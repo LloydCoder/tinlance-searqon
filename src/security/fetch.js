@@ -36,6 +36,7 @@ export async function fetchPublicUrl(value, options = {}) {
   const requestImpl = options.requestImpl ?? ((url, requestOptions, callback) =>
     (url.protocol === "https:" ? https : http).request(url, requestOptions, callback));
   if (typeof requestImpl !== "function") throw new TypeError("requestImpl must be a function");
+  if (options.validateRedirect !== undefined && typeof options.validateRedirect !== "function") throw new TypeError("validateRedirect must be a function");
 
   let current = validateTargetUrl(value);
   let redirects = 0;
@@ -103,6 +104,12 @@ export async function fetchPublicUrl(value, options = {}) {
       const next = resolveRedirectTarget(current.href, headers.location);
       if (current.protocol === "https:" && next.protocol === "http:") {
         throw new Error("HTTPS-to-HTTP redirect downgrade is not permitted");
+      }
+      if (options.validateRedirect) {
+        const allowed = await options.validateRedirect(Object.freeze({ from: current.href, to: next.href, redirectCount: redirects + 1 }));
+        if (allowed !== true) {
+          throw Object.assign(new Error("HTTP acquisition redirect blocked by destination policy"), { code: "ERR_REDIRECT_POLICY" });
+        }
       }
       current = next;
       redirects++;

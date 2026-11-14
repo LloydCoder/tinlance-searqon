@@ -54,3 +54,16 @@ test("CLI rejects unsupported extensions and invalid invocations", () => {
   assert.equal(unsupported.status,1);
   assert.match(unsupported.stderr,/Only local/);
 });
+
+
+test("CLI requires an explicit authorized-target attestation before remote scanning", () => {
+  const result = spawnSync(process.execPath,[cli.pathname,"scan-url","https://example.com"],{encoding:"utf8"});
+  assert.equal(result.status,1);
+  assert.match(result.stderr,/--confirm-authorized-target/);
+});
+
+test("CLI remote scan validates the target before any network acquisition", () => {
+  const result = spawnSync(process.execPath,[cli.pathname,"scan-url","http://127.0.0.1/admin","--confirm-authorized-target"],{encoding:"utf8"});
+  assert.equal(result.status,1);
+  assert.match(result.stderr,/non-public/);
+});

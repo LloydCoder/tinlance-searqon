@@ -152,3 +152,22 @@ test("fetch bounds DNS resolution time", async () => {
     requestImpl: fakeTransport([{ body: "should not be requested" }])
   }), /DNS resolution timed out/);
 });
+
+
+test("fetch awaits a redirect policy check before resolving the next host", async () => {
+  const seen = [];
+  let checked = 0;
+  await assert.rejects(() => fetchPublicUrl("https://example.com/start", {
+    resolver: publicResolver,
+    requestImpl: fakeTransport([{ status: 302, headers: { location: "https://other.example.com/private" } }], seen),
+    validateRedirect: async context => {
+      checked++;
+      assert.equal(context.from, "https://example.com/start");
+      assert.equal(context.to, "https://other.example.com/private");
+      assert.equal(context.redirectCount, 1);
+      return false;
+    }
+  }), error => error.code === "ERR_REDIRECT_POLICY");
+  assert.equal(checked, 1);
+  assert.equal(seen.length, 1);
+});
