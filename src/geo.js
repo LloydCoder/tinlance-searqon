@@ -163,7 +163,7 @@ export function aggregateGeoObservations(observations) {
         evidence.collectedAt!==observation.sampledAt ||
         evidence.contentType!=="application/json" ||
         !/^[a-f0-9]{64}$/.test(evidence.sha256 ?? "") ||
-        !Number.isSafeInteger(evidence.byteLength) || evidence.byteLength<0) {
+        !Number.isSafeInteger(evidence.byteLength) || evidence.byteLength<0 || evidence.methodologyVersion!=="geo-2026-11-14.1" || evidence.integrity!=="sha256-content-digest") {
       throw new TypeError("GEO observation evidence provenance is invalid");
     }
 
@@ -184,14 +184,14 @@ export function aggregateGeoObservations(observations) {
       groups.set(key,group);
     }
     group.sampleSize+=1;
-    group.mentionCount+=observation.mentionCount;
+    group.mentionCount+=observation.mentioned ? 1 : 0;\n    group.mentionOccurrences+=observation.mentionCount;
     group.brandCitationCount+=observation.brandCited ? 1 : 0;
     group.citationCount+=observation.citationCount;
   }
   return [...groups.values()].map(group=>Object.freeze({
     ...group,
     mentionRate:Number((group.mentionCount/group.sampleSize).toFixed(4)),
-    mentionRate95:wilsonInterval(group.mentionCount>0 ? Math.min(group.mentionCount,group.sampleSize) : 0,group.sampleSize),
+    mentionRate95:wilsonInterval(group.mentionCount,group.sampleSize),
     brandCitationRate:Number((group.brandCitationCount/group.sampleSize).toFixed(4)),
     brandCitationRate95:wilsonInterval(group.brandCitationCount,group.sampleSize)
   })).sort((a,b)=>
