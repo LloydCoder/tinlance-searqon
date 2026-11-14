@@ -90,7 +90,7 @@ test("OpenAPI readiness validates declared security schemes and operation identi
   assert.ok(ruleIds.includes("openapi.operation_id.missing"));
   assert.equal(result.observations.operationCount, 2);
   assert.equal(result.observations.operationsMissingOperationId, 1);
-  assert.equal(result.observations.operationsMissingDescription, 1);
+  assert.equal(result.observations.operationsMissingSummaryOrDescription, 1);
   assert.ok(result.findings.every(item => item.evidenceId === result.evidence.id));
 });
 
