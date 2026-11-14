@@ -37,12 +37,16 @@ class EvidenceLedgerStore {
   #entries;
   #tail = Promise.resolve();
   #closed = false;
+  #closing = false;
+  #closePromise;
   #failed = false;
+  #sizeBytes;
 
-  constructor(path, handle, entries) {
+  constructor(path, handle, entries, sizeBytes) {
     this.#path = path;
     this.#handle = handle;
     this.#entries = entries;
+    this.#sizeBytes = sizeBytes;
   }
 
   get filePath() {
@@ -58,7 +62,7 @@ class EvidenceLedgerStore {
   }
 
   append(record) {
-    if (this.#closed) return Promise.reject(new Error("Evidence ledger store is closed"));
+    if (this.#closed || this.#closing) return Promise.reject(new Error("Evidence ledger store is closed"));
     if (this.#failed) return Promise.reject(new Error("Evidence ledger store is unavailable after a failed write"));
     const operation = async () => {
       if (this.#closed) throw new Error("Evidence ledger store is closed");
@@ -67,8 +71,12 @@ class EvidenceLedgerStore {
       const previousHash = this.#entries.at(-1)?.entryHash ?? null;
       const entry = createEvidenceLedgerEntry(record, { sequence, previousHash });
       const line = JSON.stringify(entry) + "\n";
-      if (Buffer.byteLength(line, "utf8") > MAX_EVIDENCE_LEDGER_ENTRY_BYTES) {
+      const lineBytes = Buffer.byteLength(line, "utf8");
+      if (lineBytes > MAX_EVIDENCE_LEDGER_ENTRY_BYTES) {
         throw new Error("Evidence ledger entry exceeds the configured size limit");
+      }
+      if (this.#sizeBytes + lineBytes > MAX_EVIDENCE_LEDGER_FILE_BYTES) {
+        throw new Error("Evidence ledger exceeds the configured file size limit");
       }
       try {
         await this.#handle.writeFile(line, { encoding: "utf8" });
@@ -78,6 +86,7 @@ class EvidenceLedgerStore {
         throw error;
       }
       this.#entries.push(entry);
+      this.#sizeBytes += lineBytes;
       return entry;
     };
     const pending = this.#tail.then(operation);
@@ -85,12 +94,22 @@ class EvidenceLedgerStore {
     return pending;
   }
 
-  async close() {
-    if (this.#closed) return;
-    await this.#tail;
-    this.#closed = true;
-    activePaths.delete(this.#path);
-    await this.#handle.close();
+  close() {
+    if (this.#closePromise) return this.#closePromise;
+    if (this.#closed) return Promise.resolve();
+    // Close admission synchronously; appends already queued are drained below.
+    this.#closing = true;
+    this.#closePromise = (async () => {
+      try {
+        await this.#tail;
+        this.#closed = true;
+        await this.#handle.close();
+      } finally {
+        this.#closed = true;
+        activePaths.delete(this.#path);
+      }
+    })();
+    return this.#closePromise;
   }
 }
 
@@ -118,7 +137,7 @@ export async function openEvidenceLedgerStore(filePath) {
       throw new Error("Evidence ledger exceeds the configured file size limit");
     }
     const entries = parseLedgerContents(contents);
-    return new EvidenceLedgerStore(canonicalPath, handle, entries);
+    return new EvidenceLedgerStore(canonicalPath, handle, entries, metadata.size);
   } catch (error) {
     activePaths.delete(canonicalPath);
     if (handle) await handle.close().catch(() => {});
