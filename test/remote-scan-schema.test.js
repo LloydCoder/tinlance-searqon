@@ -10,6 +10,7 @@ test("remote scan result schema publishes all stable scanner outcomes", async ()
     "scanned",
     "robots_unreachable",
     "blocked_by_robots",
+    "redirect_not_authorized",
     "fetch_failed",
     "unsupported_content_type",
     "analysis_failed"
