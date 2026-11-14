@@ -62,3 +62,10 @@ These commands do not call a provider or fetch citations. Both bundled GEO examp
 The internal `src/security/fetch.js` module now provides a bounded HTTP(S) GET primitive for future acquisition workflows. It validates the URL, resolves and validates every DNS answer, pins the validated address in Node's socket lookup callback, and manually revalidates and re-resolves every redirect. It permits only standard HTTP/HTTPS ports, blocks HTTPS downgrade redirects, caps DNS resolution time, redirects, response bytes, headers, and socket inactivity, and requests identity encoding to avoid implicit decompression ambiguity.
 
 The transport intentionally exposes no arbitrary request headers, cookies, credentials, request body, or browser execution. It is not wired to the CLI and does not constitute a general-purpose crawler. Any production integration must still add an explicit target-authorization model, crawl scope/depth/concurrency controls, robots retrieval semantics, response MIME policy, isolated browser rendering where justified, observability, and independent security review. DNS pinning and deterministic injected transport tests are necessary controls, not a complete SSRF certification.
+
+
+## Robots policy retrieval
+
+The internal `src/security/robots-fetch.js` module retrieves `/robots.txt` through the DNS-pinned bounded transport, allows up to five validated redirects, limits the response to 512 KiB, and applies a bounded per-origin in-memory cache. Successful responses are parsed as UTF-8. Unavailable 4xx responses (except 429) produce an empty policy; 429, 5xx, unresolved redirects, invalid UTF-8, and network failures fail closed with `Disallow: /`. Cache-Control, Expires, and Retry-After are honored within a 24-hour maximum, and the cache has a configurable bounded entry count.
+
+This is a policy retrieval primitive, not a complete crawler. The caller must evaluate the parsed policy for each target URL and declared crawler product token. Robots policy is a coordination mechanism, not authorization or access control. The current cache is process-local and is not shared across workers or restarts.
