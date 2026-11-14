@@ -1,6 +1,6 @@
 import { createEvidenceRecord } from "./evidence.js";
 
-const RULES_VERSION = "2026-11-14.3";
+const RULES_VERSION = "2026-11-14.4";
 
 function finding(data) {
   return Object.freeze({
@@ -140,6 +140,113 @@ function analyzeOpenApi(content, evidenceId) {
   return {findings,observations:{openapiVersion:document.openapi,apiTitle:document.info.title ?? null,apiVersion:document.info.version ?? null,pathCount:Object.keys(paths).length,serverCount:document.servers?.length ?? 0,operationCount:operations.length,operationsMissingOperationId:missingOperationIds.length,duplicateOperationIdCount,operationsMissingSummaryOrDescription:missingOperationDescriptions.length,securitySchemeCount:Object.keys(securitySchemes).length,undefinedSecuritySchemeCount:undefinedSchemes.size},assessedDimensions:["AEO","AgEO"],scopes:{AEO:"OpenAPI API purpose, description, and operation explanations",AgEO:"OpenAPI server declaration, security scheme integrity, operation identifiers, and path surface"}};
 }
 
+
+function analyzeMcpSnapshot(content, evidenceId) {
+  let snapshot;
+  try { snapshot = JSON.parse(content); }
+  catch { throw new TypeError("Invalid MCP snapshot: expected valid JSON"); }
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    throw new TypeError("Invalid MCP snapshot: expected a JSON object");
+  }
+  if (!Array.isArray(snapshot.tools)) throw new TypeError("MCP snapshot tools must be an array");
+  if (snapshot.tools.length > 1000) throw new RangeError("MCP snapshot may contain at most 1000 tools");
+
+  const findings = [];
+  const nameCounts = new Map();
+  let toolsMissingDescription = 0;
+  let toolsWithDestructiveHint = 0;
+  let toolsWithOpenWorldHint = 0;
+  for (const tool of snapshot.tools) {
+    if (!tool || typeof tool !== "object" || Array.isArray(tool) ||
+        typeof tool.name !== "string" || !tool.name.trim() || [...tool.name].length > 128) {
+      throw new TypeError("MCP tool name must be a non-empty string of at most 128 characters");
+    }
+    if (!tool.inputSchema || typeof tool.inputSchema !== "object" || Array.isArray(tool.inputSchema) ||
+        tool.inputSchema.type !== "object") {
+      throw new TypeError("MCP tool inputSchema must be a JSON Schema object with type: object");
+    }
+    nameCounts.set(tool.name, (nameCounts.get(tool.name) ?? 0) + 1);
+    if (typeof tool.description !== "string" || !tool.description.trim()) toolsMissingDescription++;
+    if (tool.annotations && typeof tool.annotations === "object" && tool.annotations.destructiveHint === true) {
+      toolsWithDestructiveHint++;
+    }
+    if (tool.annotations && typeof tool.annotations === "object" && tool.annotations.openWorldHint === true) {
+      toolsWithOpenWorldHint++;
+    }
+  }
+
+  const duplicateToolNameCount = [...nameCounts.values()].filter(count => count > 1).length;
+  if (duplicateToolNameCount > 0) findings.push(finding({
+    ruleId:"mcp.tool.name.duplicate",
+    dimension:"AgEO",
+    severity:"medium",
+    title:"MCP tool names are not unique",
+    description:duplicateToolNameCount + " tool names are assigned to more than one tool, making tool selection and references ambiguous.",
+    recommendation:"Assign a unique, stable name to every tool exposed by this MCP server.",
+    evidenceId
+  }));
+  if (toolsMissingDescription > 0) findings.push(finding({
+    ruleId:"mcp.tool.description.missing",
+    dimension:"AEO",
+    severity:"low",
+    title:"MCP tools lack descriptions",
+    description:toolsMissingDescription + " tools have no non-empty description to explain their purpose and expected behavior.",
+    recommendation:"Provide concise descriptions covering each tool's purpose, important inputs, side effects, and expected outcomes.",
+    evidenceId
+  }));
+  if (toolsWithDestructiveHint > 0) findings.push(finding({
+    ruleId:"mcp.tool.side_effects.destructive",
+    dimension:"AgEO",
+    severity:"medium",
+    title:"MCP tools declare potentially destructive behavior",
+    description:toolsWithDestructiveHint + " tools set the destructiveHint annotation to true.",
+    recommendation:"Document the affected resources, reversibility, confirmation expectations, and authorization requirements. Treat annotations as untrusted hints, not enforcement.",
+    evidenceId
+  }));
+  if (toolsWithOpenWorldHint > 0) findings.push(finding({
+    ruleId:"mcp.tool.open_world",
+    dimension:"AgEO",
+    severity:"medium",
+    title:"MCP tools declare open-world effects",
+    description:toolsWithOpenWorldHint + " tools set the openWorldHint annotation to true.",
+    recommendation:"Document external systems and side effects, constrain reachable resources, and enforce authorization independently of tool annotations.",
+    evidenceId
+  }));
+
+  const capabilities = snapshot.capabilities && typeof snapshot.capabilities === "object" && !Array.isArray(snapshot.capabilities)
+    ? snapshot.capabilities
+    : {};
+  const toolsCapabilityAdvertised = Object.hasOwn(capabilities, "tools");
+  if (!toolsCapabilityAdvertised && snapshot.tools.length > 0) findings.push(finding({
+    ruleId:"mcp.capabilities.tools.not_advertised",
+    dimension:"AgEO",
+    severity:"medium",
+    title:"MCP tool catalog is not reflected in advertised capabilities",
+    description:"The snapshot contains tools but does not include a tools capability declaration.",
+    recommendation:"Verify that the captured server capability metadata and tool catalog belong to the same protocol snapshot.",
+    evidenceId
+  }));
+
+  return {
+    findings,
+    observations:{
+      protocolVersion:typeof snapshot.protocolVersion === "string" ? snapshot.protocolVersion : null,
+      serverName:typeof snapshot.serverInfo?.name === "string" ? snapshot.serverInfo.name : null,
+      mcpToolCount:snapshot.tools.length,
+      duplicateToolNameCount,
+      toolsMissingDescription,
+      toolsWithDestructiveHint,
+      toolsWithOpenWorldHint,
+      toolsCapabilityAdvertised
+    },
+    assessedDimensions:["AEO","AgEO"],
+    scopes:{
+      AEO:"MCP tool names and descriptions in a caller-supplied metadata snapshot",
+      AgEO:"MCP tool catalog uniqueness, input-schema root shape, advertised tool capability, and declared side-effect hints"
+    }
+  };
+}
+
 function buildAssessments(findings, assessedDimensions, scopes) {
   const dimensions = ["SEO","AEO","GEO","AgEO"];
   return Object.freeze(Object.fromEntries(dimensions.map(dimension => {
@@ -185,9 +292,9 @@ export function analyzeDocument(input) {
     throw new TypeError("source, contentType, and string content are required");
   }
   const type = input.contentType.split(";")[0].trim().toLowerCase();
-  if (!["text/html","text/markdown","application/json","application/vnd.oai.openapi+json"].includes(type)) throw new TypeError("Unsupported content type: " + type);
+  if (!["text/html","text/markdown","application/json","application/vnd.oai.openapi+json","application/vnd.searqon.mcp-snapshot+json"].includes(type)) throw new TypeError("Unsupported content type: " + type);
   const evidence = createEvidenceRecord({...input,contentType:type,methodologyVersion:RULES_VERSION});
-  const analyzed = type === "text/html" ? analyzeHtml(input.content,evidence.id) : type === "text/markdown" ? analyzeMarkdown(input.content,evidence.id) : analyzeOpenApi(input.content,evidence.id);
+  const analyzed = type === "text/html" ? analyzeHtml(input.content,evidence.id) : type === "text/markdown" ? analyzeMarkdown(input.content,evidence.id) : type === "application/vnd.searqon.mcp-snapshot+json" ? analyzeMcpSnapshot(input.content,evidence.id) : analyzeOpenApi(input.content,evidence.id);
   return Object.freeze({
     schemaVersion:"1.0.0",
     rulesVersion:RULES_VERSION,
