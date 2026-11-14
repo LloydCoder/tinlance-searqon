@@ -56,3 +56,30 @@ test("evidence source length uses Unicode code points consistently with JSON Sch
   const record = createEvidenceRecord({ source, content: "x", contentType: "text/html" });
   assert.equal([...record.source].length, 2048);
 });
+
+
+test("evidence URL sources are canonicalized without query strings or fragments", () => {
+  const record = createEvidenceRecord({ source: "https://Example.com/docs?access_token=secret#section", content: "x", contentType: "text/html" });
+  assert.equal(record.source, "https://example.com/docs");
+  assert.ok(!record.source.includes("secret"));
+});
+
+test("evidence URL sources reject embedded credentials", () => {
+  assert.throws(() => createEvidenceRecord({ source: "https://user:secret@example.com/docs", content: "x", contentType: "text/html" }), /credentials/);
+});
+
+test("evidence record verification detects identifier and shape tampering", async () => {
+  const { verifyEvidenceRecord } = await import("../src/evidence.js");
+  const record = createEvidenceRecord({ source: "fixture.html", content: "payload", contentType: "text/html" });
+  assert.equal(verifyEvidenceRecord(record).valid, true);
+  assert.equal(verifyEvidenceRecord({ ...record, id: "evidence_" + "0".repeat(20) }).valid, false);
+  assert.equal(verifyEvidenceRecord({ ...record, unexpected: true }).valid, false);
+});
+
+test("evidence content verification detects byte-length and digest mismatches", async () => {
+  const { verifyEvidenceContent } = await import("../src/evidence.js");
+  const record = createEvidenceRecord({ source: "fixture.html", content: "payload", contentType: "text/html" });
+  assert.equal(verifyEvidenceContent(record, "payload").valid, true);
+  assert.equal(verifyEvidenceContent(record, "tampered").valid, false);
+  assert.equal(verifyEvidenceContent({ ...record, byteLength: 1 }, "payload").valid, false);
+});
