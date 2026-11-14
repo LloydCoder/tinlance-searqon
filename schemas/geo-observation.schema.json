@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tinlance.com/schemas/searqon-geo-observation-1.0.0.json",
+  "title": "Searqon GEO Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "type",
+    "observationClass",
+    "provider",
+    "sampledAt",
+    "brand",
+    "targetDomain",
+    "mentioned",
+    "mentionCount",
+    "citationCount",
+    "brandCited",
+    "citations",
+    "evidence"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "type": {
+      "const": "geo_observation"
+    },
+    "observationClass": {
+      "enum": [
+        "consumer_observation",
+        "model_api"
+      ]
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "model",
+        "region",
+        "locale"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "region": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locale": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "sampledAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "brand": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetDomain": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "mentioned": {
+      "type": "boolean"
+    },
+    "mentionCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "citationCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "brandCited": {
+      "type": "boolean"
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "domain"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "domain": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "acquisitionMethod",
+        "observationClass",
+        "collectedAt",
+        "contentType",
+        "byteLength",
+        "sha256",
+        "methodologyVersion",
+        "integrity"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^evidence_[a-f0-9]{20}$"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "acquisitionMethod": {
+          "const": "provider_observation"
+        },
+        "observationClass": {
+          "enum": [
+            "consumer_observation",
+            "model_api"
+          ]
+        },
+        "collectedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "contentType": {
+          "const": "application/json"
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "methodologyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "integrity": {
+          "const": "sha256-content-digest"
+        }
+      }
+    }
+  }
+}
