@@ -26,7 +26,7 @@ function normalizeRobotsPath(value) {
 }
 
 function pathSpecificity(path) {
-  const literal = path.replace(/\*/g, "").replace(/\$/, "");
+  const literal = (path.endsWith("$") ? path.slice(0, -1) : path).replaceAll("*", "");
   return Buffer.byteLength(literal.replace(/%[0-9A-F]{2}/g, "x"), "utf8");
 }
 
