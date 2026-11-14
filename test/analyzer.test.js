@@ -117,3 +117,15 @@ test("OpenAPI 3.2 URI-based security scheme references are not mistaken for miss
   assert.equal(result.observations.undefinedSecuritySchemeCount, 0);
   assert.equal(result.findings.some(item => item.ruleId === "openapi.security_scheme.undefined"), false);
 });
+
+
+test("OpenAPI operation summary satisfies the machine-readable explanation requirement", () => {
+  const document = {
+    openapi: "3.1.0",
+    info: { title: "Example API", version: "1.0.0", description: "Example service" },
+    paths: { "/items": { get: { operationId: "listItems", summary: "List items", responses: { "200": { description: "OK" } } } } }
+  };
+  const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
+  assert.equal(result.observations.operationsMissingSummaryOrDescription, 0);
+  assert.equal(result.findings.some(item => item.ruleId === "openapi.operation_description.missing"), false);
+});
