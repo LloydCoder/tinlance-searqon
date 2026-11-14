@@ -29,7 +29,7 @@ test("GEO aggregation rejects inconsistent observation counters", () => {
 test("GEO aggregation rejects malformed provider and evidence provenance", () => {
   const result=analyzeGeoObservation(sample);
   assert.throws(()=>aggregateGeoObservations([{...result,provider:{name:" "}}]),/provider metadata/);
-  assert.throws(()=>aggregateGeoObservations([{...result,evidence:{...result.evidence,id:"bad"}}]),/evidence provenance/);
+  assert.throws(()=>aggregateGeoObservations([{...result,evidence:{...result.evidence,id:"bad"}}]),/evidence provenance/);\n  assert.throws(()=>aggregateGeoObservations([{...result,brandCited:false}]),/brand citation state/);\n  assert.throws(()=>aggregateGeoObservations([{...result,citations:[{url:"https://other.example/",domain:"docs.acme.example"}]}]),/citation URL/);
 });
 
 test("GEO aggregation does not pool distinct models, regions, or locales", () => {
