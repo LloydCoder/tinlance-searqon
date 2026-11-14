@@ -1,6 +1,6 @@
 # Passive Scanner: Current Contract
 
-The first executable scanner increment intentionally accepts local files only. This avoids network-origin SSRF exposure in the current execution path.
+Searqon supports caller-supplied local documents and a bounded, single-page remote scan. The remote path uses the SSRF-resistant transport and robots policy checks; it does not recursively crawl links or render browser content.
 
 ## Inputs
 
@@ -23,16 +23,16 @@ These checks are syntactic heuristics. Absence of an OpenAPI security requiremen
 
 ## Safety
 
-The analyzer performs no network I/O, link following, script execution, browser rendering, authentication, or MCP tool invocation. HTML and JSON are treated as untrusted text. The local CLI reads only the path explicitly supplied by the caller and writes output only to a caller-supplied new path using exclusive-create semantics.
+The local analyzer performs no network I/O, link following, script execution, browser rendering, authentication, or MCP tool invocation. The separate remote scanner retrieves only the caller-selected public URL, applies robots policy at the initial URL and each redirect destination, and does not follow page links. HTML and JSON are treated as untrusted text. Local report output uses exclusive-create semantics.
 
 ## Deferred work
 
-A remote acquisition worker requires a separately reviewed SSRF-safe resolver/connector, redirect and retry validation, IP pinning, response bounds, isolation, and a dedicated regression suite. Do not add a generic fetch URL feature to this local analyzer.
+A full-site acquisition worker still requires real socket/TLS integration testing, explicit target authorization, crawl scope/depth/concurrency controls, isolated browser execution if required, and independent security review. Do not turn the one-page scanner into an unrestricted generic crawler.
 
 
 ## Machine-readable contract
 
-The report shape is published in [`schemas/assessment-report.schema.json`](../schemas/assessment-report.schema.json) using JSON Schema 2020-12. The schema fixes required fields and enumerations while leaving observation-specific attributes extensible. Consumers should validate the schema version before interpreting fields.
+The report shape is published in [`schemas/assessment-report.schema.json`](../schemas/assessment-report.schema.json) using JSON Schema 2020-12. Evidence metadata is also published independently in [`schemas/evidence-record.schema.json`](../schemas/evidence-record.schema.json), and the remote scan result envelope is published in [`schemas/remote-scan-result.schema.json`](../schemas/remote-scan-result.schema.json). The schemas fix required fields and enumerations while leaving observation-specific attributes extensible. Consumers should validate the schema version before interpreting fields.
 
 
 ## GEO observation engine
