@@ -53,3 +53,8 @@ Every release must have reviewed dependencies and licenses, secret scanning, sta
 ## URL destination policy module
 
 The repository includes pure URL/IP policy helpers that reject non-HTTP(S) schemes, URL credentials, local/reserved hostnames, non-public IP ranges, and non-public DNS answers. Redirect targets are revalidated. These helpers do not perform DNS resolution or network requests. Any future connector must resolve A/AAAA records, validate every answer, pin the chosen validated address at socket creation, revalidate each redirect and retry, and add mocked plus isolated integration regression tests before enabling remote acquisition.
+
+
+## Robots Exclusion Protocol parser
+
+A bounded, pure parser for robots.txt user-agent groups, Allow/Disallow rules, wildcards, end anchors, Crawl-delay metadata, and Sitemap declarations is included. Evaluation selects the most-specific matching user-agent group and applies longest-path precedence with Allow winning ties. This parser does not retrieve robots.txt or grant authorization to access a resource. A future crawler must fetch robots policy using the same SSRF-safe transport and apply the applicable RFC 9309 handling for redirects, caching, unavailable responses, and unreachable servers.
