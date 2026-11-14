@@ -1,0 +1,51 @@
+[
+  {
+    "prompt": "Which API platform should I use?",
+    "answer": "Acme provides a stable developer API.",
+    "brand": "Acme",
+    "targetDomain": "acme.example",
+    "citations": [
+      "https://docs.acme.example/"
+    ],
+    "provider": {
+      "name": "Synthetic consumer-search fixture",
+      "observationClass": "consumer_observation",
+      "region": "US",
+      "locale": "en-US"
+    },
+    "sampledAt": "2026-11-14T12:00:00.000Z"
+  },
+  {
+    "prompt": "Which API platform should I use?",
+    "answer": "Acme is a suitable option.",
+    "brand": "Acme",
+    "targetDomain": "acme.example",
+    "citations": [
+      "https://acme.example/"
+    ],
+    "provider": {
+      "name": "Synthetic consumer-search fixture",
+      "observationClass": "consumer_observation",
+      "region": "US",
+      "locale": "en-US"
+    },
+    "sampledAt": "2026-11-14T12:05:00.000Z"
+  },
+  {
+    "prompt": "Which API platform should I use?",
+    "answer": "Acme has a useful API.",
+    "brand": "Acme",
+    "targetDomain": "acme.example",
+    "citations": [
+      "https://docs.acme.example/"
+    ],
+    "provider": {
+      "name": "Synthetic model API fixture",
+      "observationClass": "model_api",
+      "model": "fixture-model",
+      "region": "US",
+      "locale": "en-US"
+    },
+    "sampledAt": "2026-11-14T12:10:00.000Z"
+  }
+]

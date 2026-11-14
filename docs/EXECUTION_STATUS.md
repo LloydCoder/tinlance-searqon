@@ -1,54 +1,61 @@
 # Searqon Implementation Status
 
 **Last verified:** 2026-11-14  
-**Default branch:** `main`  
+**Main commit:** `590ba536673b7aecc787a66f577be5ceebaaddd0`  
 **Product maturity:** Early alpha; not production-ready.
 
-This document distinguishes repository implementation from customer, security, operational, and commercial acceptance. A green CI workflow is not a production-readiness certification.
+This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification.
 
 ## Phase status
 
-| Phase | Current status | Evidence / outstanding gate |
+| Phase | Status | Evidence and remaining exit gates |
 |---|---|---|
-| 0 — Product control | IMPLEMENTED | Product charter, constraints, ownership boundaries, and roadmap are in the repository. Product-owner acceptance is not recorded. |
-| 1 — Customer validation | BLOCKED | Interviews, design partners, and paid-pilot commitments require real customer participation; no results are claimed. |
-| 2 — Open-source foundation | VERIFIED | Apache-2.0 repository, contribution/security docs, Node 22/24 CI, tests, syntax checks, and package dry-run. Full dependency/provenance release audit remains open. |
-| 3 — Domain contracts | IN_PROGRESS | Evidence record and report schema exist. Broader domain contracts, migration policy, and API compatibility review remain. |
-| 4 — Secure remote acquisition | NOT_STARTED | No remote fetcher or crawler exists. The current local-only design intentionally avoids network acquisition until SSRF-safe resolution, connection pinning, redirects, and isolation are implemented and tested. |
-| 5 — Evidence and provenance | IN_PROGRESS | Local evidence metadata, UTC timestamp, acquisition method, observation class, methodology version, and SHA-256 digest are implemented. Persistent append-only storage, retention, redaction, deletion, and tamper-evident audit are not implemented. |
-| 6 — Passive scanner | IN_PROGRESS | Local HTML, Markdown, and OpenAPI JSON analysis plus CLI and evidence-linked heuristic findings. Not a full crawler, browser scanner, or complete SEO/AEO/AgEO audit. |
-| 7 — GEO intelligence | NOT_STARTED | No authorized provider adapters, prompt sampling, citation collection, or historical monitoring. |
-| 8 — Interfaces and reporting | IN_PROGRESS | Local CLI and JSON report contract exist. Hosted API, web UI, accessibility audit, and report UX remain. |
-| 9 — Hosted service | NOT_STARTED | No authentication, tenant model, billing, scheduling, managed database, or cloud deployment. |
-| 10 — Security/privacy assurance | IN_PROGRESS | Security policy and local-only safety boundaries exist. No independent penetration test, ASVS assessment, privacy counsel review, or production threat-model closure. |
-| 11 — Reliability and operations | IN_PROGRESS | CI validates Node 22/24, syntax, tests, and package contents. No production SLOs, deployment, incident response, backups, or recovery exercise. |
-| 12 — Design-partner pilots | BLOCKED | Depends on customer recruitment and validated use cases; no pilots are claimed. |
-| 13 — Commercial v1 | NOT_STARTED | No production service, customer acceptance, support process, or validated unit economics. |
-| 14 — SEO/AEO expansion | IN_PROGRESS | A small set of local deterministic document signals only. Search Console integration, crawling, Core Web Vitals, and broader methodology remain. |
-| 15 — Advanced AgEO | IN_PROGRESS | Partial OpenAPI and Markdown documentation heuristics only. MCP interoperability, auth/authorization testing, runtime reliability, governance, and enterprise assurance remain. |
+| 0 — Product control | IMPLEMENTED | Product charter, four-discipline positioning, constraints, product boundaries, and roadmap are documented. Formal product-owner acceptance is not recorded. |
+| 1 — Customer validation | BLOCKED | Interviews, five design partners, and paid-pilot commitments require real customer participation. No interviews or commitments are fabricated or claimed. |
+| 2 — Open-source foundation | VERIFIED | Public Apache-2.0 repository, contribution/security policies, Node 22/24 CI, npm lockfile/audit, package dry-run, and CodeQL v4. Full release provenance, license, SBOM, and signing review remains. |
+| 3 — Domain contracts | IN_PROGRESS | Evidence provenance contract, report JSON Schema, GEO observation schema, and separate discipline assessments exist. Broader versioned APIs, migrations, compatibility policy, and persistence contracts remain. |
+| 4 — Secure remote acquisition | IN_PROGRESS | URL/IP policy, public DNS answer validation, pinned lookup callback, redirect-target validation, and bounded robots.txt parser/evaluator exist. **No HTTP transport or crawler is enabled.** Socket integration, redirect/retry integration tests, body/header/decompression/time bounds, isolation, and RFC 9309 retrieval/error/cache behavior remain. |
+| 5 — Evidence and provenance | IN_PROGRESS | Evidence records include source, method, observation class, UTC timestamp, media type, byte length, SHA-256, methodology version, and explicit digest semantics. Persistent append-only storage, retention, redaction, deletion, and tamper-evident audit remain. |
+| 6 — Passive scanner | IN_PROGRESS | Local HTML, Markdown, and OpenAPI JSON analyzers, deterministic evidence-linked findings, partial coverage reporting, CLI, and report schema. No remote crawl, browser rendering, MCP metadata acquisition, or complete discipline audit. |
+| 7 — GEO intelligence | IN_PROGRESS | Supplied-observation normalization, provider/channel provenance, brand mention/citation extraction, provider/channel-separated aggregation, and Wilson 95% intervals. No live provider adapters, consumer-interface observation collection, scheduling, history store, or monitoring. |
+| 8 — Interfaces and reporting | IN_PROGRESS | Local scan and GEO analyze/aggregate CLI commands plus JSON Schema contracts. Hosted API, web UI, accessibility testing, and customer-facing report UX remain. |
+| 9 — Hosted service | NOT_STARTED | No authentication, tenant model, billing, quotas, scheduling service, managed database, or cloud deployment. |
+| 10 — Security/privacy assurance | IN_PROGRESS | Security policy, URL/DNS/robots primitives, CodeQL v4, npm audit, and regression tests exist. No independent penetration test, ASVS assessment, privacy/legal review, secret-scanning workflow, or production threat-model closure. |
+| 11 — Reliability and operations | IN_PROGRESS | CI tests Node.js 22/24, JavaScript syntax, full tests, npm audit, and package dry-run; CodeQL runs on PRs/main and weekly. No production SLOs, deploy/rollback, incident response, backups, or recovery exercise. |
+| 12 — Design-partner pilots | BLOCKED | Requires recruited organizations and real pilot participation. No pilots or outcomes are claimed. |
+| 13 — Commercial v1 | NOT_STARTED | No production service, accepted customer outcomes, support operations, validated pricing, or measured unit economics. |
+| 14 — SEO/AEO expansion | IN_PROGRESS | A small local HTML/Markdown/OpenAPI rule set only. Search Console integration, technical crawl, Core Web Vitals, broader entity/answer methodology, and verified remediation remain. |
+| 15 — Advanced AgEO | IN_PROGRESS | Partial OpenAPI and documentation heuristics plus explicit observation of coverage limits. MCP interoperability, runtime auth/authorization validation, reliability, transaction safety, governance, and enterprise assurance remain. |
 
-## Verified implementation
+## Merged implementation increments
 
 - [PR #1](https://github.com/LloydCoder/tinlance-searqon/pull/1) — repository foundation and governance.
 - [PR #2](https://github.com/LloydCoder/tinlance-searqon/pull/2) — local HTML/OpenAPI scanner and CLI.
 - [PR #3](https://github.com/LloydCoder/tinlance-searqon/pull/3) — evidence provenance contract.
 - [PR #4](https://github.com/LloydCoder/tinlance-searqon/pull/4) — distinct SEO/AEO/GEO/AgEO coverage reporting.
 - [PR #5](https://github.com/LloydCoder/tinlance-searqon/pull/5) — Markdown API documentation readiness checks.
-- [PR #6](https://github.com/LloydCoder/tinlance-searqon/pull/6) — JSON Schema report contract.
+- [PR #6](https://github.com/LloydCoder/tinlance-searqon/pull/6) — assessment report JSON Schema.
+- [PR #7](https://github.com/LloydCoder/tinlance-searqon/pull/7) — phase status and local scanner examples.
+- [PR #8](https://github.com/LloydCoder/tinlance-searqon/pull/8) — evidence source-label privacy hardening.
+- [PR #9](https://github.com/LloydCoder/tinlance-searqon/pull/9) — CodeQL and dependency audit workflow foundation.
+- [PR #10](https://github.com/LloydCoder/tinlance-searqon/pull/10) — CodeQL action v4.
+- [PR #11](https://github.com/LloydCoder/tinlance-searqon/pull/11) — provenance-aware GEO observation and aggregation engine.
+- [PR #12](https://github.com/LloydCoder/tinlance-searqon/pull/12) — GEO CLI and observation schema.
+- [PR #13](https://github.com/LloydCoder/tinlance-searqon/pull/13) — SSRF-resistant URL/IP policy primitives.
+- [PR #14](https://github.com/LloydCoder/tinlance-searqon/pull/14) — public DNS validation and pinned lookup callback.
+- [PR #15](https://github.com/LloydCoder/tinlance-searqon/pull/15) — bounded robots.txt parser and evaluator.
 
-## Current CI gate
+## Current verification gates
 
-The repository workflow runs on Node.js 22 and 24 and performs:
-- JavaScript syntax checks
-- Full Node test suite
-- npm package dry-run validation
+- CI: Node.js 22 and 24; syntax checks; full Node test suite; `npm audit --audit-level=high`; `npm pack --dry-run`.
+- CodeQL: v4 JavaScript/TypeScript analysis on pull requests, main pushes, and weekly schedule.
+- Dependency Review: not enabled because GitHub Dependency Graph is disabled for this repository; npm audit is the active dependency vulnerability check. Enable Dependency Graph in repository security settings before restoring Dependency Review.
+- No deployment workflow exists because no production deployment target or credentials have been approved/configured.
 
-The latest main-branch run at the time this status was written must be checked before treating the current main commit as verified. CI does not yet include dedicated SAST, dependency/license scanning, secret scanning, fuzzing, browser tests, or deployment smoke tests.
+## Immediate safe next steps
 
-## Next safe implementation sequence
-
-1. Expand scanner tests and deterministic rules without introducing network I/O.
-2. Add a robust, isolated acquisition subsystem only after its threat model and SSRF regression suite are ready.
-3. Add persistent evidence storage only after retention, deletion, privacy, and integrity semantics are defined.
-4. Add GEO observation adapters only for permitted and reproducible collection methods.
-5. Complete customer validation before building hosted billing and multi-tenant operations.
+1. Complete a real HTTP transport that uses validated/pinned DNS at socket creation, revalidates every redirect/retry, and enforces strict resource limits; prove it with isolated integration tests before enabling network scans.
+2. Add persistent evidence storage only after retention, deletion, privacy, and tamper-evidence semantics are designed.
+3. Add permitted GEO provider adapters only after terms, reproducibility, rate limits, and cost controls are verified.
+4. Recruit design partners and conduct customer interviews before implementing hosted billing and multi-tenant infrastructure.
+5. Complete independent security, privacy, operations, and commercial acceptance before GA.
