@@ -140,14 +140,18 @@ export function aggregateGeoObservations(observations, options = {}) {
     if (!provider || typeof provider !== "object" || Array.isArray(provider)) {
       throw new TypeError("GEO observation provider metadata is invalid");
     }
-    const providerName = requiredText(provider.name, "provider.name", 128);
-    if (providerName !== provider.name) throw new TypeError("GEO observation provider metadata is invalid");
-    for (const [field, maxLength] of [["model", 128], ["region", 64], ["locale", 32]]) {
-      const value = provider[field];
-      if (value !== null) {
-        const normalized = requiredText(value, "provider." + field, maxLength);
-        if (normalized !== value) throw new TypeError("GEO observation provider metadata is invalid");
+    try {
+      const providerName = requiredText(provider.name, "provider.name", 128);
+      if (providerName !== provider.name) throw new TypeError("not_normalized");
+      for (const [field, maxLength] of [["model", 128], ["region", 64], ["locale", 32]]) {
+        const value = provider[field];
+        if (value !== null) {
+          const normalized = requiredText(value, "provider." + field, maxLength);
+          if (normalized !== value) throw new TypeError("not_normalized");
+        }
       }
+    } catch {
+      throw new TypeError("GEO observation provider metadata is invalid");
     }
     const normalizedBrand = requiredText(observation.brand, "brand", 128);
     if (normalizedBrand !== observation.brand) throw new TypeError("GEO observation brand cohort is invalid");
