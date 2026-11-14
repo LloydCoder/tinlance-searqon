@@ -41,6 +41,7 @@ jobs:
           node src/cli.js scan ./examples/site.html >/dev/null
           node src/cli.js scan ./examples/openapi.json >/dev/null
           node src/cli.js scan ./examples/api-docs.md >/dev/null
+          node src/cli.js scan ./examples/mcp-snapshot.json --format mcp >/dev/null
           node src/cli.js geo analyze ./examples/geo-observation.json >/dev/null
           node src/cli.js geo aggregate ./examples/geo-observations.json >/dev/null
       - name: Audit dependency tree
