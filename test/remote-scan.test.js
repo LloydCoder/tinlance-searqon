@@ -68,6 +68,7 @@ test("remote scanner checks robots policy again before following cross-origin re
 test("remote scanner blocks a redirect when destination robots policy disallows it", async () => {
   const result = await scanPublicUrl("https://example.com/start", {
     confirmAuthorizedTarget: true,
+    allowedRedirectOrigins: ["https://other.example.com"],
     robotsLoader: async origin => origin === "https://example.com"
       ? allowedRobots()
       : ({ outcome: "available", policy: { groups: [{ userAgents: ["*"], rules: [{ type: "disallow", path: "/", specificity: 1, pattern: /^/ }] }] } }),
