@@ -5,7 +5,11 @@
   "description": "Stable result envelope for a robots-aware single-page remote scan.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "status", "target"],
+  "required": [
+    "schemaVersion",
+    "status",
+    "target"
+  ],
   "properties": {
     "schemaVersion": {
       "type": "string",
@@ -17,6 +21,7 @@
         "scanned",
         "robots_unreachable",
         "blocked_by_robots",
+        "redirect_not_authorized",
         "fetch_failed",
         "unsupported_content_type",
         "analysis_failed"
@@ -34,10 +39,17 @@
     },
     "robotsOutcome": {
       "type": "string",
-      "enum": ["available", "unavailable", "unreachable"]
+      "enum": [
+        "available",
+        "unavailable",
+        "unreachable"
+      ]
     },
     "robotsStatus": {
-      "type": ["integer", "null"],
+      "type": [
+        "integer",
+        "null"
+      ],
       "minimum": 100,
       "maximum": 599
     },
@@ -47,7 +59,10 @@
       "maximum": 599
     },
     "contentType": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "maxLength": 128
     },
     "redirects": {

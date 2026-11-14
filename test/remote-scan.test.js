@@ -52,6 +52,7 @@ test("remote scanner checks robots policy again before following cross-origin re
   let redirectValidator;
   const result = await scanPublicUrl("https://example.com/start", {
     confirmAuthorizedTarget: true,
+    allowedRedirectOrigins: ["https://other.example.com"],
     robotsLoader: async origin => { robotOrigins.push(origin); return allowedRobots(); },
     fetcher: async (url, options) => {
       redirectValidator = options.validateRedirect;
@@ -67,6 +68,7 @@ test("remote scanner checks robots policy again before following cross-origin re
 test("remote scanner blocks a redirect when destination robots policy disallows it", async () => {
   const result = await scanPublicUrl("https://example.com/start", {
     confirmAuthorizedTarget: true,
+    allowedRedirectOrigins: ["https://other.example.com"],
     robotsLoader: async origin => origin === "https://example.com"
       ? allowedRobots()
       : ({ outcome: "available", policy: { groups: [{ userAgents: ["*"], rules: [{ type: "disallow", path: "/", specificity: 1, pattern: /^/ }] }] } }),
@@ -122,5 +124,32 @@ test("remote scanner requires explicit authorization from every API caller befor
     robotsLoader: async () => { contacted = true; return allowedRobots(); },
     fetcher: async () => { contacted = true; throw new Error("must not fetch"); }
   }), /explicit authorization/);
+  assert.equal(contacted, false);
+});
+
+
+test("remote scanner blocks cross-origin redirects unless the destination origin is explicitly authorized", async () => {
+  const robotOrigins = [];
+  const result = await scanPublicUrl("https://example.com/start", {
+    confirmAuthorizedTarget: true,
+    robotsLoader: async origin => { robotOrigins.push(origin); return allowedRobots(); },
+    fetcher: async (url, options) => {
+      const allowed = await options.validateRedirect({ from: url, to: "https://other.example.com/final", redirectCount: 1 });
+      assert.equal(allowed, false);
+      throw Object.assign(new Error("cross-origin redirect not authorized"), { code: "ERR_REDIRECT_POLICY" });
+    }
+  });
+  assert.equal(result.status, "redirect_not_authorized");
+  assert.deepEqual(robotOrigins, ["https://example.com"]);
+});
+
+test("remote scanner rejects malformed cross-origin authorization entries before network access", async () => {
+  let contacted = false;
+  await assert.rejects(() => scanPublicUrl("https://example.com/start", {
+    confirmAuthorizedTarget: true,
+    allowedRedirectOrigins: ["https://user:pass@other.example.com/path"],
+    robotsLoader: async () => { contacted = true; return allowedRobots(); },
+    fetcher: async () => { contacted = true; }
+  }), /allowedRedirectOrigins/);
   assert.equal(contacted, false);
 });

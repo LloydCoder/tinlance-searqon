@@ -27,6 +27,32 @@ function result(status, data = {}) {
   return Object.freeze({ schemaVersion: "1.0.0", status, ...data });
 }
 
+function validateAllowedRedirectOrigins(value) {
+  if (value === undefined) return new Set();
+  if (!Array.isArray(value) || value.length > 20) {
+    throw new TypeError("allowedRedirectOrigins must be an array of at most 20 public HTTP(S) origins");
+  }
+  const origins = new Set();
+  for (const entry of value) {
+    if (typeof entry !== "string" || !entry.trim()) {
+      throw new TypeError("allowedRedirectOrigins entries must be absolute HTTP(S) origins");
+    }
+    let parsed;
+    try { parsed = new URL(entry); }
+    catch { throw new TypeError("allowedRedirectOrigins entries must be absolute HTTP(S) origins"); }
+    if ((parsed.protocol !== "http:" && parsed.protocol !== "https:") || parsed.username || parsed.password || parsed.pathname !== "/" || parsed.search || parsed.hash) {
+      throw new TypeError("allowedRedirectOrigins entries must contain only a public HTTP(S) origin");
+    }
+    const canonicalOrigin = parsed.origin;
+    if (entry !== canonicalOrigin && entry !== canonicalOrigin + "/") {
+      throw new TypeError("allowedRedirectOrigins entries must use canonical origin syntax");
+    }
+    validateTargetUrl(canonicalOrigin + "/");
+    origins.add(canonicalOrigin);
+  }
+  return origins;
+}
+
 function evaluatePolicy(policyResult, url, userAgent) {
   if (!policyResult || !["available", "unavailable"].includes(policyResult.outcome) || !policyResult.policy) {
     return { outcome: "unreachable", allowed: false };
@@ -48,6 +74,7 @@ export async function scanPublicUrl(value, options = {}) {
   if (options.confirmAuthorizedTarget !== true) {
     throw new Error("Remote scanning requires explicit authorization from the caller");
   }
+  const allowedRedirectOrigins = validateAllowedRedirectOrigins(options.allowedRedirectOrigins);
   const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
   if (typeof userAgent !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(userAgent)) {
     throw new TypeError("userAgent must be a crawler product token of 1-64 ASCII letters, digits, underscores, or hyphens");
@@ -98,6 +125,10 @@ export async function scanPublicUrl(value, options = {}) {
     try {
       const destination = validateTargetUrl(to);
       const destinationOrigin = new URL(destination.href).origin;
+      if (destinationOrigin !== origin && !allowedRedirectOrigins.has(destinationOrigin)) {
+        redirectBlockReason = "redirect_not_authorized";
+        return false;
+      }
       const destinationRobots = await robotsLoader(destinationOrigin, userAgent, robotsOptions);
       const decision = evaluatePolicy(destinationRobots, destination.href, userAgent);
       if (decision.outcome === "unreachable") {
@@ -126,6 +157,12 @@ export async function scanPublicUrl(value, options = {}) {
     });
   } catch (error) {
     if (error?.code === "ERR_REDIRECT_POLICY") {
+      if (redirectBlockReason === "redirect_not_authorized") {
+        return result("redirect_not_authorized", {
+          target: publicLabel(target.href),
+          error: "Cross-origin redirect destination was not explicitly authorized"
+        });
+      }
       const status = redirectBlockReason === "robots_unreachable" ? "robots_unreachable" : "blocked_by_robots";
       return result(status, {
         target: publicLabel(target.href),

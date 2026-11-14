@@ -8,7 +8,7 @@ import { scanPublicUrl } from "./remote-scan.js";
 const usage = [
   "Usage:",
   "  searqon scan <local-file> [--source <label>] [--out <json-file>]",
-  "  searqon scan-url <public-url> --confirm-authorized-target [--user-agent <token>] [--out <json-file>]",
+  "  searqon scan-url <public-url> --confirm-authorized-target [--allow-redirect-origin <origin>]... [--user-agent <token>] [--out <json-file>]",
   "  searqon geo analyze <observation.json> [--out <json-file>]",
   "  searqon geo aggregate <observations.json> [--out <json-file>]"
 ].join("\n");
@@ -45,10 +45,18 @@ async function runScan(args) {
 async function runScanUrl(args) {
   if (!args[1]) throw new Error(usage);
   if (!args.includes("--confirm-authorized-target")) throw new Error("Remote scanning requires --confirm-authorized-target to attest that you are authorized to assess this target");
+  const allowedRedirectOrigins = [];
+  for (let index = 0; index < args.length; index++) {
+    if (args[index] !== "--allow-redirect-origin") continue;
+    const origin = args[index + 1];
+    if (!origin || origin.startsWith("--")) throw new Error("--allow-redirect-origin requires an origin");
+    allowedRedirectOrigins.push(origin);
+    index++;
+  }
   const agentIndex = args.indexOf("--user-agent");
   const userAgent = agentIndex >= 0 ? args[agentIndex + 1] : undefined;
   if (agentIndex >= 0 && (!userAgent || userAgent.startsWith("--"))) throw new Error("--user-agent requires a product token");
-  await emitResult(await scanPublicUrl(args[1], { userAgent, confirmAuthorizedTarget: true }), args);
+  await emitResult(await scanPublicUrl(args[1], { userAgent, confirmAuthorizedTarget: true, allowedRedirectOrigins }), args);
 }
 
 async function runGeo(args) {

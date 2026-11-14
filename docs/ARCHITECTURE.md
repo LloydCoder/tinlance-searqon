@@ -63,7 +63,7 @@ Rust is not a default rewrite target. Consider it only after profiling identifie
 ## Security invariants
 
 - Network acquisition must defend against SSRF, DNS rebinding, redirect abuse, IP-literal tricks, IPv4-mapped IPv6, and metadata endpoints.
-- Validate every redirect and retry destination; bind outbound connections to validated addresses where supported.
+- Validate every redirect and retry destination; bind outbound connections to validated addresses where supported. A caller's authorization for the initial origin does not authorize a different origin reached through a redirect; cross-origin destinations require an explicit allowlist.
 - Apply response-size, decompression, timeout, depth, concurrency, and content-type limits.
 - Treat fetched pages, documents, metadata, prompts, and model outputs as untrusted data, never as executable instructions.
 - Discovery of an API or MCP server confers no permission to authenticate, invoke tools, or transact.

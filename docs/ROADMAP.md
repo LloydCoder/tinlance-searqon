@@ -21,7 +21,7 @@ A green CI run is necessary for applicable code changes, but is not sufficient f
 | 1 | Customer and commercial validation | 15 interviews, 5 design partners, 3 paid pilot commitments or an explicit evidence-based pivot |
 | 2 | Open-source governance and repository foundation | License/provenance review, contribution/security policies, CI, release conventions |
 | 3 | Domain contracts and architecture | Versioned contracts, threat model, ADRs, testable boundaries |
-| 4 | Secure acquisition | SSRF regression suite, DNS/redirect defenses, bounded fetch tests |
+| 4 | Secure acquisition | SSRF regression suite, DNS/redirect defenses, bounded fetch tests, explicit cross-origin redirect authorization, controlled-origin integration evidence |
 | 5 | Evidence and provenance | Reproducible evidence records, retention/deletion/redaction tests |
 | 6 | Passive Agent Readiness Scanner | Deterministic checks, fixtures, CLI report, JSON output |
 | 7 | GEO Intelligence Engine | Permitted observation adapters, sampling methodology, citation/mention analysis, cost controls |

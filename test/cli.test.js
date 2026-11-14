@@ -67,3 +67,16 @@ test("CLI remote scan validates the target before any network acquisition", () =
   assert.equal(result.status,1);
   assert.match(result.stderr,/non-public/);
 });
+
+
+test("CLI rejects non-public redirect authorization origins before network access", () => {
+  const result = spawnSync(process.execPath,[cli.pathname,"scan-url","https://example.com/docs","--confirm-authorized-target","--allow-redirect-origin","http://127.0.0.1"],{encoding:"utf8"});
+  assert.equal(result.status,1);
+  assert.match(result.stderr,/non-public/);
+});
+
+test("CLI requires a value for every redirect-origin authorization option", () => {
+  const result = spawnSync(process.execPath,[cli.pathname,"scan-url","https://example.com/docs","--confirm-authorized-target","--allow-redirect-origin"],{encoding:"utf8"});
+  assert.equal(result.status,1);
+  assert.match(result.stderr,/--allow-redirect-origin requires an origin/);
+});
