@@ -33,3 +33,8 @@ A remote acquisition worker requires a separately reviewed SSRF-safe resolver/co
 ## Machine-readable contract
 
 The report shape is published in [`schemas/assessment-report.schema.json`](../schemas/assessment-report.schema.json) using JSON Schema 2020-12. The schema fixes required fields and enumerations while leaving observation-specific attributes extensible. Consumers should validate the schema version before interpreting fields.
+
+
+## GEO observation engine
+
+The GEO module accepts externally supplied, authorized answer observations. It records provider name, observation class, model/region/locale metadata, sample time, normalized citation URLs, brand mention counts, and optional target-domain citation presence. The evidence digest covers the prompt, answer, citations, and provider metadata; raw prompt and answer text are not returned in the normalized record. Citation URLs are parsed but never fetched. Consumer-facing observations and direct model API observations are kept separate during aggregation. Mention and brand-citation rates include Wilson 95% confidence intervals; small samples must still be interpreted cautiously. No provider connector, consumer-interface scraper, scheduler, or paid API integration is included.
