@@ -77,11 +77,59 @@ function analyzeOpenApi(content, evidenceId) {
     throw new TypeError("Invalid OpenAPI document: openapi and info fields are required");
   }
   const findings = [];
+  const paths = document.paths && typeof document.paths === "object" && !Array.isArray(document.paths) ? document.paths : {};
+  const operations = [];
+  const httpMethods = new Set(["get","put","post","delete","options","head","patch","trace"]);
+  for (const [path, pathItem] of Object.entries(paths)) {
+    if (!pathItem || typeof pathItem !== "object" || Array.isArray(pathItem)) continue;
+    for (const [method, operation] of Object.entries(pathItem)) {
+      if (httpMethods.has(method.toLowerCase()) && operation && typeof operation === "object" && !Array.isArray(operation)) {
+        operations.push({ path, method: method.toLowerCase(), operation });
+      }
+    }
+  }
   if (!Array.isArray(document.servers) || document.servers.length === 0) findings.push(finding({ruleId:"openapi.servers.missing",dimension:"AgEO",severity:"medium",title:"API server endpoints are not declared",description:"The OpenAPI document does not declare a non-empty servers array.",recommendation:"Document intended server URLs and environments without exposing private infrastructure.",evidenceId}));
-  if (!document.security && !Object.values(document.paths ?? {}).some(path => Object.values(path ?? {}).some(operation => operation?.security))) findings.push(finding({ruleId:"openapi.security.missing",dimension:"AgEO",severity:"medium",title:"Authentication requirements are not explicit",description:"No root-level or operation-level security requirement was detected. This does not prove the API is unauthenticated.",recommendation:"Explicitly document whether operations are public or require a declared security scheme.",evidenceId}));
+  const securityRequirements = [];
+  if (Array.isArray(document.security)) securityRequirements.push(...document.security);
+  for (const { operation } of operations) {
+    if (Array.isArray(operation.security)) securityRequirements.push(...operation.security);
+  }
+  const securitySchemes = document.components?.securitySchemes && typeof document.components.securitySchemes === "object" && !Array.isArray(document.components.securitySchemes)
+    ? document.components.securitySchemes
+    : {};
+  if (securityRequirements.length > 0 && Object.keys(securitySchemes).length === 0) {
+    findings.push(finding({ruleId:"openapi.security_schemes.missing",dimension:"AgEO",severity:"high",title:"Security requirements have no scheme definitions",description:"One or more security requirements are declared, but components.securitySchemes contains no definitions.",recommendation:"Define each referenced authentication scheme under components.securitySchemes, or remove requirements that are not applicable.",evidenceId}));
+  }
+  const undefinedSchemes = new Set();
+  for (const requirement of securityRequirements) {
+    if (!requirement || typeof requirement !== "object" || Array.isArray(requirement)) continue;
+    for (const schemeName of Object.keys(requirement)) {
+      if (Object.hasOwn(securitySchemes, schemeName)) continue;
+      // OpenAPI 3.2 permits Security Scheme Object URI references as well as component names.
+      const versionParts = document.openapi.split(".").map(Number);
+      const supportsUriSchemeReferences = versionParts[0] > 3 || (versionParts[0] === 3 && versionParts[1] >= 2);
+      let isUriReference = false;
+      if (supportsUriSchemeReferences && schemeName.length > 0 && !/\s/.test(schemeName)) {
+        try { new URL(schemeName, "https://searqon.invalid/"); isUriReference = true; }
+        catch { isUriReference = false; }
+      }
+      if (!isUriReference) undefinedSchemes.add(schemeName);
+    }
+  }
+  for (const schemeName of undefinedSchemes) {
+    findings.push(finding({ruleId:"openapi.security_scheme.undefined",dimension:"AgEO",severity:"high",title:"Security requirement references an undefined scheme",description:"A security requirement references the scheme '" + schemeName.slice(0,128) + "', but no matching component definition exists.",recommendation:"Add the missing security scheme definition or correct the requirement name.",evidenceId}));
+  }
+  if (!document.security && !operations.some(({ operation }) => Array.isArray(operation.security))) findings.push(finding({ruleId:"openapi.security.missing",dimension:"AgEO",severity:"medium",title:"Authentication requirements are not explicit",description:"No root-level or operation-level security requirement was detected. This does not prove an API is unauthenticated.",recommendation:"Explicitly document which operations are public and which require a declared security scheme.",evidenceId}));
   if (!document.info.description) findings.push(finding({ruleId:"openapi.description.missing",dimension:"AEO",severity:"low",title:"API description is missing",description:"The API info object has no description.",recommendation:"Describe the API's purpose, intended users, and primary capabilities.",evidenceId}));
-  if (!document.paths || Object.keys(document.paths).length === 0) findings.push(finding({ruleId:"openapi.paths.empty",dimension:"AgEO",severity:"high",title:"No API paths are described",description:"The document contains no declared API paths.",recommendation:"Publish the intended operations or verify that this is the correct OpenAPI document.",evidenceId}));
-  return {findings,observations:{openapiVersion:document.openapi,apiTitle:document.info.title ?? null,apiVersion:document.info.version ?? null,pathCount:Object.keys(document.paths ?? {}).length,serverCount:document.servers?.length ?? 0},assessedDimensions:["AEO","AgEO"],scopes:{AEO:"OpenAPI API purpose and description",AgEO:"OpenAPI server declaration, security requirements, and path surface"}};
+  if (Object.keys(paths).length === 0) findings.push(finding({ruleId:"openapi.paths.empty",dimension:"AgEO",severity:"high",title:"No API paths are described",description:"The document contains no declared API paths.",recommendation:"Publish the intended operations or verify that this is the correct OpenAPI document.",evidenceId}));
+  const missingOperationIds = operations.filter(({ operation }) => typeof operation.operationId !== "string" || !operation.operationId.trim());
+  const missingOperationDescriptions = operations.filter(({ operation }) =>
+    !(typeof operation.description === "string" && operation.description.trim()) &&
+    !(typeof operation.summary === "string" && operation.summary.trim())
+  );
+  if (missingOperationIds.length > 0) findings.push(finding({ruleId:"openapi.operation_id.missing",dimension:"AgEO",severity:"low",title:"API operations lack stable operation identifiers",description:missingOperationIds.length + " operations have no operationId, which can reduce stable tool naming and generated-client consistency.",recommendation:"Assign a unique, stable operationId to each operation and keep it consistent across compatible API versions.",evidenceId}));
+  if (missingOperationDescriptions.length > 0) findings.push(finding({ruleId:"openapi.operation_description.missing",dimension:"AEO",severity:"low",title:"API operations lack concise summaries or descriptions",description:missingOperationDescriptions.length + " operations have neither a summary nor a description, limiting machine-readable explanations of their behavior.",recommendation:"Add a concise summary or description that explains each operation's purpose, inputs, side effects, and expected outcomes.",evidenceId}));
+  return {findings,observations:{openapiVersion:document.openapi,apiTitle:document.info.title ?? null,apiVersion:document.info.version ?? null,pathCount:Object.keys(paths).length,serverCount:document.servers?.length ?? 0,operationCount:operations.length,operationsMissingOperationId:missingOperationIds.length,operationsMissingSummaryOrDescription:missingOperationDescriptions.length,securitySchemeCount:Object.keys(securitySchemes).length,undefinedSecuritySchemeCount:undefinedSchemes.size},assessedDimensions:["AEO","AgEO"],scopes:{AEO:"OpenAPI API purpose, description, and operation explanations",AgEO:"OpenAPI server declaration, security scheme integrity, operation identifiers, and path surface"}};
 }
 
 function buildAssessments(findings, assessedDimensions, scopes) {

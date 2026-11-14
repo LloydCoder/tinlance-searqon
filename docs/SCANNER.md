@@ -87,3 +87,8 @@ A robots 4xx response other than 429 is treated as unavailable under the documen
 ## Live transport verification
 
 GitHub Actions runs an integration test against a public test origin using an IPv4-only DNS resolver, validates the resolved address through the SSRF policy, pins it in the HTTPS socket lookup, verifies the TLS certificate, and checks the bounded response. The test is skipped outside GitHub Actions. It verifies one real outbound TLS path; it does not replace controlled-origin integration tests for redirects, DNS rebinding, failure modes, or production network isolation.
+
+
+## OpenAPI agent-readiness checks
+
+The OpenAPI analyzer also inspects declared security requirements against `components.securitySchemes`, flags references to undefined schemes, and reports operations without stable `operationId` values or descriptive operation text. It exposes operation and scheme coverage counts in the report. These are contract-documentation diagnostics only: they do not probe endpoints, validate credential strength, establish whether authentication is enforced at runtime, or prove that an API operation is safe for agent execution. An OpenAPI security declaration is evidence about the published contract, not an authorization grant.
