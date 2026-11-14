@@ -6,7 +6,7 @@ Searqon is an evidence-first open-source toolkit for AI discoverability and agen
 
 ## Status
 
-**Early alpha.** The current executable slice analyzes caller-supplied local HTML and OpenAPI JSON. It does not fetch URLs, crawl websites, query search engines or LLM providers, invoke MCP tools, or provide hosted multi-tenant services. Its deterministic findings are diagnostic heuristics, not ranking predictions or a security certification.
+**Early alpha.** The current executable slice analyzes caller-supplied local HTML, Markdown, and OpenAPI JSON. It does not fetch URLs, crawl websites, query search engines or LLM providers, invoke MCP tools, or provide hosted multi-tenant services. Its deterministic findings are diagnostic heuristics, not ranking predictions or a security certification.
 
 ## Quick start
 
