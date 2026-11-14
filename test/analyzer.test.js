@@ -243,3 +243,25 @@ test("MCP snapshot analysis reads server identity from modern response metadata"
   });
   assert.equal(result.observations.serverName, "Modern MCP Server");
 });
+
+
+test("MCP snapshot analysis rejects malformed capability and annotation metadata", () => {
+  const base = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    tools: [{ name: "search", inputSchema: { type: "object" } }]
+  };
+  assert.throws(() => analyzeDocument({
+    source: "mcp.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify({ ...base, capabilities: [] })
+  }), /capabilities must be an object/);
+  assert.throws(() => analyzeDocument({
+    source: "mcp.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify({
+      ...base,
+      tools: [{ ...base.tools[0], annotations: { readOnlyHint: "true" } }]
+    })
+  }), /annotation.*boolean/);
+});
