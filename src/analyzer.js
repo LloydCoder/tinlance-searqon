@@ -104,7 +104,11 @@ function analyzeOpenApi(content, evidenceId) {
   for (const requirement of securityRequirements) {
     if (!requirement || typeof requirement !== "object" || Array.isArray(requirement)) continue;
     for (const schemeName of Object.keys(requirement)) {
-      if (!Object.hasOwn(securitySchemes, schemeName)) undefinedSchemes.add(schemeName);
+      if (Object.hasOwn(securitySchemes, schemeName)) continue;
+      // OpenAPI 3.2 permits a Security Scheme Object URI as an alternative
+      // to a component name. Preserve component-name precedence.
+      const isUriReference = /^[A-Za-z][A-Za-z0-9+.-]*:/.test(schemeName) || /^\.\/[A-Za-z0-9._~!      if (!Object.hasOwn(securitySchemes, schemeName)) undefinedSchemes.add(schemeName);'()*+,;=:@%-]+$/.test(schemeName);
+      if (!isUriReference) undefinedSchemes.add(schemeName);
     }
   }
   for (const schemeName of undefinedSchemes) {
