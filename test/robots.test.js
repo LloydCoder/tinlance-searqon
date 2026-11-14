@@ -52,22 +52,22 @@ test("robots parser rejects oversized input and evaluation rejects invalid URLs"
 
 
 test("robots matching normalizes UTF-8 paths to percent-encoded octets", () => {
-  const robots = parseRobots("User-agent: *\\nDisallow: /caf\\u00e9");
+  const robots = parseRobots("User-agent: *\nDisallow: /caf\u00e9");
   assert.equal(evaluateRobots(robots, "https://example.com/caf%C3%A9", "SearqonBot").allowed, false);
 });
 
 test("robots matching decodes percent-encoded unreserved octets before comparison", () => {
-  const robots = parseRobots("User-agent: *\\nDisallow: /foo/%62ar");
+  const robots = parseRobots("User-agent: *\nDisallow: /foo/%62ar");
   assert.equal(evaluateRobots(robots, "https://example.com/foo/bar", "SearqonBot").allowed, false);
 });
 
 test("robots matching preserves percent-encoded reserved octets and normalizes hex case", () => {
-  const robots = parseRobots("User-agent: *\\nDisallow: /foo%2fbar");
+  const robots = parseRobots("User-agent: *\nDisallow: /foo%2fbar");
   assert.equal(evaluateRobots(robots, "https://example.com/foo%2Fbar", "SearqonBot").allowed, false);
   assert.equal(evaluateRobots(robots, "https://example.com/foo/bar", "SearqonBot").allowed, true);
 });
 
 test("robots specificity counts normalized octets rather than percent-escape characters", () => {
-  const robots = parseRobots("User-agent: *\\nDisallow: /foo/%62\\nAllow: /foo/b");
+  const robots = parseRobots("User-agent: *\nDisallow: /foo/%62\nAllow: /foo/b");
   assert.equal(evaluateRobots(robots, "https://example.com/foo/b", "SearqonBot").allowed, true);
 });
