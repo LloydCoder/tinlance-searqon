@@ -96,3 +96,18 @@ test("GEO aggregation rejects duplicate citation URLs within one observation", (
   const tampered = { ...observation, citations: [first, first], citationCount: 2 };
   assert.throws(() => aggregateGeoObservations([tampered]), /duplicate citation URL/);
 });
+
+
+test("GEO aggregation can split cohorts into UTC daily sample periods", () => {
+  const first = analyzeGeoObservation({ ...consumer, sampledAt: "2026-11-14T12:00:00.000Z" });
+  const sameDay = analyzeGeoObservation({ ...consumer, answer: "No mention here.", citations: [], sampledAt: "2026-11-14T18:00:00.000Z" });
+  const nextDay = analyzeGeoObservation({ ...consumer, answer: "Acme appears again.", sampledAt: "2026-11-15T09:00:00.000Z" });
+  const groups = aggregateGeoObservations([first, sameDay, nextDay], { timeBucket: "day" });
+  assert.equal(groups.length, 2);
+  assert.deepEqual(groups.map(group => group.samplePeriod), ["2026-11-14", "2026-11-15"]);
+  assert.deepEqual(groups.map(group => group.sampleSize), [2, 1]);
+});
+
+test("GEO aggregation rejects unsupported time bucket modes", () => {
+  assert.throws(() => aggregateGeoObservations([], { timeBucket: "hour" }), /timeBucket must be none or day/);
+});
