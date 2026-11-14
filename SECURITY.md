@@ -48,3 +48,8 @@ Collect only data required for the declared assessment. Define retention, deleti
 ## Release requirements
 
 Every release must have reviewed dependencies and licenses, secret scanning, static analysis, dependency vulnerability checks, an SBOM, provenance/signing where supported, regression tests for security boundaries, and a documented rollback path. A passing CI workflow does not replace independent security review.
+
+
+## URL destination policy module
+
+The repository includes pure URL/IP policy helpers that reject non-HTTP(S) schemes, URL credentials, local/reserved hostnames, non-public IP ranges, and non-public DNS answers. Redirect targets are revalidated. These helpers do not perform DNS resolution or network requests. Any future connector must resolve A/AAAA records, validate every answer, pin the chosen validated address at socket creation, revalidate each redirect and retry, and add mocked plus isolated integration regression tests before enabling remote acquisition.
