@@ -52,7 +52,7 @@ An evidence record should preserve:
 - links from evidence to finding, recommendation, and verification result
 - retention, redaction, and deletion state
 
-A digest supports integrity checks; it does not by itself make storage immutable. Hosted immutability requires a separately designed and verified storage/control mechanism. The runtime factory and JSON Schema must remain aligned: source labels are limited to 2,048 Unicode code points, normalized media types to 255 characters, methodology versions to 128 characters, and content payloads to 2 MiB. Raw content is never included in the evidence record.
+A digest supports integrity checks; it does not by itself make storage immutable. Hosted immutability requires a separately designed and verified storage/control mechanism. HTTP(S) source URLs are canonicalized and stored without query strings or fragments, and URLs containing embedded credentials are rejected. `verifyEvidenceRecord` checks the record shape and content-address identifier; `verifyEvidenceContent` additionally checks the supplied bytes against the recorded length and SHA-256 digest. These checks do not authenticate mutable metadata or replace signatures, append-only storage, or independent custody controls. The runtime factory and JSON Schema must remain aligned: source labels are limited to 2,048 Unicode code points, normalized media types to 255 characters, methodology versions to 128 characters, and content payloads to 2 MiB. Raw content is never included in the evidence record.
 
 ## Proposed implementation direction
 
