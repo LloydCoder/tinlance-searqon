@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from "node:fs/promises";
-import { extname, resolve } from "node:path";
+import { basename, extname, resolve } from "node:path";
 import { analyzeDocument } from "./analyzer.js";
 
 const usage = "Usage: searqon scan <local-file> [--source <label>] [--out <json-file>]";
@@ -16,7 +16,7 @@ if (args[0] !== "scan" || !args[1]) {
     if (!contentType) throw new Error("Only local .html, .htm, .md, .markdown, and .json files are supported");
     const sourceIndex = args.indexOf("--source");
     const outIndex = args.indexOf("--out");
-    const source = sourceIndex >= 0 ? args[sourceIndex + 1] : file;
+    const source = sourceIndex >= 0 ? args[sourceIndex + 1] : basename(file);
     if (sourceIndex >= 0 && (!source || source.startsWith("--"))) throw new Error("--source requires a value");
     if (outIndex >= 0 && (!args[outIndex + 1] || args[outIndex + 1].startsWith("--"))) throw new Error("--out requires a path");
     const result = analyzeDocument({source,contentType,content:await readFile(file,"utf8")});

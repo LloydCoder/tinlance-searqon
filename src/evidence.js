@@ -14,7 +14,7 @@ export function createEvidenceRecord(input) {
   if (typeof input.content !== "string" || typeof input.contentType !== "string" || !input.contentType.trim()) {
     throw new TypeError("String content and contentType are required");
   }
-  const byteLength = Buffer.byteLength(input.content,"utf8");
+  const contentType = input.contentType.split(";")[0].trim().toLowerCase();\n  if (!contentType) throw new TypeError("contentType must contain a media type");\n  const byteLength = Buffer.byteLength(input.content,"utf8");
   if (byteLength > MAX_EVIDENCE_BYTES) throw new RangeError("Document exceeds the " + MAX_EVIDENCE_BYTES + " byte analysis limit");
   const acquisitionMethod = input.acquisitionMethod ?? "local_file";
   if (typeof acquisitionMethod !== "string" || !/^[a-z][a-z0-9_]{1,63}$/.test(acquisitionMethod)) {
@@ -32,11 +32,11 @@ export function createEvidenceRecord(input) {
   const id = "evidence_" + sha256(acquisitionMethod + "\0" + input.source + "\0" + contentDigest).slice(0,20);
   return Object.freeze({
     id,
-    source:input.source,
+    source:input.source.trim(),
     acquisitionMethod,
     observationClass,
     collectedAt,
-    contentType:input.contentType.split(";")[0].trim().toLowerCase(),
+    contentType,
     byteLength,
     sha256:contentDigest,
     methodologyVersion,
