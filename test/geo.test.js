@@ -77,3 +77,22 @@ test("GEO aggregation rejects duplicate evidence identifiers instead of inflatin
   const observation = analyzeGeoObservation(consumer);
   assert.throws(() => aggregateGeoObservations([observation, observation]), /duplicate evidence identifier/);
 });
+
+
+test("GEO aggregation rejects citation URLs that are not in canonical normalized form", () => {
+  const observation = analyzeGeoObservation(consumer);
+  const tampered = {
+    ...observation,
+    citations: observation.citations.map((citation, index) =>
+      index === 0 ? { ...citation, url: citation.url + "#fragment" } : citation
+    )
+  };
+  assert.throws(() => aggregateGeoObservations([tampered]), /citation URL is not normalized/);
+});
+
+test("GEO aggregation rejects duplicate citation URLs within one observation", () => {
+  const observation = analyzeGeoObservation(consumer);
+  const first = observation.citations[0];
+  const tampered = { ...observation, citations: [first, first], citationCount: 2 };
+  assert.throws(() => aggregateGeoObservations([tampered]), /duplicate citation URL/);
+});
