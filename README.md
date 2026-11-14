@@ -13,8 +13,10 @@ Searqon is an evidence-first open-source toolkit for AI discoverability and agen
 Requirements: Node.js 22+.
 
 ```bash
-npm test
-npm run scan -- ./examples/site.html --source https://example.test/
+node src/cli.js scan ./examples/openapi.json
+node src/cli.js scan ./examples/api-docs.md
+node src/cli.js geo analyze ./examples/geo-observation.json
+node src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
 Or run the CLI directly:
