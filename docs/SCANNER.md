@@ -82,3 +82,8 @@ node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
 The flag is an explicit operator attestation that the target is authorized for assessment; it is not technical proof of ownership. The command retrieves robots policy first, refuses disallowed or unreachable policy, checks robots again before every redirect destination, and fetches only the selected page. It does not recursively follow page links, execute scripts, render a browser, invoke MCP tools, authenticate, or perform transactions. It accepts HTML/XHTML, Markdown, and OpenAPI JSON only, with a 2 MiB response limit. Query parameters are excluded from evidence source labels.
 
 A robots 4xx response other than 429 is treated as unavailable under the documented RFC-aligned policy; 429, 5xx, network failures, invalid policy data, and blocked redirect destinations fail closed. This one-page scanner is not a substitute for an authorized full-site crawl or independent security assessment.
+
+
+## Live transport verification
+
+GitHub Actions runs an integration test against a public test origin using an IPv4-only DNS resolver, validates the resolved address through the SSRF policy, pins it in the HTTPS socket lookup, verifies the TLS certificate, and checks the bounded response. The test is skipped outside GitHub Actions. It verifies one real outbound TLS path; it does not replace controlled-origin integration tests for redirects, DNS rebinding, failure modes, or production network isolation.
