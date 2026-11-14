@@ -1,6 +1,6 @@
 import test, { afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { link, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createEvidenceRecord } from "../src/evidence.js";
@@ -105,4 +105,14 @@ test("persistent evidence ledger refuses symbolic-link targets", async () => {
   await writeFile(target, "", "utf8");
   await symlink(target, path);
   await assert.rejects(() => openEvidenceLedgerStore(path));
+});
+
+
+test("persistent evidence ledger refuses hard-linked targets", async t => {
+  if (process.platform === "win32") return t.skip("hard-link ownership semantics are platform-specific");
+  const path = await temporaryLedgerPath();
+  const target = path + ".target";
+  await writeFile(target, "", "utf8");
+  await link(target, path);
+  await assert.rejects(() => openEvidenceLedgerStore(path), /hard link|multiple links/i);
 });

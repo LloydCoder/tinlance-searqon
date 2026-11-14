@@ -128,6 +128,10 @@ export async function openEvidenceLedgerStore(filePath) {
     handle = await open(canonicalPath, flags, 0o600);
     const metadata = await handle.stat();
     if (!metadata.isFile()) throw new Error("Evidence ledger path must be a regular file");
+    if (metadata.nlink !== 1) throw new Error("Evidence ledger path must not be a hard link or have multiple links");
+    if (typeof process.getuid === "function" && metadata.uid !== process.getuid()) {
+      throw new Error("Evidence ledger file must be owned by the current user");
+    }
     if (metadata.size > MAX_EVIDENCE_LEDGER_FILE_BYTES) {
       throw new Error("Evidence ledger exceeds the configured file size limit");
     }
