@@ -20,7 +20,7 @@ node src/cli.js geo analyze ./examples/geo-observation.json
 node src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
-Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The `scan-url` command retrieves only the selected public page, checks robots policy at each redirect, and requires `--confirm-authorized-target` as an operator attestation. It does not recursively follow page links. The HTTP transport uses validated DNS pinning and bounded redirects, timeouts, headers, and response size; it is not yet a full production crawler.
+Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The `scan-url` command retrieves only the selected public page, checks robots policy at each redirect, and requires `--confirm-authorized-target` as an operator attestation. The exported `scanPublicUrl` API independently requires `{ confirmAuthorizedTarget: true }`; CLI-only confirmation is not treated as an authorization boundary. It does not recursively follow page links. The HTTP transport uses validated DNS pinning and bounded redirects, timeouts, headers, and response size; it is not yet a full production crawler.
 
 The JSON report includes a content SHA-256 digest, deterministic evidence identifier, rules version, observation class, summary, observations, and evidence-linked findings. A digest is an integrity reference, not proof of immutable storage or authenticity.
 
