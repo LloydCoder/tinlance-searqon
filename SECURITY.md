@@ -2,7 +2,7 @@
 
 ## Scope and current status
 
-Searqon is pre-alpha. The repository does not yet implement a production crawler, hosted control plane, authentication system, or scanner. The controls below are mandatory engineering requirements, not a claim that those controls have already been implemented.
+Searqon is early alpha. The repository contains local document analysis and a bounded, single-page remote scanner, but it does not implement a production crawler, hosted control plane, or authentication system. The controls below are mandatory engineering requirements; the current scanner is not a security certification or production-readiness claim.
 
 ## Reporting a vulnerability
 
@@ -20,7 +20,7 @@ The implementation must be threat-modeled against, at minimum:
 
 ## Mandatory acquisition controls
 
-Before any network scanner is released:
+Before broader remote crawling or a production release:
 
 1. Parse and normalize target URLs using a standards-compliant URL parser.
 2. Resolve all A and AAAA records and reject loopback, private, link-local, multicast, reserved, and metadata destinations.
@@ -52,9 +52,9 @@ Every release must have reviewed dependencies and licenses, secret scanning, sta
 
 ## URL destination policy module
 
-The repository includes pure URL/IP policy helpers that reject non-HTTP(S) schemes, URL credentials, local/reserved hostnames, non-public IP ranges, and non-public DNS answers. Redirect targets are revalidated. These helpers do not perform DNS resolution or network requests. Any future connector must resolve A/AAAA records, validate every answer, pin the chosen validated address at socket creation, revalidate each redirect and retry, and add mocked plus isolated integration regression tests before enabling remote acquisition.
+The repository includes URL/IP policy and bounded HTTP transport modules. They reject non-HTTP(S) schemes, URL credentials, local/reserved hostnames, non-public IP ranges, and non-public DNS answers; resolve and validate A/AAAA answers; pin the validated address at socket lookup; manually revalidate redirect targets; enforce standard ports and response/time bounds; and reject HTTPS downgrade redirects. A GitHub Actions integration test performs a real IPv4-pinned HTTPS request with TLS verification. Retry behavior is not implemented. These controls are not a complete SSRF certification: broader production crawling still requires controlled-origin redirect/DNS-rebinding tests, stronger target authorization, concurrency/depth limits, and independent security review.
 
 
 ## Robots Exclusion Protocol parser
 
-A bounded, pure parser for robots.txt user-agent groups, Allow/Disallow rules, wildcards, end anchors, Crawl-delay metadata, and Sitemap declarations is included. Evaluation selects the most-specific matching user-agent group and applies longest-path precedence with Allow winning ties. This parser does not retrieve robots.txt or grant authorization to access a resource. A future crawler must fetch robots policy using the same SSRF-safe transport and apply the applicable RFC 9309 handling for redirects, caching, unavailable responses, and unreachable servers.
+A bounded parser and retrieval module for robots.txt is included. The parser handles user-agent groups, Allow/Disallow rules, wildcards, end anchors, Crawl-delay metadata, and Sitemap declarations. Evaluation selects the most-specific matching user-agent group and applies longest-path precedence with Allow winning ties. Retrieval uses the SSRF-safe transport, follows up to five validated redirects, caps input at 512 KiB, applies unavailable/unreachable outcomes, and uses a bounded process-local cache. Robots policy is a coordination signal, not authorization to access a resource. The current cache is not shared across workers or restarts.
