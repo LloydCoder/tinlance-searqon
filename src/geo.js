@@ -178,13 +178,15 @@ export function aggregateGeoObservations(observations) {
         targetDomain:observation.targetDomain,
         sampleSize:0,
         mentionCount:0,
+        mentionOccurrences:0,
         brandCitationCount:0,
         citationCount:0
       };
       groups.set(key,group);
     }
     group.sampleSize+=1;
-    group.mentionCount+=observation.mentioned ? 1 : 0;\n    group.mentionOccurrences+=observation.mentionCount;
+    group.mentionCount+=observation.mentioned ? 1 : 0;
+    group.mentionOccurrences+=observation.mentionCount;
     group.brandCitationCount+=observation.brandCited ? 1 : 0;
     group.citationCount+=observation.citationCount;
   }
