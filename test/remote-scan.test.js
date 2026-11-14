@@ -10,6 +10,7 @@ const allowedRobots = async () => ({
 test("remote scanner checks robots policy before fetching the target", async () => {
   const calls = [];
   const result = await scanPublicUrl("https://example.com/docs", {
+    confirmAuthorizedTarget: true,
     robotsLoader: async (origin, agent) => { calls.push(["robots", origin, agent]); return allowedRobots(); },
     fetcher: async (url, options) => {
       calls.push(["fetch", url, typeof options.validateRedirect]);
@@ -27,6 +28,7 @@ test("remote scanner checks robots policy before fetching the target", async () 
 test("remote scanner refuses a robots-disallowed path without fetching it", async () => {
   let fetched = false;
   const result = await scanPublicUrl("https://example.com/private", {
+    confirmAuthorizedTarget: true,
     robotsLoader: async () => ({ outcome: "available", policy: { groups: [{ userAgents: ["*"], rules: [{ type: "disallow", path: "/private", specificity: 8, pattern: /^\/private/ }] }] } }),
     fetcher: async () => { fetched = true; throw new Error("must not fetch"); }
   });
@@ -37,6 +39,7 @@ test("remote scanner refuses a robots-disallowed path without fetching it", asyn
 test("remote scanner fails closed when robots retrieval is unreachable", async () => {
   let fetched = false;
   const result = await scanPublicUrl("https://example.com/", {
+    confirmAuthorizedTarget: true,
     robotsLoader: async () => ({ outcome: "unreachable", policy: { groups: [], sitemaps: [] } }),
     fetcher: async () => { fetched = true; }
   });
@@ -48,6 +51,7 @@ test("remote scanner checks robots policy again before following cross-origin re
   const robotOrigins = [];
   let redirectValidator;
   const result = await scanPublicUrl("https://example.com/start", {
+    confirmAuthorizedTarget: true,
     robotsLoader: async origin => { robotOrigins.push(origin); return allowedRobots(); },
     fetcher: async (url, options) => {
       redirectValidator = options.validateRedirect;
@@ -62,6 +66,7 @@ test("remote scanner checks robots policy again before following cross-origin re
 
 test("remote scanner blocks a redirect when destination robots policy disallows it", async () => {
   const result = await scanPublicUrl("https://example.com/start", {
+    confirmAuthorizedTarget: true,
     robotsLoader: async origin => origin === "https://example.com"
       ? allowedRobots()
       : ({ outcome: "available", policy: { groups: [{ userAgents: ["*"], rules: [{ type: "disallow", path: "/", specificity: 1, pattern: /^/ }] }] } }),
@@ -76,11 +81,13 @@ test("remote scanner blocks a redirect when destination robots policy disallows 
 
 test("remote scanner accepts only supported media types and bounded responses", async () => {
   const unsupported = await scanPublicUrl("https://example.com/file", {
+    confirmAuthorizedTarget: true,
     robotsLoader: allowedRobots,
     fetcher: async url => ({ status: 200, headers: { "content-type": "application/pdf" }, body: Buffer.from("%PDF"), finalUrl: url, redirects: 0 })
   });
   assert.equal(unsupported.status, "unsupported_content_type");
   const tooLarge = await scanPublicUrl("https://example.com/large", {
+    confirmAuthorizedTarget: true,
     robotsLoader: allowedRobots,
     maxBytes: 10,
     fetcher: async () => ({ status: 200, headers: { "content-type": "text/html" }, body: Buffer.from("x".repeat(11)) })
@@ -90,6 +97,7 @@ test("remote scanner accepts only supported media types and bounded responses", 
 
 test("remote scanner sanitizes source provenance and never records query parameters", async () => {
   const result = await scanPublicUrl("https://example.com/docs?token=secret", {
+    confirmAuthorizedTarget: true,
     robotsLoader: allowedRobots,
     fetcher: async url => ({ status: 200, headers: { "content-type": "text/html" }, body: Buffer.from("<html><title>Docs</title></html>"), finalUrl: url, redirects: 0 })
   });
@@ -100,8 +108,19 @@ test("remote scanner sanitizes source provenance and never records query paramet
 test("remote scanner rejects unsafe targets before robots or HTTP requests", async () => {
   let called = false;
   await assert.rejects(() => scanPublicUrl("http://127.0.0.1/admin", {
+    confirmAuthorizedTarget: true,
     robotsLoader: async () => { called = true; },
     fetcher: async () => { called = true; }
   }), /non-public/);
   assert.equal(called, false);
+});
+
+
+test("remote scanner requires explicit authorization from every API caller before robots or HTTP access", async () => {
+  let contacted = false;
+  await assert.rejects(() => scanPublicUrl("https://example.com/docs", {
+    robotsLoader: async () => { contacted = true; return allowedRobots(); },
+    fetcher: async () => { contacted = true; throw new Error("must not fetch"); }
+  }), /explicit authorization/);
+  assert.equal(contacted, false);
 });

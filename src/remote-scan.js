@@ -45,6 +45,9 @@ function evaluatePolicy(policyResult, url, userAgent) {
  */
 export async function scanPublicUrl(value, options = {}) {
   const target = validateTargetUrl(value);
+  if (options.confirmAuthorizedTarget !== true) {
+    throw new Error("Remote scanning requires explicit authorization from the caller");
+  }
   const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
   if (typeof userAgent !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(userAgent)) {
     throw new TypeError("userAgent must be a crawler product token of 1-64 ASCII letters, digits, underscores, or hyphens");
