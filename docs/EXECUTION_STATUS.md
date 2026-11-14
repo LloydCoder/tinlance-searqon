@@ -65,8 +65,6 @@ This register separates implemented repository capabilities from customer, secur
 - [PR #44](https://github.com/LloydCoder/tinlance-searqon/pull/44) — reconcile security policy and workflow evidence through PR #43.
 - [PR #45](https://github.com/LloydCoder/tinlance-searqon/pull/45) — classify unsafe redirect destinations separately from robots failures.
 - [PR #46](https://github.com/LloydCoder/tinlance-searqon/pull/46) — RFC 9309 path normalization, percent-encoding comparison, and octet-based rule specificity.
-- [PR #43](https://github.com/LloydCoder/tinlance-searqon/pull/43) — cross-origin redirect allowlist, distinct unauthorized-redirect result, CLI option, and versioned schema.
-
 ## Verification gates and limitations
 
 - CI: Node.js 22 and 24; syntax checks for root and nested source modules; full Node test suite; smoke tests for HTML, Markdown, OpenAPI, GEO analysis, and GEO aggregation examples; `npm audit --audit-level=high`; `npm pack --dry-run`.
