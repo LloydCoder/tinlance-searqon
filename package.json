@@ -1,0 +1,14 @@
+{
+  "name": "@tinlance/searqon",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Open-source toolkit for AI discoverability and agent readiness",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
