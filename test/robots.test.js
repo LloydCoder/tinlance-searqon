@@ -74,7 +74,7 @@ test("robots specificity counts normalized octets rather than percent-escape cha
 
 
 test("robots matching does not reinterpret percent-encoded reserved metacharacters", () => {
-  const robots = parseRobots("User-agent: *\\nDisallow: /literal%2Astar\\nDisallow: /exact%24");
+  const robots = parseRobots("User-agent: *\nDisallow: /literal%2Astar\nDisallow: /exact%24");
   assert.equal(evaluateRobots(robots, "https://example.com/literal%2Astar", "SearqonBot").allowed, false);
   assert.equal(evaluateRobots(robots, "https://example.com/literalXstar", "SearqonBot").allowed, true);
   assert.equal(evaluateRobots(robots, "https://example.com/exact%24", "SearqonBot").allowed, false);
