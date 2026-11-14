@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.tinlance.com/schemas/evidence-ledger-entry/1.0.0",
+  "title": "Searqon Evidence Ledger Entry",
+  "description": "Hash-linked evidence record event. The chain detects record and ordering changes but is not a digital signature or immutable storage proof.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sequence", "previousHash", "createdAt", "record", "entryHash"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0.0" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "previousHash": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "record": {
+      "$ref": "https://searqon.tinlance.com/schemas/evidence-record/1.0.0"
+    },
+    "entryHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

@@ -39,6 +39,8 @@ Do not combine consumer-facing product observations with direct model API respon
 
 ## Evidence record minimum
 
+Evidence ledger entries wrap records in a sequence-numbered SHA-256 hash chain (`previousHash` → `entryHash`). This detects accidental or partial modification, reordering, and deletion within the verified chain. The chain is not a digital signature, trusted timestamp, WORM guarantee, or protection against an attacker who can rewrite the entire chain and replace its trusted root. Persistent storage, external root anchoring, retention, redaction, and deletion are separate controls.
+
 An evidence record should preserve:
 
 - stable evidence identifier and target scope
