@@ -19,19 +19,54 @@ function analyzeHtml(html, evidenceId) {
   const findings = [];
   const title = extractTag(html, "title");
   const h1 = extractTag(html, "h1");
-  const description = /<meta\b(?=[^>]*\bname=["']description["'])[^>]*\bcontent=["'][^"']+["'][^>]*>/i.test(html);
+  const descriptionMatch = html.match(/<meta\b(?=[^>]*\bname=["']description["'])[^>]*\bcontent=["']([^"']*)["'][^>]*>/i);
+  const descriptionText = descriptionMatch?.[1]?.trim() ?? "";
+  const description = descriptionText.length > 0;
   const canonical = /<link\b(?=[^>]*\brel=["']canonical["'])[^>]*\bhref=["'][^"']+["'][^>]*>/i.test(html);
   const jsonLd = /<script\b(?=[^>]*\btype=["']application\/ld\+json["'])/i.test(html);
   const robotsNoIndex = /<meta\b(?=[^>]*\bname=["']robots["'])[^>]*\bcontent=["'][^"']*noindex/i.test(html);
+  const languagePresent = /<html\b(?=[^>]*\blang=["'][^"']+["'])/i.test(html);
+  const viewportPresent = /<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*\bcontent=["'][^"']+["'][^>]*>/i.test(html);
+  const titleLength = title ? [...title].length : null;
+  const descriptionLength = description ? [...descriptionText].length : null;
+  const h1Count = [...html.matchAll(/<h1\b[^>]*>/gi)].length;
+  const imagesMissingAlt = [...html.matchAll(/<img\b[^>]*>/gi)].filter(match => !/\balt\s*=/i.test(match[0])).length;
 
   if (!title) findings.push(finding({ruleId:"html.title.missing",dimension:"SEO",severity:"high",title:"Document title is missing",description:"The document has no detectable title element.",recommendation:"Add a concise, page-specific title that describes the page's primary subject.",evidenceId}));
+  else if (titleLength < 30 || titleLength > 60) findings.push(finding({ruleId:"html.title.length_out_of_range",dimension:"SEO",severity:"low",title:"Document title length is outside the suggested range",description:"The detected title contains " + titleLength + " characters; this heuristic flags titles shorter than 30 or longer than 60 characters.",recommendation:"Review the title for clarity and specificity; treat the character range as a guideline, not a ranking guarantee.",evidenceId}));
   if (!description) findings.push(finding({ruleId:"html.meta_description.missing",dimension:"SEO",severity:"medium",title:"Meta description is missing",description:"No non-empty meta description was detected.",recommendation:"Add a unique summary of the page's purpose and content.",evidenceId}));
+  else if (descriptionLength < 70 || descriptionLength > 160) findings.push(finding({ruleId:"html.meta_description.length_out_of_range",dimension:"SEO",severity:"low",title:"Meta description length is outside the suggested range",description:"The detected description contains " + descriptionLength + " characters; this heuristic flags descriptions shorter than 70 or longer than 160 characters.",recommendation:"Review the description for clarity and usefulness; search engines may generate different snippets.",evidenceId}));
   if (!h1) findings.push(finding({ruleId:"html.h1.missing",dimension:"AEO",severity:"medium",title:"Primary heading is missing",description:"No H1 heading was detected.",recommendation:"Provide a clear primary heading that states the page's subject.",evidenceId}));
+  if (h1Count > 1) findings.push(finding({ruleId:"html.h1.multiple",dimension:"AEO",severity:"low",title:"Multiple primary headings detected",description:"The document contains " + h1Count + " H1 elements; this may make the page's primary topic less explicit.",recommendation:"Review heading hierarchy and use one clear page-level H1 where it improves document structure.",evidenceId}));
+  if (!languagePresent) findings.push(finding({ruleId:"html.lang.missing",dimension:"SEO",severity:"medium",title:"Document language is not declared",description:"The HTML element has no detectable lang attribute.",recommendation:"Declare the primary document language on the HTML element using a valid BCP 47 language tag.",evidenceId}));
+  if (!viewportPresent) findings.push(finding({ruleId:"html.viewport.missing",dimension:"SEO",severity:"low",title:"Viewport metadata is missing",description:"No non-empty viewport meta declaration was detected.",recommendation:"Add an appropriate viewport declaration so the page can adapt to device widths.",evidenceId}));
+  if (imagesMissingAlt > 0) findings.push(finding({ruleId:"html.image.alt_missing",dimension:"SEO",severity:"medium",title:"Images are missing alternative text attributes",description:imagesMissingAlt + " image elements have no alt attribute. Empty alt text is valid for decorative images.",recommendation:"Provide concise alternative text for informative images and an empty alt attribute for decorative images.",evidenceId}));
   if (!canonical) findings.push(finding({ruleId:"html.canonical.missing",dimension:"SEO",severity:"low",title:"Canonical URL is not declared",description:"No canonical link element was detected.",recommendation:"Declare a canonical URL when duplicate or parameterized URLs are possible.",evidenceId}));
   if (!jsonLd) findings.push(finding({ruleId:"html.structured_data.absent",dimension:"AEO",severity:"low",title:"JSON-LD structured data not detected",description:"No JSON-LD script block was detected; structured data is optional and context-dependent.",recommendation:"Assess whether a supported schema.org type would clarify the page's entities; do not add irrelevant markup.",evidenceId}));
   if (robotsNoIndex) findings.push(finding({ruleId:"html.robots.noindex",dimension:"SEO",severity:"high",title:"Page declares noindex",description:"A robots meta directive appears to request that crawlers not index this page.",recommendation:"Confirm this is intentional for the page's publishing and discovery goals.",evidenceId}));
 
-  return {findings,observations:{titlePresent:Boolean(title),descriptionPresent:description,h1Present:Boolean(h1),canonicalPresent:canonical,jsonLdPresent:jsonLd,noindex:robotsNoIndex},assessedDimensions:["SEO","AEO"],scopes:{SEO:"HTML title, description, canonical, and indexing directives",AEO:"HTML primary heading and JSON-LD presence"}};
+  return {
+    findings,
+    observations:{
+      titlePresent:Boolean(title),
+      titleLength,
+      descriptionPresent:description,
+      descriptionLength,
+      h1Present:Boolean(h1),
+      h1Count,
+      canonicalPresent:canonical,
+      jsonLdPresent:jsonLd,
+      noindex:robotsNoIndex,
+      languagePresent,
+      viewportPresent,
+      imagesMissingAlt
+    },
+    assessedDimensions:["SEO","AEO"],
+    scopes:{
+      SEO:"HTML title and description quality, canonical and indexing directives, language, viewport, and image alternative text",
+      AEO:"HTML primary heading hierarchy and JSON-LD presence"
+    }
+  };
 }
 
 function analyzeOpenApi(content, evidenceId) {
