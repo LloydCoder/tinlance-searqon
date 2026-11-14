@@ -5,6 +5,7 @@ Searqon supports caller-supplied local documents and a bounded, single-page remo
 ## Inputs
 
 - HTML: \`text/html\`
+- Markdown: `text/markdown`
 - OpenAPI JSON: \`application/json\` or \`application/vnd.oai.openapi+json\`
 - Maximum UTF-8 payload: 2 MiB
 - Caller-supplied source label; it is metadata only and is never fetched.
