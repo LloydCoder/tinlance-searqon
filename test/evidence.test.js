@@ -35,7 +35,7 @@ test("evidence factory enforces the same payload bound", () => {
 
 
 test("evidence factory rejects invalid media types that violate the published schema", () => {
-  for (const contentType of ["text", "text /html", "/html", "text/html extra", "text/html\\nX-Evil: yes"]) {
+  for (const contentType of ["text", "text /html", "/html", "text/html extra", "a".repeat(256) + "/html", "text/html\nX-Evil: yes"]) {
     assert.throws(() => createEvidenceRecord({ source: "fixture", content: "x", contentType }), /contentType/);
   }
 });
