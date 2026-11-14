@@ -65,6 +65,7 @@ async function main() {
   const args=process.argv.slice(2);
   try {
     if (args[0]==="scan") await runScan(args);
+    else if (args[0]==="scan-url") await runScanUrl(args);
     else if (args[0]==="geo") await runGeo(args);
     else { process.stderr.write(usage+"\n"); process.exitCode=2; }
   } catch (error) {
