@@ -1,6 +1,6 @@
 import test, { afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { link, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, link, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createEvidenceRecord } from "../src/evidence.js";
@@ -115,4 +115,12 @@ test("persistent evidence ledger refuses hard-linked targets", async t => {
   await writeFile(target, "", "utf8");
   await link(target, path);
   await assert.rejects(() => openEvidenceLedgerStore(path), /hard link|multiple links/i);
+});
+
+
+test("persistent evidence ledger rejects group- or world-writable parent directories", async () => {
+  const path = await temporaryLedgerPath();
+  const directory = join(path, "..");
+  await chmod(directory, 0o777);
+  await assert.rejects(() => openEvidenceLedgerStore(path), /parent directory.*permissions|directory.*writable/i);
 });
