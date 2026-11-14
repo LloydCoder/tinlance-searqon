@@ -17,9 +17,9 @@ The evidence identifier is deterministic for the same source, acquisition method
 
 ## Rules
 
-HTML rules detect title, meta description, H1, canonical link, JSON-LD presence, and a noindex directive. Markdown rules look for headings, authentication, error-handling, rate-limit, versioning, and code-example guidance. OpenAPI rules inspect document shape, server declarations, explicit security requirements, API description, and path presence.
+HTML rules detect title and meta-description presence and suggested character-length ranges, H1 presence and multiplicity, canonical link, JSON-LD presence, noindex, declared document language, viewport metadata, and image alt-attribute presence. Markdown rules look for headings, authentication, error-handling, rate-limit, versioning, and code-example guidance. OpenAPI rules inspect document shape, server declarations, explicit security requirements and referenced scheme definitions, API description, path presence, stable operation identifiers, and operation summaries/descriptions. The rule set is deliberately partial and versioned; it does not claim conformance to a complete SEO, AEO, GEO, or AgEO standard.
 
-These checks are syntactic heuristics. Absence of an OpenAPI security requirement is not proof that an endpoint is public. JSON-LD presence is not proof that markup is valid or eligible for rich results. A canonical declaration is not proof that a search engine honors it.
+These checks are syntactic heuristics. Character-length ranges are review prompts, not ranking factors or guarantees. Absence of an OpenAPI security requirement is not proof that an endpoint is public. A declared scheme is not proof that runtime authentication is enforced. JSON-LD presence is not proof that markup is valid or eligible for rich results. A canonical declaration is not proof that a search engine honors it. Empty alt text can be correct for decorative images.
 
 ## Safety
 
