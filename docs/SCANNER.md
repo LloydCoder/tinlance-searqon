@@ -55,3 +55,10 @@ node src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
 These commands do not call a provider or fetch citations. Both bundled GEO examples are synthetic fixture data, not live measurements. `geo aggregate` groups by provider and observation class and never pools consumer-facing and model API samples. The output contract is [`schemas/geo-observation.schema.json`](../schemas/geo-observation.schema.json).
+
+
+## SSRF-safe HTTP transport foundation
+
+The internal `src/security/fetch.js` module now provides a bounded HTTP(S) GET primitive for future acquisition workflows. It validates the URL, resolves and validates every DNS answer, pins the validated address in Node's socket lookup callback, and manually revalidates and re-resolves every redirect. It permits only standard HTTP/HTTPS ports, blocks HTTPS downgrade redirects, caps redirects, response bytes, headers, and socket inactivity, and requests identity encoding to avoid implicit decompression ambiguity.
+
+The transport intentionally exposes no arbitrary request headers, cookies, credentials, request body, or browser execution. It is not wired to the CLI and does not constitute a general-purpose crawler. Any production integration must still add an explicit target-authorization model, crawl scope/depth/concurrency controls, robots retrieval semantics, response MIME policy, isolated browser rendering where justified, observability, and independent security review. DNS pinning and deterministic injected transport tests are necessary controls, not a complete SSRF certification.

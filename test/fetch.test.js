@@ -110,3 +110,36 @@ test("fetch rejects excessive redirect chains", async () => {
     requestImpl: fakeTransport(responses)
   }), /redirect limit/);
 });
+
+test("fetch blocks HTTPS-to-HTTP redirect downgrade", async () => {
+  await assert.rejects(() => fetchPublicUrl("https://example.com/secure", {
+    resolver: publicResolver,
+    requestImpl: fakeTransport([{ status: 302, headers: { location: "http://example.com/insecure" } }])
+  }), /downgrade/);
+});
+
+test("fetch rejects invalid or oversized declared content lengths before buffering", async () => {
+  await assert.rejects(() => fetchPublicUrl("https://example.com/large", {
+    resolver: publicResolver,
+    maxBytes: 4,
+    requestImpl: fakeTransport([{ body: "", headers: { "content-length": "5" } }])
+  }), /byte limit/);
+  await assert.rejects(() => fetchPublicUrl("https://example.com/invalid-length", {
+    resolver: publicResolver,
+    requestImpl: fakeTransport([{ body: "", headers: { "content-length": "not-a-number" } }])
+  }), /invalid content length/);
+});
+
+test("fetch rejects socket inactivity timeouts", async () => {
+  const requestImpl = () => {
+    const request = new EventEmitter();
+    request.setTimeout = (_duration, callback) => process.nextTick(callback);
+    request.destroy = error => process.nextTick(() => request.emit("error", error));
+    request.end = () => {};
+    return request;
+  };
+  await assert.rejects(() => fetchPublicUrl("https://example.com/slow", {
+    resolver: publicResolver,
+    requestImpl
+  }), /timed out/);
+});
