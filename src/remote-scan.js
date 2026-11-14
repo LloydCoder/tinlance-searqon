@@ -12,11 +12,6 @@ function publicLabel(value) {
   return url.origin + url.pathname;
 }
 
-function robotsAllows(policyResult, url, userAgent) {
-  if (!policyResult || !["available", "unavailable"].includes(policyResult.outcome) || !policyResult.policy) return false;
-  return evaluateRobots(policyResult.policy, url, userAgent).allowed;
-}
-
 function mediaType(headers) {
   const value = headers?.["content-type"];
   return typeof value === "string" ? value.split(";", 1)[0].trim().toLowerCase() : "";
@@ -30,6 +25,17 @@ function toAnalyzerType(value) {
 
 function result(status, data = {}) {
   return Object.freeze({ schemaVersion: "1.0.0", status, ...data });
+}
+
+function evaluatePolicy(policyResult, url, userAgent) {
+  if (!policyResult || !["available", "unavailable"].includes(policyResult.outcome) || !policyResult.policy) {
+    return { outcome: "unreachable", allowed: false };
+  }
+  try {
+    return { outcome: policyResult.outcome, allowed: evaluateRobots(policyResult.policy, url, userAgent).allowed };
+  } catch {
+    return { outcome: "unreachable", allowed: false };
+  }
 }
 
 /**
@@ -47,6 +53,10 @@ export async function scanPublicUrl(value, options = {}) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_SCAN_BYTES) {
     throw new RangeError("maxBytes must be between 1 byte and 2 MiB");
   }
+  const maxRedirects = options.maxRedirects ?? 3;
+  if (!Number.isSafeInteger(maxRedirects) || maxRedirects < 0 || maxRedirects > 5) {
+    throw new RangeError("maxRedirects must be between 0 and 5");
+  }
   const robotsLoader = options.robotsLoader ?? fetchRobotsPolicy;
   const fetcher = options.fetcher ?? fetchPublicUrl;
   if (typeof robotsLoader !== "function" || typeof fetcher !== "function") throw new TypeError("robotsLoader and fetcher must be functions");
@@ -57,11 +67,25 @@ export async function scanPublicUrl(value, options = {}) {
     timeoutMs: options.timeoutMs,
     dnsTimeoutMs: options.dnsTimeoutMs
   };
-  const initialRobots = await robotsLoader(origin, userAgent, robotsOptions);
-  if (!robotsAllows(initialRobots, target.href, userAgent)) {
-    return result(initialRobots?.outcome === "unavailable" ? "robots_policy_invalid" : "robots_unreachable", {
+
+  let initialRobots;
+  try {
+    initialRobots = await robotsLoader(origin, userAgent, robotsOptions);
+  } catch {
+    return result("robots_unreachable", { target: publicLabel(target.href), robotsOutcome: "unreachable" });
+  }
+  const initialDecision = evaluatePolicy(initialRobots, target.href, userAgent);
+  if (initialDecision.outcome === "unreachable") {
+    return result("robots_unreachable", {
       target: publicLabel(target.href),
-      robotsOutcome: initialRobots?.outcome ?? "unreachable",
+      robotsOutcome: "unreachable",
+      robotsStatus: initialRobots?.status ?? null
+    });
+  }
+  if (!initialDecision.allowed) {
+    return result("blocked_by_robots", {
+      target: publicLabel(target.href),
+      robotsOutcome: initialDecision.outcome,
       robotsStatus: initialRobots?.status ?? null
     });
   }
@@ -72,8 +96,13 @@ export async function scanPublicUrl(value, options = {}) {
       const destination = validateTargetUrl(to);
       const destinationOrigin = new URL(destination.href).origin;
       const destinationRobots = await robotsLoader(destinationOrigin, userAgent, robotsOptions);
-      if (!robotsAllows(destinationRobots, destination.href, userAgent)) {
-        redirectBlockReason = destinationRobots?.outcome === "unreachable" ? "robots_unreachable" : "robots_disallowed";
+      const decision = evaluatePolicy(destinationRobots, destination.href, userAgent);
+      if (decision.outcome === "unreachable") {
+        redirectBlockReason = "robots_unreachable";
+        return false;
+      }
+      if (!decision.allowed) {
+        redirectBlockReason = "robots_disallowed";
         return false;
       }
       return true;
@@ -87,14 +116,15 @@ export async function scanPublicUrl(value, options = {}) {
   try {
     response = await fetcher(target.href, {
       maxBytes,
-      maxRedirects: options.maxRedirects ?? 3,
+      maxRedirects,
       timeoutMs: options.timeoutMs ?? 10_000,
       dnsTimeoutMs: options.dnsTimeoutMs ?? 5_000,
       validateRedirect
     });
   } catch (error) {
     if (error?.code === "ERR_REDIRECT_POLICY") {
-      return result(redirectBlockReason === "robots_unreachable" ? "robots_unreachable" : "blocked_by_robots", {
+      const status = redirectBlockReason === "robots_unreachable" ? "robots_unreachable" : "blocked_by_robots";
+      return result(status, {
         target: publicLabel(target.href),
         robotsOutcome: redirectBlockReason ?? "unreachable"
       });
