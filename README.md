@@ -19,15 +19,6 @@ node src/cli.js geo analyze ./examples/geo-observation.json
 node src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
-Or run the CLI directly:
-
-```bash
-node src/cli.js scan ./examples/openapi.json
-node src/cli.js scan ./examples/api-docs.md
-node src/cli.js geo analyze ./examples/geo-observation.json
-node src/cli.js geo aggregate ./examples/geo-observations.json\nnode src/cli.js geo analyze ./examples/geo-observation.json\nnode src/cli.js geo aggregate ./examples/geo-observations.json
-```
-
 Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The analyzer does not make network requests or follow document links.
 
 The JSON report includes a content SHA-256 digest, deterministic evidence identifier, rules version, observation class, summary, observations, and evidence-linked findings. A digest is an integrity reference, not proof of immutable storage or authenticity.
@@ -45,7 +36,7 @@ The GEO CLI accepts supplied observation samples; it does not collect them. Use 
 
 ## Project governance
 
-Read [Product Charter](docs/PRODUCT_CHARTER.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security](SECURITY.md), and [Contributing](CONTRIBUTING.md).
+Read [Product Charter](docs/PRODUCT_CHARTER.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security](SECURITY.md), and [Contributing](CONTRIBUTING.md), and [Implementation Status](docs/EXECUTION_STATUS.md).
 
 ## License
 
