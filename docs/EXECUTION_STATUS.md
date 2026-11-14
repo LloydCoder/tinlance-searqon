@@ -68,7 +68,8 @@ This register separates implemented repository capabilities from customer, secur
 - [PR #49](https://github.com/LloydCoder/tinlance-searqon/pull/49) — evidence record/content verification and digest integrity checks.
 - [PR #50](https://github.com/LloydCoder/tinlance-searqon/pull/50) — tamper-evident sequence-numbered evidence ledger chain.
 - [PR #51](https://github.com/LloydCoder/tinlance-searqon/pull/51) — persistent local JSONL evidence ledger store with bounded writes and single-process writer protection.
-- [PR #53](https://github.com/LloydCoder/tinlance-searqon/pull/53) — reject hard-linked and foreign-owned evidence-ledger files.\n- [PR #57](https://github.com/LloydCoder/tinlance-searqon/pull/57) — detect duplicate OpenAPI `operationId` values and report the diagnostic as evidence-linked AgEO readiness coverage.
+- [PR #53](https://github.com/LloydCoder/tinlance-searqon/pull/53) — reject hard-linked and foreign-owned evidence-ledger files.
+- [PR #57](https://github.com/LloydCoder/tinlance-searqon/pull/57) — detect duplicate OpenAPI `operationId` values and report the diagnostic as evidence-linked AgEO readiness coverage.
 ## Verification gates and limitations
 
 - CI: Node.js 22 and 24; syntax checks for root and nested source modules; full Node test suite; smoke tests for HTML, Markdown, OpenAPI, GEO analysis, and GEO aggregation examples; `npm audit --audit-level=high`; `npm pack --dry-run`.
