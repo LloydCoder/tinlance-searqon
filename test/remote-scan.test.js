@@ -64,13 +64,14 @@ test("remote scanner blocks a redirect when destination robots policy disallows 
   const result = await scanPublicUrl("https://example.com/start", {
     robotsLoader: async origin => origin === "https://example.com"
       ? allowedRobots()
-      : ({ outcome: "available", policy: { groups: [{ userAgents: ["*"], rules: [{ type: "disallow", path: "/", specificity: 1, pattern: /^\// }] }] } }),
+      : ({ outcome: "available", policy: { groups: [{ userAgents: ["*"], rules: [{ type: "disallow", path: "/", specificity: 1, pattern: /^\\// }] }] } }),
     fetcher: async (url, options) => {
-      await assert.rejects(() => options.validateRedirect({ from: url, to: "https://other.example.com/private", redirectCount: 1 }), /robots/);
-      return { status: 200, headers: { "content-type": "text/html" }, body: Buffer.from("<html><title>ok</title></html>"), finalUrl: url, redirects: 0 };
+      const allowed = await options.validateRedirect({ from: url, to: "https://other.example.com/private", redirectCount: 1 });
+      if (!allowed) throw Object.assign(new Error("blocked by redirect policy"), { code: "ERR_REDIRECT_POLICY" });
+      throw new Error("redirect should have been denied");
     }
   });
-  assert.equal(result.status, "scanned");
+  assert.equal(result.status, "blocked_by_robots");
 });
 
 test("remote scanner accepts only supported media types and bounded responses", async () => {
