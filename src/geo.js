@@ -154,6 +154,7 @@ export function aggregateGeoObservations(observations) {
         observation.citationCount!==observation.citations.length) {
       throw new TypeError("GEO observation citation count is inconsistent");
     }
+    const citationUrls = new Set();
     for (const citation of observation.citations) {
       if (!citation || typeof citation.url!=="string" || typeof citation.domain!=="string") throw new TypeError("GEO observation citation URL is invalid");
       let url;
@@ -161,6 +162,11 @@ export function aggregateGeoObservations(observations) {
       if ((url.protocol!=="http:" && url.protocol!=="https:") || url.username || url.password || url.hostname.toLowerCase()!==citation.domain) {
         throw new TypeError("GEO observation citation URL is invalid");
       }
+      if (url.hash || url.toString() !== citation.url) {
+        throw new TypeError("GEO observation citation URL is not normalized");
+      }
+      if (citationUrls.has(citation.url)) throw new TypeError("GEO observation contains a duplicate citation URL");
+      citationUrls.add(citation.url);
     }
     const targetDomain=observation.targetDomain;
     const expectedBrandCited=targetDomain ? observation.citations.some(item=>item.domain===targetDomain || item.domain.endsWith("."+targetDomain)) : false;
