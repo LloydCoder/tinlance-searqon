@@ -1,6 +1,6 @@
 import { createEvidenceRecord } from "./evidence.js";
 
-const RULES_VERSION = "2026-11-14.2";
+const RULES_VERSION = "2026-11-14.3";
 
 function finding(data) {
   return Object.freeze({
@@ -123,13 +123,21 @@ function analyzeOpenApi(content, evidenceId) {
   if (!document.info.description) findings.push(finding({ruleId:"openapi.description.missing",dimension:"AEO",severity:"low",title:"API description is missing",description:"The API info object has no description.",recommendation:"Describe the API's purpose, intended users, and primary capabilities.",evidenceId}));
   if (Object.keys(paths).length === 0) findings.push(finding({ruleId:"openapi.paths.empty",dimension:"AgEO",severity:"high",title:"No API paths are described",description:"The document contains no declared API paths.",recommendation:"Publish the intended operations or verify that this is the correct OpenAPI document.",evidenceId}));
   const missingOperationIds = operations.filter(({ operation }) => typeof operation.operationId !== "string" || !operation.operationId.trim());
+  const operationIdCounts = new Map();
+  for (const { operation } of operations) {
+    if (typeof operation.operationId !== "string" || !operation.operationId.trim()) continue;
+    const operationId = operation.operationId.trim();
+    operationIdCounts.set(operationId, (operationIdCounts.get(operationId) ?? 0) + 1);
+  }
+  const duplicateOperationIdCount = [...operationIdCounts.values()].filter(count => count > 1).length;
   const missingOperationDescriptions = operations.filter(({ operation }) =>
     !(typeof operation.description === "string" && operation.description.trim()) &&
     !(typeof operation.summary === "string" && operation.summary.trim())
   );
   if (missingOperationIds.length > 0) findings.push(finding({ruleId:"openapi.operation_id.missing",dimension:"AgEO",severity:"low",title:"API operations lack stable operation identifiers",description:missingOperationIds.length + " operations have no operationId, which can reduce stable tool naming and generated-client consistency.",recommendation:"Assign a unique, stable operationId to each operation and keep it consistent across compatible API versions.",evidenceId}));
+  if (duplicateOperationIdCount > 0) findings.push(finding({ruleId:"openapi.operation_id.duplicate",dimension:"AgEO",severity:"medium",title:"API operations reuse operation identifiers",description:duplicateOperationIdCount + " operationId values are assigned to more than one operation; this makes operation references ambiguous for generated clients and agent-facing tooling.",recommendation:"Assign a globally unique, stable operationId to every operation in the OpenAPI document.",evidenceId}));
   if (missingOperationDescriptions.length > 0) findings.push(finding({ruleId:"openapi.operation_description.missing",dimension:"AEO",severity:"low",title:"API operations lack concise summaries or descriptions",description:missingOperationDescriptions.length + " operations have neither a summary nor a description, limiting machine-readable explanations of their behavior.",recommendation:"Add a concise summary or description that explains each operation's purpose, inputs, side effects, and expected outcomes.",evidenceId}));
-  return {findings,observations:{openapiVersion:document.openapi,apiTitle:document.info.title ?? null,apiVersion:document.info.version ?? null,pathCount:Object.keys(paths).length,serverCount:document.servers?.length ?? 0,operationCount:operations.length,operationsMissingOperationId:missingOperationIds.length,operationsMissingSummaryOrDescription:missingOperationDescriptions.length,securitySchemeCount:Object.keys(securitySchemes).length,undefinedSecuritySchemeCount:undefinedSchemes.size},assessedDimensions:["AEO","AgEO"],scopes:{AEO:"OpenAPI API purpose, description, and operation explanations",AgEO:"OpenAPI server declaration, security scheme integrity, operation identifiers, and path surface"}};
+  return {findings,observations:{openapiVersion:document.openapi,apiTitle:document.info.title ?? null,apiVersion:document.info.version ?? null,pathCount:Object.keys(paths).length,serverCount:document.servers?.length ?? 0,operationCount:operations.length,operationsMissingOperationId:missingOperationIds.length,duplicateOperationIdCount,operationsMissingSummaryOrDescription:missingOperationDescriptions.length,securitySchemeCount:Object.keys(securitySchemes).length,undefinedSecuritySchemeCount:undefinedSchemes.size},assessedDimensions:["AEO","AgEO"],scopes:{AEO:"OpenAPI API purpose, description, and operation explanations",AgEO:"OpenAPI server declaration, security scheme integrity, operation identifiers, and path surface"}};
 }
 
 function buildAssessments(findings, assessedDimensions, scopes) {

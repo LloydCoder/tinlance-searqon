@@ -129,3 +129,38 @@ test("OpenAPI operation summary satisfies the machine-readable explanation requi
   assert.equal(result.observations.operationsMissingSummaryOrDescription, 0);
   assert.equal(result.findings.some(item => item.ruleId === "openapi.operation_description.missing"), false);
 });
+
+
+test("OpenAPI analysis detects duplicate operationId values across paths and methods", () => {
+  const document = {
+    openapi: "3.1.0",
+    info: { title: "Example API", version: "1.0.0", description: "Example service" },
+    paths: {
+      "/items": {
+        get: { operationId: "listItems", summary: "List items", responses: { "200": { description: "OK" } } },
+        post: { operationId: "createItem", summary: "Create item", responses: { "201": { description: "Created" } } }
+      },
+      "/products": {
+        get: { operationId: "listItems", summary: "List products", responses: { "200": { description: "OK" } } }
+      }
+    }
+  };
+  const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
+  assert.equal(result.observations.duplicateOperationIdCount, 1);
+  assert.ok(result.findings.some(item => item.ruleId === "openapi.operation_id.duplicate"));
+  assert.ok(result.findings.every(item => item.evidenceId === result.evidence.id));
+});
+
+test("OpenAPI analysis accepts unique operationId values and reports zero duplicates", () => {
+  const document = {
+    openapi: "3.1.0",
+    info: { title: "Example API", version: "1.0.0", description: "Example service" },
+    paths: {
+      "/items": { get: { operationId: "listItems", summary: "List items", responses: { "200": { description: "OK" } } } },
+      "/products": { get: { operationId: "listProducts", summary: "List products", responses: { "200": { description: "OK" } } } }
+    }
+  };
+  const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
+  assert.equal(result.observations.duplicateOperationIdCount, 0);
+  assert.equal(result.findings.some(item => item.ruleId === "openapi.operation_id.duplicate"), false);
+});
