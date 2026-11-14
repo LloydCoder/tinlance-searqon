@@ -128,6 +128,7 @@ function wilsonInterval(successes, total) {
 export function aggregateGeoObservations(observations) {
   if (!Array.isArray(observations)) throw new TypeError("observations must be an array");
   const groups = new Map();
+  const seenEvidenceIds = new Set();
   for (const observation of observations) {
     if (!observation || observation.type!=="geo_observation" || observation.schemaVersion!=="1.0.0" || !OBSERVATION_CLASSES.has(observation.observationClass)) {
       throw new TypeError("Every item must be a valid GEO observation");
@@ -178,6 +179,10 @@ export function aggregateGeoObservations(observations) {
         !Number.isSafeInteger(evidence.byteLength) || evidence.byteLength<0 || evidence.methodologyVersion!=="geo-2026-11-14.1" || evidence.integrity!=="sha256-content-digest") {
       throw new TypeError("GEO observation evidence provenance is invalid");
     }
+    if (seenEvidenceIds.has(evidence.id)) {
+      throw new TypeError("GEO observations contain a duplicate evidence identifier");
+    }
+    seenEvidenceIds.add(evidence.id);
 
     const providerKey=[provider.name,provider.model,provider.region,provider.locale];
     const key=JSON.stringify([observation.observationClass,providerKey,observation.brand,observation.targetDomain]);

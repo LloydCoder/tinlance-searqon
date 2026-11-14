@@ -71,3 +71,9 @@ test("GEO aggregation rejects evidence records with forged but well-shaped ident
   };
   assert.throws(() => aggregateGeoObservations([tampered]), /evidence provenance is invalid/);
 });
+
+
+test("GEO aggregation rejects duplicate evidence identifiers instead of inflating sample size", () => {
+  const observation = analyzeGeoObservation(consumer);
+  assert.throws(() => aggregateGeoObservations([observation, observation]), /duplicate evidence identifier/);
+});
