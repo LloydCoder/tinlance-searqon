@@ -192,7 +192,7 @@ test("MCP snapshot analysis assesses passive tool metadata without executing too
   assert.ok(result.findings.every(item => item.evidenceId === result.evidence.id));
 });
 
-test("MCP snapshot analysis detects duplicate names, missing descriptions, and unclassified side effects", () => {
+test("MCP snapshot analysis detects duplicate names, missing descriptions, and declared side-effect hints", () => {
   const snapshot = {
     protocolVersion: "2026-07-28",
     capabilities: { tools: {} },
@@ -226,4 +226,20 @@ test("MCP snapshot analysis rejects malformed snapshots and invalid input schema
     contentType: "application/vnd.searqon.mcp-snapshot+json",
     content: JSON.stringify({ protocolVersion: "2026-07-28", tools: [{ name: "bad", inputSchema: { type: "string" } }] })
   }), /inputSchema.*object/);
+});
+
+
+test("MCP snapshot analysis reads server identity from modern response metadata", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    _meta: { "io.modelcontextprotocol/serverInfo": { name: "Modern MCP Server", version: "2.0.0" } },
+    capabilities: { tools: {} },
+    tools: []
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.equal(result.observations.serverName, "Modern MCP Server");
 });
