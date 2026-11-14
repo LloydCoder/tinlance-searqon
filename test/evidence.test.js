@@ -31,6 +31,6 @@ test("evidence factory rejects missing provenance and malformed timestamps", () 
   assert.throws(()=>createEvidenceRecord({source:"x",content:"x",contentType:"text/html",collectedAt:"y"}),/ISO 8601/);
 });
 
-test("evidence factory enforces the same payload bound", () => {
+test("evidence source labels are bounded and reject control characters", () => {\n  assert.throws(()=>createEvidenceRecord({source:"x".repeat(2049),contentType:"text/html",content:"x"}),/source/);\n  assert.throws(()=>createEvidenceRecord({source:"bad\\nsource",contentType:"text/html",content:"x"}),/source/);\n});\n\ntest("evidence factory enforces the same payload bound", () => {
   assert.throws(()=>createEvidenceRecord({source:"large",contentType:"text/html",content:"x".repeat(2*1024*1024+1)}),/analysis limit/);
 });
