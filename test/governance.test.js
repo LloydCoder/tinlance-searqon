@@ -9,7 +9,7 @@ test("product charter preserves the four separate assessment disciplines", async
   for (const discipline of ["SEO", "AEO", "GEO", "AgEO"]) {
     assert.ok(charter.includes(discipline), `missing ${discipline} discipline`);
   }
-  assert.match(charter, /no opaque universal score/i);
+  assert.match(charter, /must not collapse them into an unexplained universal score/i);
 });
 
 test("architecture preserves the Tinlyt and TAS authority boundaries", async () => {
@@ -22,7 +22,7 @@ test("architecture preserves the Tinlyt and TAS authority boundaries", async () 
 test("security policy requires SSRF controls and treats fetched content as untrusted", async () => {
   const policy = await read("../SECURITY.md");
   assert.match(policy, /DNS rebinding/i);
-  assert.match(policy, /private.*address/i);
+  assert.match(policy, /reject loopback, private, link-local/i);
   assert.match(policy, /untrusted data/i);
 });
 
