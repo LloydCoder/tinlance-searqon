@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createEvidenceRecord } from "../src/evidence.js";
+import { createEvidenceRecord, verifyEvidenceRecord, verifyEvidenceContent } from "../src/evidence.js";
 
 test("evidence record preserves provenance and a verifiable content digest", () => {
   const record = createEvidenceRecord({source:"fixture.html",contentType:"text/html",content:"<title>Example</title>",acquisitionMethod:"local_file",collectedAt:"2026-11-14T00:00:00.000Z",methodologyVersion:"2026-11-14.1"});
@@ -69,7 +69,6 @@ test("evidence URL sources reject embedded credentials", () => {
 });
 
 test("evidence record verification detects identifier and shape tampering", async () => {
-  const { verifyEvidenceRecord } = await import("../src/evidence.js");
   const record = createEvidenceRecord({ source: "fixture.html", content: "payload", contentType: "text/html" });
   assert.equal(verifyEvidenceRecord(record).valid, true);
   assert.equal(verifyEvidenceRecord({ ...record, id: "evidence_" + "0".repeat(20) }).valid, false);
@@ -77,7 +76,6 @@ test("evidence record verification detects identifier and shape tampering", asyn
 });
 
 test("evidence content verification detects byte-length and digest mismatches", async () => {
-  const { verifyEvidenceContent } = await import("../src/evidence.js");
   const record = createEvidenceRecord({ source: "fixture.html", content: "payload", contentType: "text/html" });
   assert.equal(verifyEvidenceContent(record, "payload").valid, true);
   assert.equal(verifyEvidenceContent(record, "tampered").valid, false);
