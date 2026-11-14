@@ -14,16 +14,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  repository-governance:
-    name: Repository governance tests
+  test:
+    name: Tests and package validation (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "22"
-      - name: Run governance tests
+          node-version: ${{ matrix.node-version }}
+      - name: Check JavaScript syntax
+        run: |
+          for file in src/*.js test/*.js; do
+            node --check "$file"
+          done
+      - name: Run test suite
         run: npm test
+      - name: Validate package contents
+        run: npm pack --dry-run
