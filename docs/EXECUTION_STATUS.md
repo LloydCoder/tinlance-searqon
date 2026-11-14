@@ -2,7 +2,6 @@
 
 **Last reconciled:** 2026-11-14  
 **Base commit for this status revision:** `5dec145f93546e97ef5a91d10c169cc71e159f93`  
-**Base commit for this status revision:** `56610e0595d905d95afe084b050916d73befce7d`  
 **Product maturity:** Early alpha; not production-ready.
 
 This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification. Status is evidence-based; implementation does not imply independent assurance or product-owner acceptance.
