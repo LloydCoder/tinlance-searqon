@@ -18,14 +18,16 @@ test("CLI scans a caller-selected local HTML file and emits parseable JSON", asy
   } finally { await rm(dir,{recursive:true,force:true}); }
 });
 
-test("CLI accepts local Markdown documentation files", async () => {
+test("CLI accepts local Markdown documentation files and avoids leaking local paths", async () => {
   const dir = await mkdtemp(join(tmpdir(),"searqon-"));
   try {
     const input = join(dir,"docs.md");
     await writeFile(input,"# API\n\nAuthentication uses bearer tokens.");
     const result = spawnSync(process.execPath,[cli.pathname,"scan",input],{encoding:"utf8"});
     assert.equal(result.status,0,result.stderr);
-    const report = JSON.parse(result.stdout);\n    assert.equal(report.assessments.AgEO.status,"findings_detected");\n    assert.equal(report.evidence.source,"docs.md");
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.assessments.AgEO.status,"findings_detected");
+    assert.equal(report.evidence.source,"docs.md");
   } finally { await rm(dir,{recursive:true,force:true}); }
 });
 
