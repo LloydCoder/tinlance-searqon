@@ -9,7 +9,6 @@ const DEFAULT_FAILURE_TTL_MS = 30 * 1000;
 const DEFAULT_MAX_CACHE_ENTRIES = 1024;
 const DISALLOW_ALL = parseRobots("User-agent: *\nDisallow: /");
 const ALLOW_ALL = parseRobots("");
-
 const defaultCache = new Map();
 
 function headerValue(headers, name) {
@@ -65,6 +64,10 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
   const sourceUrl = new URL("/robots.txt", originKey).href;
   const cache = options.cache ?? defaultCache;
   if (!(cache instanceof Map)) throw new TypeError("cache must be a Map");
+  const maxEntries = options.maxEntries ?? DEFAULT_MAX_CACHE_ENTRIES;
+  if (!Number.isSafeInteger(maxEntries) || maxEntries < 1 || maxEntries > 10_000) {
+    throw new RangeError("maxEntries must be an integer between 1 and 10000");
+  }
   const clock = options.now ?? Date.now;
   if (typeof clock !== "function") throw new TypeError("now must be a clock function");
   const now = clock();
@@ -134,6 +137,9 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
     cacheHit: false
   });
 
-  if (expiresAt !== null) {\n    cache.set(originKey, result);\n    while (cache.size > maxEntries) cache.delete(cache.keys().next().value);\n  }
+  if (expiresAt !== null) {
+    cache.set(originKey, result);
+    while (cache.size > maxEntries) cache.delete(cache.keys().next().value);
+  }
   return result;
 }
