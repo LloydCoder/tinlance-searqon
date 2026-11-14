@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.tinlance.com/schemas/remote-scan-result/1.0.0",
+  "title": "Searqon Remote Scan Result",
+  "description": "Stable result envelope for a robots-aware single-page remote scan.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "target"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scanned",
+        "robots_unreachable",
+        "blocked_by_robots",
+        "fetch_failed",
+        "unsupported_content_type",
+        "analysis_failed"
+      ]
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "finalUrl": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "robotsOutcome": {
+      "type": "string",
+      "enum": ["available", "unavailable", "unreachable"]
+    },
+    "robotsStatus": {
+      "type": ["integer", "null"],
+      "minimum": 100,
+      "maximum": 599
+    },
+    "responseStatus": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "contentType": {
+      "type": ["string", "null"],
+      "maxLength": 128
+    },
+    "redirects": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "assessment": {
+      "$ref": "assessment-report.schema.json"
+    },
+    "error": {
+      "type": "string",
+      "maxLength": 256
+    }
+  }
+}
