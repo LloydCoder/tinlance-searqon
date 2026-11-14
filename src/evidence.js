@@ -13,10 +13,10 @@ function normalizeEvidenceSource(value) {
     throw new TypeError("source must be a non-empty string");
   }
   const source = value.trim();
-  if ([...source].length > 2048 || /[\\u0000-\\u001f\\u007f]/.test(source)) {
+  if ([...source].length > 2048 || /[\u0000-\u001f\u007f]/.test(source)) {
     throw new TypeError("source must be at most 2048 characters and contain no control characters");
   }
-  if (!/^https?:\\/\\//i.test(source)) return source;
+  if (!/^https?:\/\//i.test(source)) return source;
   let url;
   try { url = new URL(source); }
   catch { throw new TypeError("source URL must be valid"); }
@@ -123,7 +123,7 @@ export function verifyEvidenceRecord(record) {
     typeof record.acquisitionMethod === "string" &&
     typeof record.source === "string" &&
     typeof record.sha256 === "string" &&
-    record.id !== "evidence_" + sha256(record.acquisitionMethod + "\\0" + record.source + "\\0" + record.sha256).slice(0, 20)
+    record.id !== "evidence_" + sha256(record.acquisitionMethod + "\0" + record.source + "\0" + record.sha256).slice(0, 20)
   ) {
     errors.push("evidence_id_mismatch");
   }
