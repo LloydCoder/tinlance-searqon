@@ -42,7 +42,16 @@ async function runScan(args) {
   await emitResult(analyzeDocument({source,contentType,content:await readFile(file,"utf8")}),args);
 }
 
-async function runScanUrl(args) {\n  if (!args[1]) throw new Error(usage);\n  if (!args.includes("--confirm-authorized-target")) throw new Error("Remote scanning requires --confirm-authorized-target to attest that you are authorized to assess this target");\n  const agentIndex = args.indexOf("--user-agent");\n  const userAgent = agentIndex >= 0 ? args[agentIndex + 1] : undefined;\n  if (agentIndex >= 0 && (!userAgent || userAgent.startsWith("--"))) throw new Error("--user-agent requires a product token");\n  await emitResult(await scanPublicUrl(args[1], { userAgent }), args);\n}\n\nasync function runGeo(args) {
+async function runScanUrl(args) {
+  if (!args[1]) throw new Error(usage);
+  if (!args.includes("--confirm-authorized-target")) throw new Error("Remote scanning requires --confirm-authorized-target to attest that you are authorized to assess this target");
+  const agentIndex = args.indexOf("--user-agent");
+  const userAgent = agentIndex >= 0 ? args[agentIndex + 1] : undefined;
+  if (agentIndex >= 0 && (!userAgent || userAgent.startsWith("--"))) throw new Error("--user-agent requires a product token");
+  await emitResult(await scanPublicUrl(args[1], { userAgent }), args);
+}
+
+async function runGeo(args) {
   const command=args[1], fileArg=args[2];
   if (!["analyze","aggregate"].includes(command) || !fileArg) throw new Error(usage);
   const file=resolve(fileArg);
