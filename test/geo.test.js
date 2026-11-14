@@ -61,3 +61,13 @@ test("aggregation handles empty input and validates records", () => {
   assert.deepEqual(aggregateGeoObservations([]),[]);
   assert.throws(()=>aggregateGeoObservations([{}]),/valid GEO observation/);
 });
+
+
+test("GEO aggregation rejects evidence records with forged but well-shaped identifiers", () => {
+  const observation = analyzeGeoObservation(consumer);
+  const tampered = {
+    ...observation,
+    evidence: { ...observation.evidence, id: "evidence_" + "0".repeat(20) }
+  };
+  assert.throws(() => aggregateGeoObservations([tampered]), /evidence provenance is invalid/);
+});
