@@ -1,10 +1,10 @@
 # Searqon Implementation Status
 
-**Last verified:** 2026-11-14  
-**Base commit for this status revision:** `c2941679bbd23250268a3325fb03e9468f0e84d1`  
+**Last reconciled:** 2026-11-14  
+**Base commit for this status revision:** `5013fe4ab6a3cb2599c6339f832ae88417307583`  
 **Product maturity:** Early alpha; not production-ready.
 
-This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification.
+This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification. Status is evidence-based; implementation does not imply independent assurance or product-owner acceptance.
 
 ## Phase status
 
@@ -12,20 +12,20 @@ This register separates implemented repository capabilities from customer, secur
 |---|---|---|
 | 0 — Product control | IMPLEMENTED | Product charter, four-discipline positioning, constraints, product boundaries, and roadmap are documented. Formal product-owner acceptance is not recorded. |
 | 1 — Customer validation | BLOCKED | Interviews, five design partners, and paid-pilot commitments require real customer participation. No interviews or commitments are fabricated or claimed. |
-| 2 — Open-source foundation | VERIFIED | Public Apache-2.0 repository, contribution/security policies, Node 22/24 CI, npm lockfile/audit, package dry-run, and CodeQL v4. Full release provenance, license, SBOM, and signing review remains. |
-| 3 — Domain contracts | IN_PROGRESS | Evidence provenance runtime contract, standalone Evidence Record JSON Schema 2020-12, remote scan result JSON Schema 2020-12, assessment report schema, GEO observation schema, and separate discipline assessments exist. Broader versioned APIs, migrations, compatibility policy, and persistence contracts remain. |
-| 4 — Secure remote acquisition | IN_PROGRESS | URL/IP policy, public DNS validation, pinned socket lookup, manual redirect validation, hard per-request deadlines, DNS/socket inactivity timeouts, bounded response headers/bytes, and robots parser/retrieval/cache are implemented. Azure WireServer and additional local/special-use hostnames are blocked. The one-page scanner checks robots policy before acquisition and every redirect. A real IPv4-pinned HTTPS/TLS smoke test runs in CI. Controlled-origin redirect/DNS-rebinding integration tests, stronger target authorization beyond CLI attestation, and broader crawl isolation remain. |
+| 2 — Open-source foundation | VERIFIED | Public Apache-2.0 repository, contribution/security policies, Node 22/24 CI, npm lockfile/audit, package dry-run, and CodeQL v4. Full release provenance, complete license/SBOM review, signed releases, and repository ruleset verification remain. |
+| 3 — Domain contracts | IN_PROGRESS | Evidence provenance runtime contract, standalone Evidence Record JSON Schema 2020-12, remote scan result JSON Schema 2020-12, assessment report schema, GEO observation schema, separate discipline assessments, and OpenAPI security/agent-readiness diagnostics exist. Broader versioned APIs, migrations, compatibility policy, persistence contracts, and cross-version compatibility tests remain. |
+| 4 — Secure remote acquisition | IN_PROGRESS | URL/IP policy, public DNS validation, pinned socket lookup, manual redirect validation, hard per-request deadlines, DNS/socket inactivity timeouts, bounded response headers/bytes, robots parser/retrieval/cache, and robots-aware one-page scanning exist. PR #38 adds deterministic DNS-rebinding regression tests for same-host and cross-host redirect hops; PR #29 supplies a live pinned IPv4 HTTPS/TLS smoke test. These are not a controlled-origin live redirect/DNS-rebinding integration suite. Explicit target authorization beyond CLI attestation, crawl scope/depth/concurrency, MIME policy hardening, controlled-origin redirect/timeout tests, and browser/process isolation remain. No recursive crawl is enabled. |
 | 5 — Evidence and provenance | IN_PROGRESS | Runtime evidence records, content digests, provenance metadata, and standalone Evidence Record JSON Schema 2020-12 are implemented. Persistent storage, retention, redaction/deletion, tamper-evident audit, and multi-tenant evidence access controls remain. |
-| 6 — Passive scanner | IN_PROGRESS | Local HTML, Markdown, and OpenAPI analysis plus a bounded one-page remote scanner with robots checks, redirect destination policy checks, a 2 MiB response cap, and explicit operator authorization attestation. Findings are evidence-linked with explicit partial coverage. Recursive crawling, browser rendering, MCP metadata acquisition, and complete discipline audits remain. |
+| 6 — Passive Agent Readiness Scanner | IN_PROGRESS | Local HTML, Markdown, and OpenAPI analysis plus a bounded one-page remote scanner with robots checks, redirect destination policy checks, a 2 MiB response cap, and explicit operator authorization attestation. OpenAPI diagnostics now cover security requirements and operation readiness, including OpenAPI 3.2 URI-reference semantics. Findings are evidence-linked with explicit partial coverage. Recursive crawling, browser rendering, MCP metadata acquisition, and complete discipline audits remain. |
 | 7 — GEO intelligence | IN_PROGRESS | Supplied-observation normalization, provider/channel provenance, brand mention/citation extraction, cohort-safe aggregation by channel/provider/model/region/locale/brand/domain, and Wilson 95% intervals. No live provider adapters, consumer-interface observation collection, scheduling, history store, or monitoring. |
 | 8 — Interfaces and reporting | IN_PROGRESS | Local scan, authorized single-page remote scan, and GEO analyze/aggregate CLI commands plus JSON Schema contracts and synthetic fixtures. Hosted API, web UI, accessibility testing, and customer-facing report UX remain. |
 | 9 — Hosted service | NOT_STARTED | No authentication, tenant model, billing, quotas, scheduling service, managed database, or cloud deployment. |
-| 10 — Security/privacy assurance | IN_PROGRESS | Security policy, URL/DNS/robots primitives, CodeQL v4, npm audit, and regression tests exist. CodeQL workflow completion is verified, but alert disposition was not independently reviewed here. No independent penetration test, ASVS assessment, privacy/legal review, secret-scanning workflow, or production threat-model closure. |
-| 11 — Reliability and operations | IN_PROGRESS | CI tests Node.js 22/24, source syntax, full tests, CLI examples, npm audit, package dry-run, and a live pinned HTTPS/TLS smoke test; CodeQL runs on PRs/main and weekly. No production SLOs, deploy/rollback, incident response, backups, or recovery exercise. |
+| 10 — Security/privacy assurance | IN_PROGRESS | Security policy, URL/DNS/robots primitives, CodeQL v4, npm audit, and regression tests exist. CodeQL completed successfully on PR #38's exact head. Alert disposition has not been independently reviewed here. No independent penetration test, ASVS assessment, privacy/legal review, dedicated secret-scanning workflow, or production threat-model closure. |
+| 11 — Reliability and operations | IN_PROGRESS | CI tests Node.js 22/24, source syntax, full tests, CLI examples, npm audit, package dry-run, and a live pinned HTTPS/TLS smoke test; CodeQL is configured for PRs/main and weekly runs. PR #38 CI and CodeQL both passed on its exact head. No production SLOs, deploy/rollback, incident response, backups, or recovery exercise. A separate push-triggered workflow result for merge commit #38 has not been independently retrieved. |
 | 12 — Design-partner pilots | BLOCKED | Requires recruited organizations and real pilot participation. No pilots or outcomes are claimed. |
 | 13 — Commercial v1 | NOT_STARTED | No production service, accepted customer outcomes, support operations, validated pricing, or measured unit economics. |
-| 14 — SEO/AEO expansion | IN_PROGRESS | A small local HTML/Markdown/OpenAPI rule set only. Search Console integration, technical crawl, Core Web Vitals, broader entity/answer methodology, and verified remediation remain. |
-| 15 — Advanced AgEO | IN_PROGRESS | Partial OpenAPI and documentation heuristics plus explicit observation coverage. MCP interoperability, runtime auth/authorization validation, reliability, transaction safety, governance, and enterprise assurance remain. |
+| 14 — SEO/AEO expansion | IN_PROGRESS | HTML SEO/AEO diagnostics and a small local HTML/Markdown/OpenAPI rule set exist, with a versioned expanded HTML methodology. Search Console integration, technical crawl, Core Web Vitals measurement, broader entity/answer methodology, multilingual validation, and verified remediation remain. |
+| 15 — Advanced AgEO | IN_PROGRESS | Partial OpenAPI and documentation heuristics plus explicit observation coverage exist. OpenAPI security and operation-readiness diagnostics are implemented, including 3.2 URI-reference handling. MCP interoperability, runtime auth/authorization validation, reliability, transaction safety, governance, and enterprise assurance remain. |
 
 ## Merged implementation increments
 
@@ -54,11 +54,16 @@ This register separates implemented repository capabilities from customer, secur
 - [PR #28](https://github.com/LloydCoder/tinlance-searqon/pull/28) — remote scan result JSON Schema and runtime result contract tests.
 - [PR #29](https://github.com/LloydCoder/tinlance-searqon/pull/29) — live pinned IPv4 HTTPS/TLS integration test in GitHub Actions.
 - [PR #34](https://github.com/LloydCoder/tinlance-searqon/pull/34) — hard HTTP acquisition deadlines and Azure WireServer/local special-use SSRF blocking.
+- [PR #35](https://github.com/LloydCoder/tinlance-searqon/pull/35) — reconcile SSRF hardening and scanner implementation status.
+- [PR #36](https://github.com/LloydCoder/tinlance-searqon/pull/36) — expanded HTML SEO/AEO diagnostics and methodology versioning.
+- [PR #37](https://github.com/LloydCoder/tinlance-searqon/pull/37) — OpenAPI security and agent-readiness diagnostics, including OpenAPI 3.2 URI-reference semantics.
+- [PR #38](https://github.com/LloydCoder/tinlance-searqon/pull/38) — deterministic same-host and cross-host DNS-rebinding redirect regression tests.
 
-## Current verification gates
+## Verification gates and limitations
 
 - CI: Node.js 22 and 24; syntax checks for root and nested source modules; full Node test suite; smoke tests for HTML, Markdown, OpenAPI, GEO analysis, and GEO aggregation examples; `npm audit --audit-level=high`; `npm pack --dry-run`.
-- CodeQL: v4 JavaScript/TypeScript analysis on pull requests, main pushes, and weekly schedule. Latest verified main run completed successfully; review any reported alerts separately.
+- CodeQL: v4 JavaScript/TypeScript analysis configured for pull requests, main pushes, and weekly schedule. PR #38's exact head passed. Review any reported alerts separately.
+- PR #38 exact head: CI run 43639506465 and CodeQL run 43639506501 both completed successfully. Merge commit: `5013fe4ab6a3cb2599c6339f832ae88417307583`. The workflow-run lookup used for this register returns PR-triggered runs only; it did not return push-triggered runs for the merge commit. Do not interpret that absence as a verified push-run success or failure.
 - Dependency Review: not enabled because GitHub Dependency Graph is disabled for this repository; npm audit is the active dependency vulnerability check. Enable Dependency Graph in repository security settings before restoring Dependency Review.
 - Secret scanning: no dedicated workflow has been added or independently verified.
 - Branch protection: required status checks and ruleset enforcement have not been inspected or configured in this execution.
@@ -66,9 +71,10 @@ This register separates implemented repository capabilities from customer, secur
 
 ## Remaining release blockers
 
-1. Extend live integration coverage to redirects, DNS rebinding, and timeout behavior using a controlled origin; strengthen target authorization beyond CLI attestation and add production crawl isolation before enabling broader crawling.
-2. Implement persistent evidence storage with retention, deletion, privacy, and tamper-evidence semantics.
-3. Add permitted GEO provider adapters only after terms, reproducibility, sampling, rate limits, and cost controls are verified.
-4. Recruit design partners and conduct customer interviews; validate willingness to pay and actual outcomes.
-5. Build hosted tenancy, billing, monitoring, and operations only after validation and explicit infrastructure approval.
-6. Complete independent security, privacy, operational, and commercial acceptance before GA.
+1. Complete controlled-origin live integration tests for redirect handling, DNS rebinding, and timeout behavior; deterministic injected tests and the live pinned HTTPS/TLS smoke test do not replace this.
+2. Strengthen target authorization beyond CLI attestation; add crawl scope/depth/concurrency controls, MIME policy, and browser/process isolation before broader crawling.
+3. Implement persistent evidence storage with retention, deletion, privacy, tenant isolation, and tamper-evidence semantics.
+4. Add permitted GEO provider adapters only after terms, reproducibility, sampling, rate limits, and cost controls are verified.
+5. Recruit design partners and conduct customer interviews; validate willingness to pay and actual outcomes.
+6. Build hosted tenancy, billing, monitoring, and operations only after validation and explicit infrastructure approval.
+7. Complete independent security, privacy, operational, and commercial acceptance before GA.
