@@ -6,6 +6,7 @@ const MAX_ROBOTS_BYTES = 512 * 1024;
 const MAX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_SUCCESS_TTL_MS = 60 * 60 * 1000;
 const DEFAULT_FAILURE_TTL_MS = 30 * 1000;
+const DEFAULT_MAX_CACHE_ENTRIES = 1024;
 const DISALLOW_ALL = parseRobots("User-agent: *\nDisallow: /");
 const ALLOW_ALL = parseRobots("");
 
@@ -39,7 +40,7 @@ function cacheTtl(headers, status, now) {
     const parsed = Date.parse(expires);
     if (Number.isFinite(parsed)) return Math.min(Math.max(0, parsed - now), MAX_CACHE_TTL_MS);
   }
-  if (status === null || status === 429 || status >= 500) {
+  if (!Number.isInteger(status) || status < 200 || status === 429 || status >= 500) {
     return retryAfterMs(headers, now) ?? DEFAULT_FAILURE_TTL_MS;
   }
   return DEFAULT_SUCCESS_TTL_MS;
@@ -133,6 +134,6 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
     cacheHit: false
   });
 
-  if (expiresAt !== null) cache.set(originKey, result);
+  if (expiresAt !== null) {\n    cache.set(originKey, result);\n    while (cache.size > maxEntries) cache.delete(cache.keys().next().value);\n  }
   return result;
 }
