@@ -7,7 +7,7 @@ import { scanPublicUrl } from "./remote-scan.js";
 
 const usage = [
   "Usage:",
-  "  searqon scan <local-file> [--source <label>] [--out <json-file>]",
+  "  searqon scan <local-file> [--format mcp] [--source <label>] [--out <json-file>]",
   "  searqon scan-url <public-url> --confirm-authorized-target [--allow-redirect-origin <origin>]... [--user-agent <token>] [--out <json-file>]",
   "  searqon geo analyze <observation.json> [--out <json-file>]",
   "  searqon geo aggregate <observations.json> [--out <json-file>]"
@@ -34,7 +34,11 @@ async function runScan(args) {
   if (!args[1]) throw new Error(usage);
   const file=resolve(args[1]);
   const extension=extname(file).toLowerCase();
-  const contentType=extension===".html" || extension===".htm" ? "text/html" : extension===".md" || extension===".markdown" ? "text/markdown" : extension===".json" ? "application/json" : "";
+  const formatIndex=args.indexOf("--format");
+  const format=formatIndex>=0 ? args[formatIndex+1] : null;
+  if (formatIndex>=0 && format!=="mcp") throw new Error("--format currently supports only mcp");
+  if (format==="mcp" && extension!==".json") throw new Error("MCP snapshot analysis requires a local .json file");
+  const contentType=format==="mcp" ? "application/vnd.searqon.mcp-snapshot+json" : extension===".html" || extension===".htm" ? "text/html" : extension===".md" || extension===".markdown" ? "text/markdown" : extension===".json" ? "application/json" : "";
   if (!contentType) throw new Error("Only local .html, .htm, .md, .markdown, and .json files are supported");
   const sourceIndex=args.indexOf("--source");
   const source=sourceIndex>=0 ? args[sourceIndex+1] : basename(file);
