@@ -5,6 +5,31 @@ function escapeRegexCharacter(character) {
   return metacharacters.has(character) ? "\\"+character : character;
 }
 
+function normalizeRobotsPath(value) {
+  let encoded = "";
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint <= 0x7f) {
+      encoded += character;
+      continue;
+    }
+    for (const byte of Buffer.from(character, "utf8")) {
+      encoded += "%" + byte.toString(16).toUpperCase().padStart(2, "0");
+    }
+  }
+  return encoded.replace(/%([0-9a-f]{2})/gi, (sequence, hex) => {
+    const octet = Number.parseInt(hex, 16);
+    const character = String.fromCharCode(octet);
+    if (/^[A-Za-z0-9._~-]$/.test(character)) return character;
+    return "%" + hex.toUpperCase();
+  });
+}
+
+function pathSpecificity(path) {
+  const literal = (path.endsWith("$") ? path.slice(0, -1) : path).replaceAll("*", "");
+  return Buffer.byteLength(literal.replace(/%[0-9A-F]{2}/g, "x"), "utf8");
+}
+
 function compileRulePattern(path) {
   const anchored=path.endsWith("$");
   const body=anchored ? path.slice(0,-1) : path;
@@ -58,11 +83,12 @@ export function parseRobots(content) {
       current._hasDirectives=true;
       if (!value) continue;
       if (!value.startsWith("/") && !value.startsWith("*")) continue;
+      const normalizedPath = normalizeRobotsPath(value);
       current.rules.push(Object.freeze({
         type:field,
         path:value,
-        specificity:Buffer.byteLength(value.replace(/\*/g,"").replace(/\$$/,""),"utf8"),
-        pattern:compileRulePattern(value)
+        specificity:pathSpecificity(normalizedPath),
+        pattern:compileRulePattern(normalizedPath)
       }));
       continue;
     }
@@ -112,7 +138,7 @@ export function evaluateRobots(robots, targetUrl, userAgent) {
     selected=robots.groups.filter(group=>group.userAgents.includes("*"));
   }
 
-  const path=url.pathname+url.search;
+  const path=normalizeRobotsPath(url.pathname+url.search);
   const matchingRules=selected.flatMap(group=>group.rules.filter(rule=>rule.pattern.test(path)));
   if (!matchingRules.length) return Object.freeze({allowed:true,matchedRule:null,matchingGroups:selected.length});
   const longest=Math.max(...matchingRules.map(rule=>rule.specificity));
