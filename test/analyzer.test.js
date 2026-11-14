@@ -64,3 +64,43 @@ test("HTML SEO analysis reports language, viewport, image-alt, heading, and leng
   assert.equal(result.observations.languagePresent, false);
   assert.equal(result.observations.viewportPresent, false);
 });
+
+
+test("OpenAPI readiness validates declared security schemes and operation identifiers", () => {
+  const document = {
+    openapi: "3.1.0",
+    info: { title: "Example API", version: "1.0.0", description: "Example service" },
+    servers: [{ url: "https://api.example.com" }],
+    components: { securitySchemes: { bearerAuth: { type: "http", scheme: "bearer" } } },
+    security: [{ missingAuth: [] }],
+    paths: {
+      "/items": {
+        get: { responses: { "200": { description: "OK" } } },
+        post: {
+          operationId: "createItem",
+          description: "Create an item",
+          responses: { "201": { description: "Created" } }
+        }
+      }
+    }
+  };
+  const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
+  const ruleIds = result.findings.map(item => item.ruleId);
+  assert.ok(ruleIds.includes("openapi.security_scheme.undefined"));
+  assert.ok(ruleIds.includes("openapi.operation_id.missing"));
+  assert.equal(result.observations.operationCount, 2);
+  assert.equal(result.observations.operationsMissingOperationId, 1);
+  assert.equal(result.observations.operationsMissingDescription, 1);
+  assert.ok(result.findings.every(item => item.evidenceId === result.evidence.id));
+});
+
+test("OpenAPI security requirement without any security scheme definition is flagged", () => {
+  const document = {
+    openapi: "3.1.0",
+    info: { title: "Example API", version: "1.0.0", description: "Example service" },
+    security: [{ bearerAuth: [] }],
+    paths: { "/items": { get: { responses: { "200": { description: "OK" } } } } }
+  };
+  const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
+  assert.ok(result.findings.some(item => item.ruleId === "openapi.security_schemes.missing"));
+});
