@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 export const MAX_EVIDENCE_BYTES = 2 * 1024 * 1024;
 const OBSERVATION_CLASSES = new Set(["crawl","first_party","consumer_observation","model_api","derived","estimate"]);
+const MEDIA_TYPE_PATTERN = new RegExp("^[a-z0-9!#const OBSERVATION_CLASSES = new Set(["crawl","first_party","consumer_observation","model_api","derived","estimate"]);^_.+-]+/[a-z0-9!#const OBSERVATION_CLASSES = new Set(["crawl","first_party","consumer_observation","model_api","derived","estimate"]);^_.+-]+$");
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -15,7 +16,7 @@ export function createEvidenceRecord(input) {
     throw new TypeError("String content and contentType are required");
   }
   const contentType = input.contentType.split(";")[0].trim().toLowerCase();
-  if (contentType.length > 255 || !/^[a-z0-9!#  if (!contentType) throw new TypeError("contentType must contain a media type");^_.+-]+\/[a-z0-9!#  if (!contentType) throw new TypeError("contentType must contain a media type");^_.+-]+$/.test(contentType)) {
+  if (contentType.length > 255 || !MEDIA_TYPE_PATTERN.test(contentType)) {
     throw new TypeError("contentType must be a valid media type of at most 255 characters");
   }
   const byteLength = Buffer.byteLength(input.content,"utf8");
