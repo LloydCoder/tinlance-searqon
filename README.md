@@ -20,7 +20,8 @@ npm run scan -- ./examples/site.html --source https://example.test/
 Or run the CLI directly:
 
 ```bash
-node src/cli.js scan ./examples/openapi.json\nnode src/cli.js scan ./examples/api-docs.md
+node src/cli.js scan ./examples/openapi.json
+node src/cli.js scan ./examples/api-docs.md
 ```
 
 Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The analyzer does not make network requests or follow document links.
