@@ -14,7 +14,7 @@ This register separates implemented repository capabilities from customer, secur
 | 1 — Customer validation | BLOCKED | Interviews, five design partners, and paid-pilot commitments require real customer participation. No interviews or commitments are fabricated or claimed. |
 | 2 — Open-source foundation | VERIFIED | Public Apache-2.0 repository, contribution/security policies, Node 22/24 CI, npm lockfile/audit, package dry-run, and CodeQL v4. Full release provenance, license, SBOM, and signing review remains. |
 | 3 — Domain contracts | IN_PROGRESS | Evidence provenance contract, assessment report JSON Schema, GEO observation schema, and separate discipline assessments exist. Broader versioned APIs, migrations, compatibility policy, and persistence contracts remain. |
-| 4 — Secure remote acquisition | IN_PROGRESS | URL/IP policy, public DNS validation, socket lookup pinning, redirect validation, bounded robots parser/evaluator, and an internal bounded HTTP(S) GET transport now exist. The transport re-resolves and pins each hop, limits DNS/socket inactivity, redirects, headers, and response bytes, and rejects non-identity encoding and HTTPS downgrade. Deterministic injected-transport tests pass; real socket/TLS integration, explicit target authorization, crawl scope/depth/concurrency, MIME policy, robots retrieval/error/cache behavior, and browser isolation remain. No CLI network crawl is enabled. |
+| 4 — Secure remote acquisition | IN_PROGRESS | URL/IP policy, public DNS validation, socket lookup pinning, redirect validation, bounded robots parser/evaluator/retrieval, and an internal bounded HTTP(S) GET transport now exist. The transport re-resolves and pins each hop, limits DNS/socket inactivity, redirects, headers, and response bytes, and rejects non-identity encoding and HTTPS downgrade. Robots retrieval follows up to five validated redirects, caps UTF-8 input at 512 KiB, applies RFC-aligned unavailable/unreachable outcomes, and uses a bounded process-local cache. Deterministic injected-transport tests pass; real socket/TLS integration, explicit target authorization, crawl scope/depth/concurrency, MIME policy, and browser isolation remain. No CLI network crawl is enabled. |
 | 5 — Evidence and provenance | IN_PROGRESS | Evidence records include source, method, observation class, UTC timestamp, media type, byte length, SHA-256, methodology version, and explicit digest semantics. Persistent append-only storage, retention, redaction, deletion, and tamper-evident audit remain. |
 | 6 — Passive scanner | IN_PROGRESS | Local HTML, Markdown, and OpenAPI JSON analyzers, deterministic evidence-linked findings, partial coverage reporting, CLI, and report schema. No remote crawl, browser rendering, MCP metadata acquisition, or complete discipline audit. |
 | 7 — GEO intelligence | IN_PROGRESS | Supplied-observation normalization, provider/channel provenance, brand mention/citation extraction, cohort-safe aggregation by channel/provider/model/region/locale/brand/domain, and Wilson 95% intervals. No live provider adapters, consumer-interface observation collection, scheduling, history store, or monitoring. |
@@ -48,6 +48,7 @@ This register separates implemented repository capabilities from customer, secur
 - [PR #17](https://github.com/LloydCoder/tinlance-searqon/pull/17) — GEO cohort integrity and validation.
 - [PR #18](https://github.com/LloydCoder/tinlance-searqon/pull/18) — citation provenance hardening and CLI smoke tests.
 - [PR #20](https://github.com/LloydCoder/tinlance-searqon/pull/20) — DNS-pinned bounded HTTP acquisition transport with redirect, timeout, encoding, and response-size regression coverage.
+- [PR #22](https://github.com/LloydCoder/tinlance-searqon/pull/22) — bounded robots.txt retrieval, failure policy, and process-local cache.
 
 ## Current verification gates
 
@@ -60,7 +61,7 @@ This register separates implemented repository capabilities from customer, secur
 
 ## Remaining release blockers
 
-1. Complete real socket/TLS integration tests for the HTTP transport; add explicit target authorization, crawl scope/depth/concurrency, MIME policy, RFC 9309 robots retrieval/error/cache behavior, and browser isolation before enabling remote scanning.
+1. Complete real socket/TLS integration tests for the HTTP transport; add explicit target authorization, crawl scope/depth/concurrency, MIME policy, and browser isolation before enabling remote scanning.
 2. Implement persistent evidence storage with retention, deletion, privacy, and tamper-evidence semantics.
 3. Add permitted GEO provider adapters only after terms, reproducibility, sampling, rate limits, and cost controls are verified.
 4. Recruit design partners and conduct customer interviews; validate willingness to pay and actual outcomes.
