@@ -65,15 +65,38 @@ function buildAssessments(findings, assessedDimensions, scopes) {
   })));
 }
 
+
+function analyzeMarkdown(markdown, evidenceId) {
+  const findings = [];
+  const headingPresent = /^#{1,6}\s+\S/m.test(markdown);
+  const authenticationGuidancePresent = /\b(authentication|authorization|api[- ]key|bearer|oauth|mtls)\b/i.test(markdown);
+  const errorHandlingGuidancePresent = /\b(error handling|error codes?|http [45]\d\d|status codes?|problem details)\b/i.test(markdown);
+  const rateLimitGuidancePresent = /\b(rate limit|throttl|requests? per (second|minute|hour)|quota)\b/i.test(markdown);
+  const versioningGuidancePresent = /\b(api )?version(ing|ed)?\b/i.test(markdown);
+  const codeExamplesPresent = /(^|\n)\x60\x60\x60[\s\S]+?\x60\x60\x60/m.test(markdown);
+  if (!headingPresent) findings.push(finding({ruleId:"docs.heading.missing",dimension:"AEO",severity:"medium",title:"Documentation heading is missing",description:"No Markdown heading was detected.",recommendation:"Add a descriptive heading that identifies the API or product documented.",evidenceId}));
+  if (!authenticationGuidancePresent) findings.push(finding({ruleId:"docs.authentication.missing",dimension:"AgEO",severity:"high",title:"Authentication guidance is not detectable",description:"No common authentication or authorization terminology was found.",recommendation:"Document authentication methods, credential handling, scopes, and authorization expectations without publishing secrets.",evidenceId}));
+  if (!errorHandlingGuidancePresent) findings.push(finding({ruleId:"docs.error_handling.missing",dimension:"AgEO",severity:"medium",title:"Error handling guidance is not detectable",description:"No common error-handling or HTTP status terminology was found.",recommendation:"Document error response formats, common status codes, retryability, and remediation guidance.",evidenceId}));
+  if (!rateLimitGuidancePresent) findings.push(finding({ruleId:"docs.rate_limits.missing",dimension:"AgEO",severity:"low",title:"Rate-limit guidance is not detectable",description:"No rate-limit, throttling, or quota guidance was found.",recommendation:"Document applicable quotas, rate limits, response headers, and retry behavior.",evidenceId}));
+  if (!versioningGuidancePresent) findings.push(finding({ruleId:"docs.versioning.missing",dimension:"AgEO",severity:"low",title:"API versioning guidance is not detectable",description:"No API versioning guidance was found.",recommendation:"Explain the API versioning strategy and compatibility or deprecation policy.",evidenceId}));
+  if (!codeExamplesPresent) findings.push(finding({ruleId:"docs.code_examples.missing",dimension:"AEO",severity:"low",title:"Code examples are not detectable",description:"No fenced code example was found.",recommendation:"Provide a minimal, safe, copyable request or integration example.",evidenceId}));
+  return {
+    findings,
+    observations:{headingPresent,authenticationGuidancePresent,errorHandlingGuidancePresent,rateLimitGuidancePresent,versioningGuidancePresent,codeExamplesPresent},
+    assessedDimensions:["AEO","AgEO"],
+    scopes:{AEO:"Markdown heading and code-example presence",AgEO:"Markdown authentication, error, rate-limit, and versioning guidance"}
+  };
+}
+
 /** Analyze caller-supplied local content only; never fetch or execute it. */
 export function analyzeDocument(input) {
   if (!input || typeof input !== "object" || typeof input.source !== "string" || !input.source.trim() || typeof input.content !== "string" || typeof input.contentType !== "string") {
     throw new TypeError("source, contentType, and string content are required");
   }
   const type = input.contentType.split(";")[0].trim().toLowerCase();
-  if (!["text/html","application/json","application/vnd.oai.openapi+json"].includes(type)) throw new TypeError("Unsupported content type: " + type);
+  if (!["text/html","text/markdown","application/json","application/vnd.oai.openapi+json"].includes(type)) throw new TypeError("Unsupported content type: " + type);
   const evidence = createEvidenceRecord({...input,contentType:type,methodologyVersion:RULES_VERSION});
-  const analyzed = type === "text/html" ? analyzeHtml(input.content,evidence.id) : analyzeOpenApi(input.content,evidence.id);
+  const analyzed = type === "text/html" ? analyzeHtml(input.content,evidence.id) : type === "text/markdown" ? analyzeMarkdown(input.content,evidence.id) : analyzeOpenApi(input.content,evidence.id);
   return Object.freeze({
     schemaVersion:"1.0.0",
     rulesVersion:RULES_VERSION,
