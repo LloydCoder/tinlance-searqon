@@ -4,6 +4,7 @@ import { resolvePublicHost, createPinnedLookup, validateTargetUrl, resolveRedire
 
 const DEFAULT_MAX_BYTES = 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_DNS_TIMEOUT_MS = 5_000;
 const DEFAULT_MAX_REDIRECTS = 3;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
@@ -30,6 +31,7 @@ export async function fetchPublicUrl(value, options = {}) {
   const maxBytes = validateBound(options.maxBytes ?? DEFAULT_MAX_BYTES, "maxBytes", 1, 10 * 1024 * 1024);
   const timeoutMs = validateBound(options.timeoutMs ?? DEFAULT_TIMEOUT_MS, "timeoutMs", 100, 30_000);
   const maxRedirects = validateBound(options.maxRedirects ?? DEFAULT_MAX_REDIRECTS, "maxRedirects", 0, 5);
+  const dnsTimeoutMs = validateBound(options.dnsTimeoutMs ?? DEFAULT_DNS_TIMEOUT_MS, "dnsTimeoutMs", 100, 10_000);
   const resolver = options.resolver;
   const requestImpl = options.requestImpl ?? ((url, requestOptions, callback) =>
     (url.protocol === "https:" ? https : http).request(url, requestOptions, callback));
@@ -40,7 +42,18 @@ export async function fetchPublicUrl(value, options = {}) {
 
   while (true) {
     validatePort(current);
-    const addresses = await resolvePublicHost(current.hostname, resolver);
+    let dnsTimer;
+    let addresses;
+    try {
+      addresses = await Promise.race([
+        resolvePublicHost(current.hostname, resolver),
+        new Promise((_, reject) => {
+          dnsTimer = setTimeout(() => reject(new Error("DNS resolution timed out")), dnsTimeoutMs);
+        })
+      ]);
+    } finally {
+      clearTimeout(dnsTimer);
+    }
     const lookup = createPinnedLookup(current.hostname, addresses);
     const url = new URL(current.href);
     const requestOptions = {

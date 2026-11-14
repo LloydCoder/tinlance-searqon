@@ -143,3 +143,12 @@ test("fetch rejects socket inactivity timeouts", async () => {
     requestImpl
   }), /timed out/);
 });
+
+
+test("fetch bounds DNS resolution time", async () => {
+  await assert.rejects(() => fetchPublicUrl("https://example.com/dns-slow", {
+    dnsTimeoutMs: 100,
+    resolver: () => new Promise(() => {}),
+    requestImpl: fakeTransport([{ body: "should not be requested" }])
+  }), /DNS resolution timed out/);
+});
