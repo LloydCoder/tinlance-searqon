@@ -3,14 +3,7 @@ import assert from "node:assert/strict";
 import { createEvidenceRecord } from "../src/evidence.js";
 
 test("evidence record preserves provenance and a verifiable content digest", () => {
-  const record = createEvidenceRecord({
-    source:"fixture.html",
-    contentType:"text/html",
-    content:"<title>Example</title>",
-    acquisitionMethod:"local_file",
-    collectedAt:"2026-11-14T00:00:00.000Z",
-    methodologyVersion:"2026-11-14.1"
-  });
+  const record = createEvidenceRecord({source:"fixture.html",contentType:"text/html",content:"<title>Example</title>",acquisitionMethod:"local_file",collectedAt:"2026-11-14T00:00:00.000Z",methodologyVersion:"2026-11-14.1"});
   assert.match(record.id,/^evidence_[a-f0-9]{20}$/);
   assert.equal(record.observationClass,"first_party");
   assert.equal(record.acquisitionMethod,"local_file");
@@ -31,6 +24,11 @@ test("evidence factory rejects missing provenance and malformed timestamps", () 
   assert.throws(()=>createEvidenceRecord({source:"x",content:"x",contentType:"text/html",collectedAt:"y"}),/ISO 8601/);
 });
 
-test("evidence source labels are bounded and reject control characters", () => {\n  assert.throws(()=>createEvidenceRecord({source:"x".repeat(2049),contentType:"text/html",content:"x"}),/source/);\n  assert.throws(()=>createEvidenceRecord({source:"bad\\nsource",contentType:"text/html",content:"x"}),/source/);\n});\n\ntest("evidence factory enforces the same payload bound", () => {
+test("evidence source labels are bounded and reject control characters", () => {
+  assert.throws(()=>createEvidenceRecord({source:"x".repeat(2049),contentType:"text/html",content:"x"}),/source/);
+  assert.throws(()=>createEvidenceRecord({source:"bad\nsource",contentType:"text/html",content:"x"}),/source/);
+});
+
+test("evidence factory enforces the same payload bound", () => {
   assert.throws(()=>createEvidenceRecord({source:"large",contentType:"text/html",content:"x".repeat(2*1024*1024+1)}),/analysis limit/);
 });
