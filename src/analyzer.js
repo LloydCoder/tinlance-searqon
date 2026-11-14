@@ -1,6 +1,6 @@
 import { createEvidenceRecord } from "./evidence.js";
 
-const RULES_VERSION = "2026-11-14.1";
+const RULES_VERSION = "2026-11-14.2";
 
 function finding(data) {
   return Object.freeze({
