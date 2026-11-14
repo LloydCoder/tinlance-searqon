@@ -21,14 +21,14 @@ A green CI run is necessary for applicable code changes, but is not sufficient f
 | 1 | Customer and commercial validation | 15 interviews, 5 design partners, 3 paid pilot commitments or an explicit evidence-based pivot |
 | 2 | Open-source governance and repository foundation | License/provenance review, contribution/security policies, CI, release conventions |
 | 3 | Domain contracts and architecture | Versioned contracts, threat model, ADRs, testable boundaries |
-| 4 | Secure acquisition | SSRF regression suite, DNS/redirect defenses, bounded fetch tests, explicit cross-origin redirect authorization, controlled-origin integration evidence |
+| 4 | Secure acquisition | SSRF regression suite, DNS/redirect defenses, bounded fetch tests, explicit caller attestation, cross-origin origin allowlist, RFC 9309 robots path matching |
 | 5 | Evidence and provenance | Reproducible evidence records, retention/deletion/redaction tests |
 | 6 | Passive Agent Readiness Scanner | Deterministic checks, fixtures, CLI report, JSON output |
 | 7 | GEO Intelligence Engine | Permitted observation adapters, sampling methodology, citation/mention analysis, cost controls |
 | 8 | User interfaces and reporting | Accessible CLI/API/report experience and end-to-end tests |
 | 9 | Hosted service | Tenant isolation, roles, billing, quotas, scheduling, audit, backups, recovery |
 | 10 | Security and privacy assurance | Threat-model closure, ASVS-aligned evidence, privacy/retention review, independent testing |
-| 11 | Reliability and operations | CI, observability, SLOs, incident/recovery exercises, signed release artifacts |
+| 11 | Reliability and operations | CI, controlled-origin redirect/DNS-rebinding/timeout integration, observability, SLOs, incident/recovery exercises, signed release artifacts |
 | 12 | Design-partner pilots | Measured outcomes, usability evidence, provider cost and support data |
 | 13 | Commercial v1 launch | Security, reliability, documentation, support, pricing, and pilot gates accepted |
 | 14 | SEO and AEO expansion | Versioned methodologies, authorized integrations, verified recommendations |
