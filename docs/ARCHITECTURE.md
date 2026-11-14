@@ -39,7 +39,7 @@ Do not combine consumer-facing product observations with direct model API respon
 
 ## Evidence record minimum
 
-Evidence ledger entries wrap records in a sequence-numbered SHA-256 hash chain (`previousHash` → `entryHash`). This detects accidental or partial modification, reordering, and deletion within the verified chain. The chain is not a digital signature, trusted timestamp, WORM guarantee, or protection against an attacker who can rewrite the entire chain and replace its trusted root. Persistent storage, external root anchoring, retention, redaction, and deletion are separate controls.
+Evidence ledger entries wrap records in a sequence-numbered SHA-256 hash chain (`previousHash` → `entryHash`). This detects accidental or partial modification, reordering, and deletion within the verified chain. The chain is not a digital signature, trusted timestamp, WORM guarantee, or protection against an attacker who can rewrite the entire chain and replace its trusted root. The current local JSONL adapter serializes appends and enforces a single active writer only within one Node.js process. It bounds file and entry sizes, uses owner-only file permissions, syncs appends, rejects symlink targets, and verifies the full chain when reopening. It stores metadata and digests, not raw content bytes. It is not encrypted, cross-process coordinated, remotely replicated, WORM-immutable, digitally signed, or protected against a full-chain rewrite. External root anchoring, retention, redaction, deletion, and tenant access controls are separate controls and remain unimplemented.
 
 An evidence record should preserve:
 
