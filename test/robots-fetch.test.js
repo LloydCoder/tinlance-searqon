@@ -131,3 +131,15 @@ test("invalid cache bounds are rejected", async () => {
     fetcher: async () => ({ status: 200, headers: {}, body: Buffer.alloc(0) })
   }), /maxEntries/);
 });
+
+
+test("unfollowable redirect responses fail closed with a short cache lifetime", async () => {
+  const result = await fetchRobotsPolicy(origin, "SearqonBot", {
+    cache: new Map(),
+    now: () => 20_000,
+    fetcher: async () => ({ status: 302, headers: {}, body: Buffer.alloc(0) })
+  });
+  assert.equal(result.outcome, "unreachable");
+  assert.equal(result.expiresAt, 50_000);
+  assert.equal(evaluateRobots(result.policy, "https://example.com/", "SearqonBot").allowed, false);
+});
