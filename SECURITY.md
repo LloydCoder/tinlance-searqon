@@ -26,8 +26,8 @@ Before broader remote crawling or a production release:
 2. Resolve all A and AAAA records and reject loopback, private, link-local, multicast, reserved, and metadata destinations, including Azure WireServer's special platform address 168.63.129.16.
 3. Handle IPv4-mapped IPv6, unusual numeric IP encodings, and relevant translation mechanisms.
 4. Mitigate DNS rebinding by validating the actual connection destination, not only a preflight DNS lookup.
-5. Disable automatic redirects or validate every redirect hop and bind each connection to a validated address.
-6. Revalidate destinations on retries.
+5. Disable automatic redirects or validate every redirect hop and bind each connection to a validated address. The current one-page scanner uses manual redirects, permits same-origin redirects subject to policy, and requires an explicit origin allowlist before a cross-origin destination is contacted.
+6. Revalidate destinations on retries before retries are introduced; retry behavior is not currently implemented.
 7. Enforce strict response byte, decompression, total request deadline, socket inactivity timeout, DNS timeout, redirect, concurrency, depth, and content-type limits.
 8. Isolate browser execution from credentials, internal networks, and host resources.
 9. Treat robots policy as a crawl coordination signal, not authorization to access otherwise restricted resources.
@@ -52,9 +52,18 @@ Every release must have reviewed dependencies and licenses, secret scanning, sta
 
 ## URL destination policy module
 
-The repository includes URL/IP policy and bounded HTTP transport modules. They reject non-HTTP(S) schemes, URL credentials, local/reserved hostnames, non-public IP ranges, and non-public DNS answers; resolve and validate A/AAAA answers; pin the validated address at socket lookup; manually revalidate redirect targets; enforce standard ports and response/time bounds; and reject HTTPS downgrade redirects. A GitHub Actions integration test performs a real IPv4-pinned HTTPS request with TLS verification. Retry behavior is not implemented. These controls are not a complete SSRF certification: broader production crawling still requires controlled-origin redirect/DNS-rebinding tests, stronger target authorization, concurrency/depth limits, and independent security review.
+The repository includes URL/IP policy and bounded HTTP transport modules. They reject non-HTTP(S) schemes, URL credentials, local/reserved hostnames, non-public IP ranges, and non-public DNS answers; resolve and validate A/AAAA answers; pin the validated address at socket lookup; manually revalidate redirect targets; enforce standard ports and response/time bounds; and reject HTTPS downgrade redirects. The remote-scan API requires `confirmAuthorizedTarget: true`, and the CLI requires `--confirm-authorized-target`. Cross-origin redirects are denied unless their public origins are explicitly allowlisted. These controls are operator attestations, not independent proof of ownership or authority. A GitHub Actions integration test performs a real IPv4-pinned HTTPS request with TLS verification. Retry behavior is not implemented. These controls are not a complete SSRF certification: broader production crawling still requires controlled-origin redirect/DNS-rebinding tests, stronger authorization, concurrency/depth limits, and independent security review.
 
 
 ## Robots Exclusion Protocol parser
 
 A bounded parser and retrieval module for robots.txt is included. The parser handles user-agent groups, Allow/Disallow rules, wildcards, end anchors, Crawl-delay metadata, and Sitemap declarations. Evaluation selects the most-specific matching user-agent group and applies longest-path precedence with Allow winning ties. Retrieval uses the SSRF-safe transport, follows up to five validated redirects, caps input at 512 KiB, applies unavailable/unreachable outcomes, and uses a bounded process-local cache. Robots policy is a coordination signal, not authorization to access a resource. The current cache is not shared across workers or restarts.
+
+
+## External security and protocol references
+
+- OWASP, [Server Side Request Forgery Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html): destination validation, DNS rebinding, redirect validation, and connection pinning.
+- IANA, [IPv4 Special-Purpose Address Registry](https://www.iana.org/assignments/iana-ipv4-special-registry): current destination/global-reachability classifications for IPv4 special-purpose ranges.
+- IANA, [IPv6 Special-Purpose Address Registry](https://www.iana.org/assignments/iana-ipv6-special-registry): current destination/global-reachability classifications, including the non-global `5f00::/16` SRv6 SID block.
+- IETF, [RFC 9309 — Robots Exclusion Protocol](https://www.rfc-editor.org/rfc/rfc9309.html): robots retrieval, redirects, unavailable/unreachable handling, caching, and the rule that robots is not access authorization.
+- IETF, [RFC 9110 — HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110.html): response media-type semantics and MIME-sniffing risks.
