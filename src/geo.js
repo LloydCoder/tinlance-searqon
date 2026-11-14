@@ -128,25 +128,78 @@ export function aggregateGeoObservations(observations) {
   if (!Array.isArray(observations)) throw new TypeError("observations must be an array");
   const groups = new Map();
   for (const observation of observations) {
-    if (!observation || observation.type !== "geo_observation" || !OBSERVATION_CLASSES.has(observation.observationClass) || typeof observation.provider?.name !== "string" || typeof observation.mentioned !== "boolean" || typeof observation.brandCited !== "boolean") {
+    if (!observation || observation.type!=="geo_observation" || observation.schemaVersion!=="1.0.0" || !OBSERVATION_CLASSES.has(observation.observationClass)) {
       throw new TypeError("Every item must be a valid GEO observation");
     }
-    const key = observation.observationClass + "\0" + observation.provider.name;
-    let group = groups.get(key);
+    const provider=observation.provider;
+    if (!provider || typeof provider.name!=="string" || !provider.name.trim() ||
+        ![provider.model,provider.region,provider.locale].every(value=>value===null || typeof value==="string")) {
+      throw new TypeError("GEO observation provider metadata is invalid");
+    }
+    if (typeof observation.brand!=="string" || !observation.brand.trim() ||
+        !(observation.targetDomain===null || typeof observation.targetDomain==="string")) {
+      throw new TypeError("GEO observation brand cohort is invalid");
+    }
+    if (typeof observation.sampledAt!=="string" || Number.isNaN(Date.parse(observation.sampledAt)) ||
+        new Date(observation.sampledAt).toISOString()!==observation.sampledAt) {
+      throw new TypeError("GEO observation sample timestamp is invalid");
+    }
+    if (!Number.isSafeInteger(observation.mentionCount) || observation.mentionCount<0 ||
+        typeof observation.mentioned!=="boolean" || observation.mentioned!==(observation.mentionCount>0)) {
+      throw new TypeError("GEO observation mention count is inconsistent");
+    }
+    if (!Array.isArray(observation.citations) || !Number.isSafeInteger(observation.citationCount) ||
+        observation.citationCount!==observation.citations.length || observation.citations.some(item=>!item || typeof item.url!=="string" || typeof item.domain!=="string")) {
+      throw new TypeError("GEO observation citation count is inconsistent");
+    }
+    if (typeof observation.brandCited!=="boolean" || (observation.targetDomain===null && observation.brandCited)) {
+      throw new TypeError("GEO observation brand citation state is inconsistent");
+    }
+    const evidence=observation.evidence;
+    if (!evidence || !/^evidence_[a-f0-9]{20}$/.test(evidence.id ?? "") ||
+        evidence.observationClass!==observation.observationClass ||
+        evidence.acquisitionMethod!=="provider_observation" ||
+        evidence.source!==provider.name ||
+        evidence.collectedAt!==observation.sampledAt ||
+        evidence.contentType!=="application/json" ||
+        !/^[a-f0-9]{64}$/.test(evidence.sha256 ?? "") ||
+        !Number.isSafeInteger(evidence.byteLength) || evidence.byteLength<0 || evidence.methodologyVersion!=="geo-2026-11-14.1" || evidence.integrity!=="sha256-content-digest") {
+      throw new TypeError("GEO observation evidence provenance is invalid");
+    }
+
+    const providerKey=[provider.name,provider.model,provider.region,provider.locale];
+    const key=JSON.stringify([observation.observationClass,providerKey,observation.brand,observation.targetDomain]);
+    let group=groups.get(key);
     if (!group) {
-      group = {observationClass:observation.observationClass,provider:observation.provider.name,sampleSize:0,mentionCount:0,brandCitationCount:0,citationCount:0};
+      group={
+        observationClass:observation.observationClass,
+        provider:Object.freeze({...provider}),
+        brand:observation.brand,
+        targetDomain:observation.targetDomain,
+        sampleSize:0,
+        mentionCount:0,
+        mentionOccurrences:0,
+        brandCitationCount:0,
+        citationCount:0
+      };
       groups.set(key,group);
     }
-    group.sampleSize += 1;
-    group.mentionCount += observation.mentioned ? 1 : 0;
-    group.brandCitationCount += observation.brandCited ? 1 : 0;
-    group.citationCount += observation.citationCount;
+    group.sampleSize+=1;
+    group.mentionCount+=observation.mentioned ? 1 : 0;
+    group.mentionOccurrences+=observation.mentionCount;
+    group.brandCitationCount+=observation.brandCited ? 1 : 0;
+    group.citationCount+=observation.citationCount;
   }
-  return [...groups.values()].map(group => Object.freeze({
+  return [...groups.values()].map(group=>Object.freeze({
     ...group,
-    mentionRate:Number((group.mentionCount / group.sampleSize).toFixed(4)),
+    mentionRate:Number((group.mentionCount/group.sampleSize).toFixed(4)),
     mentionRate95:wilsonInterval(group.mentionCount,group.sampleSize),
-    brandCitationRate:Number((group.brandCitationCount / group.sampleSize).toFixed(4)),
+    brandCitationRate:Number((group.brandCitationCount/group.sampleSize).toFixed(4)),
     brandCitationRate95:wilsonInterval(group.brandCitationCount,group.sampleSize)
-  })).sort((a,b) => a.observationClass.localeCompare(b.observationClass) || a.provider.localeCompare(b.provider));
+  })).sort((a,b)=>
+    a.observationClass.localeCompare(b.observationClass) ||
+    a.provider.name.localeCompare(b.provider.name) ||
+    a.brand.localeCompare(b.brand) ||
+    String(a.targetDomain ?? "").localeCompare(String(b.targetDomain ?? ""))
+  );
 }

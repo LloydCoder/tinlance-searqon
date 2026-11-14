@@ -44,7 +44,7 @@ test("GEO observation requires an explicit supported observation channel", () =>
 
 test("aggregation keeps providers and observation classes separate and reports Wilson intervals", () => {
   const a=analyzeGeoObservation(consumer);
-  const b=analyzeGeoObservation({...consumer,answer:"No mention here.",citations:[],provider:{name:"Consumer Search UI",observationClass:"consumer_observation"}});
+  const b=analyzeGeoObservation({...consumer,answer:"No mention here.",citations:[],provider:{name:"Consumer Search UI",observationClass:"consumer_observation",region:"US",locale:"en-US"}});
   const c=analyzeGeoObservation({...consumer,provider:{name:"Model API",observationClass:"model_api"}});
   const groups=aggregateGeoObservations([a,b,c]);
   assert.equal(groups.length,2);
