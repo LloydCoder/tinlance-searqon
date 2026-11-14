@@ -33,10 +33,9 @@ The JSON report includes a content SHA-256 digest, deterministic evidence identi
 Results remain separated by discipline; Searqon does not emit an opaque universal score.
 The GEO CLI accepts supplied observation samples; it does not collect them. Use `geo analyze` for one observation and `geo aggregate` for a JSON array. Synthetic fixtures are provided under `examples/`.
 
-
 ## Project governance
 
-Read [Product Charter](docs/PRODUCT_CHARTER.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security](SECURITY.md), and [Contributing](CONTRIBUTING.md), and [Implementation Status](docs/EXECUTION_STATUS.md).
+Read [Product Charter](docs/PRODUCT_CHARTER.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security](SECURITY.md), [Contributing](CONTRIBUTING.md), and [Implementation Status](docs/EXECUTION_STATUS.md).
 
 ## License
 
