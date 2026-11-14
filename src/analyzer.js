@@ -150,6 +150,28 @@ function analyzeMcpSnapshot(content, evidenceId) {
   }
   if (!Array.isArray(snapshot.tools)) throw new TypeError("MCP snapshot tools must be an array");
   if (snapshot.tools.length > 1000) throw new RangeError("MCP snapshot may contain at most 1000 tools");
+  if (snapshot.protocolVersion !== undefined &&
+      (typeof snapshot.protocolVersion !== "string" || !snapshot.protocolVersion.trim() || snapshot.protocolVersion.length > 64)) {
+    throw new TypeError("MCP snapshot protocolVersion must be a non-empty string of at most 64 characters");
+  }
+  if (snapshot.capabilities !== undefined &&
+      (!snapshot.capabilities || typeof snapshot.capabilities !== "object" || Array.isArray(snapshot.capabilities))) {
+    throw new TypeError("MCP snapshot capabilities must be an object");
+  }
+  if (snapshot._meta !== undefined && (!snapshot._meta || typeof snapshot._meta !== "object" || Array.isArray(snapshot._meta))) {
+    throw new TypeError("MCP snapshot _meta must be an object");
+  }
+  const modernServerInfo = snapshot._meta?.["io.modelcontextprotocol/serverInfo"];
+  for (const [label, info] of [["serverInfo", snapshot.serverInfo], ["modern serverInfo", modernServerInfo]]) {
+    if (info === undefined) continue;
+    if (!info || typeof info !== "object" || Array.isArray(info)) throw new TypeError("MCP snapshot " + label + " must be an object");
+    for (const field of ["name", "version"]) {
+      if (info[field] !== undefined &&
+          (typeof info[field] !== "string" || !info[field].trim() || info[field].length > 128)) {
+        throw new TypeError("MCP snapshot " + label + "." + field + " must be a non-empty string of at most 128 characters");
+      }
+    }
+  }
 
   const findings = [];
   const nameCounts = new Map();
@@ -165,14 +187,27 @@ function analyzeMcpSnapshot(content, evidenceId) {
         tool.inputSchema.type !== "object") {
       throw new TypeError("MCP tool inputSchema must be a JSON Schema object with type: object");
     }
+    if (tool.description !== undefined &&
+        (typeof tool.description !== "string" || [...tool.description].length > 4096)) {
+      throw new TypeError("MCP tool description must be a string of at most 4096 characters");
+    }
+    if (tool.outputSchema !== undefined &&
+        (!tool.outputSchema || typeof tool.outputSchema !== "object" || Array.isArray(tool.outputSchema))) {
+      throw new TypeError("MCP tool outputSchema must be an object");
+    }
+    if (tool.annotations !== undefined &&
+        (!tool.annotations || typeof tool.annotations !== "object" || Array.isArray(tool.annotations))) {
+      throw new TypeError("MCP tool annotations must be an object");
+    }
+    for (const hint of ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"]) {
+      if (tool.annotations && Object.hasOwn(tool.annotations, hint) && typeof tool.annotations[hint] !== "boolean") {
+        throw new TypeError("MCP tool annotation " + hint + " must be boolean");
+      }
+    }
     nameCounts.set(tool.name, (nameCounts.get(tool.name) ?? 0) + 1);
     if (typeof tool.description !== "string" || !tool.description.trim()) toolsMissingDescription++;
-    if (tool.annotations && typeof tool.annotations === "object" && tool.annotations.destructiveHint === true) {
-      toolsWithDestructiveHint++;
-    }
-    if (tool.annotations && typeof tool.annotations === "object" && tool.annotations.openWorldHint === true) {
-      toolsWithOpenWorldHint++;
-    }
+    if (tool.annotations?.destructiveHint === true) toolsWithDestructiveHint++;
+    if (tool.annotations?.openWorldHint === true) toolsWithOpenWorldHint++;
   }
 
   const duplicateToolNameCount = [...nameCounts.values()].filter(count => count > 1).length;
@@ -213,9 +248,7 @@ function analyzeMcpSnapshot(content, evidenceId) {
     evidenceId
   }));
 
-  const capabilities = snapshot.capabilities && typeof snapshot.capabilities === "object" && !Array.isArray(snapshot.capabilities)
-    ? snapshot.capabilities
-    : {};
+  const capabilities = snapshot.capabilities ?? {};
   const toolsCapabilityAdvertised = Object.hasOwn(capabilities, "tools");
   if (!toolsCapabilityAdvertised && snapshot.tools.length > 0) findings.push(finding({
     ruleId:"mcp.capabilities.tools.not_advertised",
