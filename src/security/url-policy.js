@@ -50,7 +50,11 @@ export function validateTargetUrl(value) {
   if (family) {
     if (!isPublicIp(hostname)) throw new TypeError("Target IP address is non-public or reserved");
   } else {
-    if (!hostname.includes(".") || RESERVED_HOST_SUFFIXES.some(suffix=>hostname===suffix.slice(1) || hostname.endsWith(suffix))) {
+    const labels=hostname.split(".");
+    if (hostname.length>253 || labels.length<2 || labels.some(label=>label.length>63 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label))) {
+      throw new TypeError("Target hostname labels are invalid");
+    }
+    if (RESERVED_HOST_SUFFIXES.some(suffix=>hostname===suffix.slice(1) || hostname.endsWith(suffix))) {
       throw new TypeError("Local, single-label, and reserved hostnames are not allowed");
     }
   }

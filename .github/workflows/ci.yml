@@ -31,11 +31,18 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Check JavaScript syntax
         run: |
-          for file in src/*.js test/*.js; do
+          for file in src/*.js src/security/*.js test/*.js; do
             node --check "$file"
           done
       - name: Run test suite
         run: npm test
+      - name: Smoke-test documented CLI examples
+        run: |
+          node src/cli.js scan ./examples/site.html >/dev/null
+          node src/cli.js scan ./examples/openapi.json >/dev/null
+          node src/cli.js scan ./examples/api-docs.md >/dev/null
+          node src/cli.js geo analyze ./examples/geo-observation.json >/dev/null
+          node src/cli.js geo aggregate ./examples/geo-observations.json >/dev/null
       - name: Audit dependency tree
         run: npm audit --audit-level=high
       - name: Validate package contents
