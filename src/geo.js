@@ -137,14 +137,22 @@ export function aggregateGeoObservations(observations, options = {}) {
       throw new TypeError("Every item must be a valid GEO observation");
     }
     const provider=observation.provider;
-    if (!provider || typeof provider.name!=="string" || !provider.name.trim() ||
-        ![provider.model,provider.region,provider.locale].every(value=>value===null || typeof value==="string")) {
+    if (!provider || typeof provider !== "object" || Array.isArray(provider)) {
       throw new TypeError("GEO observation provider metadata is invalid");
     }
-    if (typeof observation.brand!=="string" || !observation.brand.trim() ||
-        !(observation.targetDomain===null || typeof observation.targetDomain==="string")) {
-      throw new TypeError("GEO observation brand cohort is invalid");
+    const providerName = requiredText(provider.name, "provider.name", 128);
+    if (providerName !== provider.name) throw new TypeError("GEO observation provider metadata is invalid");
+    for (const [field, maxLength] of [["model", 128], ["region", 64], ["locale", 32]]) {
+      const value = provider[field];
+      if (value !== null) {
+        const normalized = requiredText(value, "provider." + field, maxLength);
+        if (normalized !== value) throw new TypeError("GEO observation provider metadata is invalid");
+      }
     }
+    const normalizedBrand = requiredText(observation.brand, "brand", 128);
+    if (normalizedBrand !== observation.brand) throw new TypeError("GEO observation brand cohort is invalid");
+    const normalizedTargetDomain = normalizeTargetDomain(observation.targetDomain);
+    if (normalizedTargetDomain !== observation.targetDomain) throw new TypeError("GEO observation target domain is not normalized");
     if (typeof observation.sampledAt!=="string" || Number.isNaN(Date.parse(observation.sampledAt)) ||
         new Date(observation.sampledAt).toISOString()!==observation.sampledAt) {
       throw new TypeError("GEO observation sample timestamp is invalid");
