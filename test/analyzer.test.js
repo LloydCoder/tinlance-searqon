@@ -104,3 +104,16 @@ test("OpenAPI security requirement without any security scheme definition is fla
   const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
   assert.ok(result.findings.some(item => item.ruleId === "openapi.security_schemes.missing"));
 });
+
+
+test("OpenAPI 3.2 URI-based security scheme references are not mistaken for missing components", () => {
+  const document = {
+    openapi: "3.2.1",
+    info: { title: "Example API", version: "1.0.0", description: "Example service" },
+    security: [{ "urn:example:security:bearer": [] }],
+    paths: { "/items": { get: { operationId: "listItems", description: "List items", responses: { "200": { description: "OK" } } } } }
+  };
+  const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
+  assert.equal(result.observations.undefinedSecuritySchemeCount, 0);
+  assert.equal(result.findings.some(item => item.ruleId === "openapi.security_scheme.undefined"), false);
+});
