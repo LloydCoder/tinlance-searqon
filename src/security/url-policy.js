@@ -1,4 +1,5 @@
 import { BlockList, isIP } from "node:net";
+import { lookup as dnsLookup } from "node:dns/promises";
 
 const blockedIPv4 = new BlockList();
 const blockedIPv4Ranges = [
@@ -94,4 +95,59 @@ export function resolveRedirectTarget(currentUrl, location) {
   try { target=new URL(location,base.href); }
   catch { throw new TypeError("Redirect target is not a valid URL"); }
   return validateTargetUrl(target.href);
+}
+
+
+/**
+ * Resolve a previously validated public hostname and reject the entire answer
+ * set if any A/AAAA result is private, reserved, or otherwise non-global.
+ */
+export async function resolvePublicHost(hostname, resolver=dnsLookup) {
+  if (typeof hostname!=="string" || !hostname.trim()) throw new TypeError("Hostname is required");
+  const candidate=hostname.includes(":") && !hostname.startsWith("[") ? "https://["+hostname+"]/":"https://"+hostname+"/";
+  const target=validateTargetUrl(candidate);
+  if (target.isIpLiteral) {
+    const family=isIP(target.hostname);
+    return validateResolvedAddresses(target.hostname,[{address:target.hostname,family}]);
+  }
+  const answers=await resolver(target.hostname,{all:true,verbatim:true});
+  return validateResolvedAddresses(target.hostname,answers);
+}
+
+/**
+ * Create a Node-compatible lookup callback that can return only the addresses
+ * validated earlier. It never performs a new DNS lookup.
+ */
+export function createPinnedLookup(hostname, addresses) {
+  if (typeof hostname!=="string" || !hostname.trim()) throw new TypeError("Pinned hostname is required");
+  const candidate=hostname.includes(":") && !hostname.startsWith("[") ? "https://["+hostname+"]/":"https://"+hostname+"/";
+  const target=validateTargetUrl(candidate);
+  const pinned=validateResolvedAddresses(target.hostname,addresses);
+  const expectedHostname=target.hostname.toLowerCase();
+
+  return function pinnedLookup(requestedHostname, options, callback) {
+    if (typeof options==="function") {
+      callback=options;
+      options={};
+    }
+    if (typeof callback!=="function") throw new TypeError("DNS lookup callback is required");
+    const requested=typeof requestedHostname==="string" ? requestedHostname.toLowerCase().replace(/^\[|\]$/g,"") : "";
+    if (requested!==expectedHostname) {
+      const error=Object.assign(new Error("Pinned lookup hostname mismatch"),{code:"ENOTFOUND"});
+      callback(error);
+      return;
+    }
+    const requestedFamily=typeof options==="number" ? options : options?.family ?? 0;
+    const candidates=pinned.filter(record=>requestedFamily===0 || record.family===requestedFamily);
+    if (candidates.length===0) {
+      const error=Object.assign(new Error("No validated address for requested family"),{code:"ENOTFOUND"});
+      callback(error);
+      return;
+    }
+    if (options?.all) {
+      callback(null,candidates.map(record=>({address:record.address,family:record.family})));
+      return;
+    }
+    callback(null,candidates[0].address,candidates[0].family);
+  };
 }
