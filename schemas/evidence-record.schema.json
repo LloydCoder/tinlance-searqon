@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.tinlance.com/schemas/evidence-record/1.0.0",
+  "title": "Searqon Evidence Record",
+  "description": "Versioned metadata contract for an evidence item. Raw document content is intentionally excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "source",
+    "acquisitionMethod",
+    "observationClass",
+    "collectedAt",
+    "contentType",
+    "byteLength",
+    "sha256",
+    "methodologyVersion",
+    "integrity"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^evidence_[a-f0-9]{20}$"
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "acquisitionMethod": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,63}$"
+    },
+    "observationClass": {
+      "type": "string",
+      "enum": [
+        "crawl",
+        "first_party",
+        "consumer_observation",
+        "model_api",
+        "derived",
+        "estimate"
+      ]
+    },
+    "collectedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$",
+      "description": "Canonical ISO 8601 UTC timestamp."
+    },
+    "contentType": {
+      "type": "string",
+      "pattern": "^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$"
+    },
+    "byteLength": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2097152
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "methodologyVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "integrity": {
+      "type": "string",
+      "const": "sha256-content-digest"
+    }
+  }
+}
