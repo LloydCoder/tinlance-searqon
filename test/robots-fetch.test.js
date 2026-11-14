@@ -118,11 +118,11 @@ test("malformed fetch responses fail closed and use the short failure cache", as
 test("robots cache enforces a bounded entry count", async () => {
   const cache = new Map();
   const fetcher = async url => ({ status: 200, headers: {}, body: Buffer.from("User-agent: *\nAllow: /"), finalUrl: url });
-  await fetchRobotsPolicy("https://one.example", "SearqonBot", { cache, fetcher, maxEntries: 1 });
-  await fetchRobotsPolicy("https://two.example", "SearqonBot", { cache, fetcher, maxEntries: 1 });
+  await fetchRobotsPolicy("https://one.example.com", "SearqonBot", { cache, fetcher, maxEntries: 1 });
+  await fetchRobotsPolicy("https://two.example.com", "SearqonBot", { cache, fetcher, maxEntries: 1 });
   assert.equal(cache.size, 1);
-  assert.equal(cache.has("https://two.example"), true);
-  assert.equal(cache.has("https://one.example"), false);
+  assert.equal(cache.has("https://two.example.com"), true);
+  assert.equal(cache.has("https://one.example.com"), false);
 });
 
 test("invalid cache bounds are rejected", async () => {
