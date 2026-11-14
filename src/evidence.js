@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export const MAX_EVIDENCE_BYTES = 2 * 1024 * 1024;
 const OBSERVATION_CLASSES = new Set(["crawl","first_party","consumer_observation","model_api","derived","estimate"]);
-const MEDIA_TYPE_PATTERN = new RegExp("^[a-z0-9!#const OBSERVATION_CLASSES = new Set(["crawl","first_party","consumer_observation","model_api","derived","estimate"]);^_.+-]+/[a-z0-9!#const OBSERVATION_CLASSES = new Set(["crawl","first_party","consumer_observation","model_api","derived","estimate"]);^_.+-]+$");
+const MEDIA_TYPE_PATTERN = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/;
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
