@@ -111,3 +111,16 @@ test("GEO aggregation can split cohorts into UTC daily sample periods", () => {
 test("GEO aggregation rejects unsupported time bucket modes", () => {
   assert.throws(() => aggregateGeoObservations([], { timeBucket: "hour" }), /timeBucket must be none or day/);
 });
+
+
+test("GEO aggregation rejects non-canonical provider metadata", () => {
+  const observation = analyzeGeoObservation(consumer);
+  const tampered = { ...observation, provider: { ...observation.provider, model: " " } };
+  assert.throws(() => aggregateGeoObservations([tampered]), /provider metadata is invalid/);
+});
+
+test("GEO aggregation rejects malformed target-domain cohort values", () => {
+  const observation = analyzeGeoObservation(consumer);
+  const tampered = { ...observation, targetDomain: "acme.example/path", brandCited: false };
+  assert.throws(() => aggregateGeoObservations([tampered]), /targetDomain must be a valid DNS hostname/);
+});
