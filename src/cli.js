@@ -12,8 +12,8 @@ if (args[0] !== "scan" || !args[1]) {
   try {
     const file = resolve(args[1]);
     const extension = extname(file).toLowerCase();
-    const contentType = extension === ".html" || extension === ".htm" ? "text/html" : extension === ".json" ? "application/json" : "";
-    if (!contentType) throw new Error("Only local .html, .htm, and .json files are supported");
+    const contentType = extension === ".html" || extension === ".htm" ? "text/html" : extension === ".md" || extension === ".markdown" ? "text/markdown" : extension === ".json" ? "application/json" : "";
+    if (!contentType) throw new Error("Only local .html, .htm, .md, .markdown, and .json files are supported");
     const sourceIndex = args.indexOf("--source");
     const outIndex = args.indexOf("--out");
     const source = sourceIndex >= 0 ? args[sourceIndex + 1] : file;

@@ -17,7 +17,7 @@ The evidence identifier is deterministic for the same source, acquisition method
 
 ## Rules
 
-HTML rules detect title, meta description, H1, canonical link, JSON-LD presence, and a noindex directive. OpenAPI rules inspect document shape, server declarations, explicit security requirements, API description, and path presence.
+HTML rules detect title, meta description, H1, canonical link, JSON-LD presence, and a noindex directive. Markdown rules look for headings, authentication, error-handling, rate-limit, versioning, and code-example guidance. OpenAPI rules inspect document shape, server declarations, explicit security requirements, API description, and path presence.
 
 These checks are syntactic heuristics. Absence of an OpenAPI security requirement is not proof that an endpoint is public. JSON-LD presence is not proof that markup is valid or eligible for rich results. A canonical declaration is not proof that a search engine honors it.
 
