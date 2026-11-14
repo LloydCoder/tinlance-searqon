@@ -93,3 +93,16 @@ GitHub Actions runs an integration test against a public test origin using an IP
 ## OpenAPI agent-readiness checks
 
 The OpenAPI analyzer also inspects declared security requirements against `components.securitySchemes`, flags references to undefined schemes, and reports operations without stable `operationId` values or descriptive operation text. It exposes operation and scheme coverage counts in the report. These are contract-documentation diagnostics only: they do not probe endpoints, validate credential strength, establish whether authentication is enforced at runtime, or prove that an API operation is safe for agent execution. An OpenAPI security declaration is evidence about the published contract, not an authorization grant.
+
+
+## Passive MCP metadata snapshots
+
+Searqon accepts a normalized, caller-supplied MCP metadata snapshot through the local scanner:
+
+```bash
+node src/cli.js scan ./examples/mcp-snapshot.json --format mcp
+```
+
+The import contract is published in [`schemas/mcp-snapshot.schema.json`](../schemas/mcp-snapshot.schema.json). It records the protocol version, optional self-reported server identity and capabilities, and a captured tool catalog. This is a static import format, not a claim that the snapshot is a complete wire-level MCP response. The scanner does not connect to an MCP server, issue `server/discover` or `tools/list` requests, invoke `tools/call`, authenticate, or transact.
+
+Checks include duplicate tool names, missing descriptions, the required object-root shape of tool input schemas, advertised tool capability consistency, and declared `destructiveHint` / `openWorldHint` annotations. MCP annotations and server identity are self-reported, untrusted hints; they are not proof of behavior, authorization, or enforcement. A declared read-only hint does not establish that a tool is safe. Missing hints are not interpreted as proof of safety. Findings are partial, evidence-linked metadata diagnostics only.

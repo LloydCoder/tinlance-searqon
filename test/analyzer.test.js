@@ -164,3 +164,104 @@ test("OpenAPI analysis accepts unique operationId values and reports zero duplic
   assert.equal(result.observations.duplicateOperationIdCount, 0);
   assert.equal(result.findings.some(item => item.ruleId === "openapi.operation_id.duplicate"), false);
 });
+
+
+test("MCP snapshot analysis assesses passive tool metadata without executing tools", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    serverInfo: { name: "Example MCP", version: "1.0.0" },
+    capabilities: { tools: {} },
+    tools: [
+      {
+        name: "search_docs",
+        description: "Search documentation for relevant pages.",
+        inputSchema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+      }
+    ]
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.equal(result.observations.mcpToolCount, 1);
+  assert.equal(result.observations.duplicateToolNameCount, 0);
+  assert.equal(result.observations.toolsMissingDescription, 0);
+  assert.ok(result.assessments.AgEO.coverage === "partial");
+  assert.ok(result.findings.every(item => item.evidenceId === result.evidence.id));
+});
+
+test("MCP snapshot analysis detects duplicate names, missing descriptions, and declared side-effect hints", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    tools: [
+      { name: "update_record", inputSchema: { type: "object" }, annotations: { destructiveHint: true, openWorldHint: true } },
+      { name: "update_record", description: "Update another record.", inputSchema: { type: "object" } }
+    ]
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  const ruleIds = result.findings.map(item => item.ruleId);
+  assert.equal(result.observations.duplicateToolNameCount, 1);
+  assert.equal(result.observations.toolsMissingDescription, 1);
+  assert.ok(ruleIds.includes("mcp.tool.name.duplicate"));
+  assert.ok(ruleIds.includes("mcp.tool.description.missing"));
+  assert.ok(ruleIds.includes("mcp.tool.side_effects.destructive"));
+  assert.ok(ruleIds.includes("mcp.tool.open_world"));
+});
+
+test("MCP snapshot analysis rejects malformed snapshots and invalid input schema roots", () => {
+  assert.throws(() => analyzeDocument({
+    source: "mcp.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify({ protocolVersion: "2026-07-28", tools: {} })
+  }), /tools must be an array/);
+  assert.throws(() => analyzeDocument({
+    source: "mcp.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify({ protocolVersion: "2026-07-28", tools: [{ name: "bad", inputSchema: { type: "string" } }] })
+  }), /inputSchema.*object/);
+});
+
+
+test("MCP snapshot analysis reads server identity from modern response metadata", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    _meta: { "io.modelcontextprotocol/serverInfo": { name: "Modern MCP Server", version: "2.0.0" } },
+    capabilities: { tools: {} },
+    tools: []
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.equal(result.observations.serverName, "Modern MCP Server");
+});
+
+
+test("MCP snapshot analysis rejects malformed capability and annotation metadata", () => {
+  const base = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    tools: [{ name: "search", inputSchema: { type: "object" } }]
+  };
+  assert.throws(() => analyzeDocument({
+    source: "mcp.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify({ ...base, capabilities: [] })
+  }), /capabilities must be an object/);
+  assert.throws(() => analyzeDocument({
+    source: "mcp.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify({
+      ...base,
+      tools: [{ ...base.tools[0], annotations: { readOnlyHint: "true" } }]
+    })
+  }), /annotation.*boolean/);
+});
