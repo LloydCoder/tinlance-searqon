@@ -153,3 +153,19 @@ test("remote scanner rejects malformed cross-origin authorization entries before
   }), /allowedRedirectOrigins/);
   assert.equal(contacted, false);
 });
+
+
+test("remote scanner classifies unsafe redirect destinations separately and never checks their robots policy", async () => {
+  const robotOrigins = [];
+  const result = await scanPublicUrl("https://example.com/start", {
+    confirmAuthorizedTarget: true,
+    robotsLoader: async origin => { robotOrigins.push(origin); return allowedRobots(); },
+    fetcher: async (url, options) => {
+      const allowed = await options.validateRedirect({ from: url, to: "http://127.0.0.1/admin", redirectCount: 1 });
+      assert.equal(allowed, false);
+      throw Object.assign(new Error("unsafe redirect blocked"), { code: "ERR_REDIRECT_POLICY" });
+    }
+  });
+  assert.equal(result.status, "redirect_blocked_by_policy");
+  assert.deepEqual(robotOrigins, ["https://example.com"]);
+});
