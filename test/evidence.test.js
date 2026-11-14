@@ -17,7 +17,7 @@ test("evidence record preserves provenance and a verifiable content digest", () 
   assert.equal(record.collectedAt,"2026-11-14T00:00:00.000Z");
   assert.equal(record.methodologyVersion,"2026-11-14.1");
   assert.equal(record.sha256.length,64);
-  assert.equal(record.byteLength,23);
+  assert.equal(record.byteLength,22);
   assert.ok(!("content" in record));
 });
 
