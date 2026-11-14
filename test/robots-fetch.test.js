@@ -101,3 +101,33 @@ test("invalid origins are rejected before acquisition", async () => {
     fetcher: async () => { throw new Error("must not run"); }
   }), /non-public/);
 });
+
+
+test("malformed fetch responses fail closed and use the short failure cache", async () => {
+  const cache = new Map();
+  const result = await fetchRobotsPolicy(origin, "SearqonBot", {
+    cache,
+    now: () => 50_000,
+    fetcher: async () => ({ headers: {}, body: Buffer.alloc(0) })
+  });
+  assert.equal(result.outcome, "unreachable");
+  assert.equal(result.expiresAt, 80_000);
+  assert.equal(evaluateRobots(result.policy, "https://example.com/", "SearqonBot").allowed, false);
+});
+
+test("robots cache enforces a bounded entry count", async () => {
+  const cache = new Map();
+  const fetcher = async url => ({ status: 200, headers: {}, body: Buffer.from("User-agent: *\nAllow: /"), finalUrl: url });
+  await fetchRobotsPolicy("https://one.example", "SearqonBot", { cache, fetcher, maxEntries: 1 });
+  await fetchRobotsPolicy("https://two.example", "SearqonBot", { cache, fetcher, maxEntries: 1 });
+  assert.equal(cache.size, 1);
+  assert.equal(cache.has("https://two.example"), true);
+  assert.equal(cache.has("https://one.example"), false);
+});
+
+test("invalid cache bounds are rejected", async () => {
+  await assert.rejects(() => fetchRobotsPolicy(origin, "SearqonBot", {
+    maxEntries: 0,
+    fetcher: async () => ({ status: 200, headers: {}, body: Buffer.alloc(0) })
+  }), /maxEntries/);
+});
