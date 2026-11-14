@@ -1,4 +1,4 @@
-import { createEvidenceRecord } from "./evidence.js";
+import { createEvidenceRecord, verifyEvidenceRecord } from "./evidence.js";
 
 const GEO_METHOD_VERSION = "geo-2026-11-14.1";
 const OBSERVATION_CLASSES = new Set(["consumer_observation","model_api"]);
@@ -167,7 +167,8 @@ export function aggregateGeoObservations(observations) {
       throw new TypeError("GEO observation brand citation state is inconsistent");
     }
     const evidence=observation.evidence;
-    if (!evidence || !/^evidence_[a-f0-9]{20}$/.test(evidence.id ?? "") ||
+    const evidenceVerification=verifyEvidenceRecord(evidence);
+    if (!evidenceVerification.valid || !evidence || !/^evidence_[a-f0-9]{20}$/.test(evidence.id ?? "") ||
         evidence.observationClass!==observation.observationClass ||
         evidence.acquisitionMethod!=="provider_observation" ||
         evidence.source!==provider.name ||
