@@ -6,7 +6,7 @@ Searqon is an evidence-first open-source toolkit for AI discoverability and agen
 
 ## Status
 
-**Early alpha.** The current executable slice analyzes caller-supplied local HTML, Markdown, and OpenAPI JSON. It does not fetch URLs, crawl websites, or query search engines or LLM providers. It can analyze externally supplied GEO observation JSON, but it does not collect those observations itself. It does not invoke MCP tools or provide hosted multi-tenant services. Its deterministic findings are diagnostic heuristics, not ranking predictions or a security certification.
+**Early alpha.** Searqon analyzes caller-supplied local documents and supports a bounded, single-page remote scan of an explicitly authorized public URL. Remote scans check robots policy before acquisition and before each redirect destination; they do not recursively crawl links, execute browser scripts, authenticate, or invoke MCP tools. Searqon does not query search engines or LLM providers yet. It can analyze externally supplied GEO observation JSON, but it does not collect those observations itself. No hosted multi-tenant service exists. Deterministic findings are diagnostic heuristics, not ranking predictions or a security certification.
 
 ## Quick start
 
@@ -15,11 +15,12 @@ Requirements: Node.js 22+.
 ```bash
 node src/cli.js scan ./examples/openapi.json
 node src/cli.js scan ./examples/api-docs.md
+node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
 node src/cli.js geo analyze ./examples/geo-observation.json
 node src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
-Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The analyzer does not make network requests or follow document links.
+Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The `scan-url` command retrieves only the selected public page, checks robots policy at each redirect, and requires `--confirm-authorized-target` as an operator attestation. It does not recursively follow page links. The HTTP transport uses validated DNS pinning and bounded redirects, timeouts, headers, and response size; it is not yet a full production crawler.
 
 The JSON report includes a content SHA-256 digest, deterministic evidence identifier, rules version, observation class, summary, observations, and evidence-linked findings. A digest is an integrity reference, not proof of immutable storage or authenticity.
 
