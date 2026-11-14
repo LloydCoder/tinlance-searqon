@@ -22,6 +22,7 @@ test("remote scan result schema publishes all stable scanner outcomes", async ()
 test("runtime remote scan results expose the documented base fields", async () => {
   const schema = JSON.parse(await readFile(new URL("../schemas/remote-scan-result.schema.json", import.meta.url), "utf8"));
   const result = await scanPublicUrl("https://example.com/docs", {
+    confirmAuthorizedTarget: true,
     robotsLoader: async () => ({ outcome: "available", policy: { groups: [], sitemaps: [] } }),
     fetcher: async url => ({
       status: 200,
