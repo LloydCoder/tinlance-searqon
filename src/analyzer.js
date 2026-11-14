@@ -109,7 +109,7 @@ function analyzeOpenApi(content, evidenceId) {
       const versionParts = document.openapi.split(".").map(Number);
       const supportsUriSchemeReferences = versionParts[0] > 3 || (versionParts[0] === 3 && versionParts[1] >= 2);
       let isUriReference = false;
-      if (supportsUriSchemeReferences && schemeName.length > 0 && !/\\s/.test(schemeName)) {
+      if (supportsUriSchemeReferences && schemeName.length > 0 && !/\s/.test(schemeName)) {
         try { new URL(schemeName, "https://searqon.invalid/"); isUriReference = true; }
         catch { isUriReference = false; }
       }
