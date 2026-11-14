@@ -1,6 +1,6 @@
 # Searqon
 
-**Be discovered. Be understood. Be actionable.**
+**Understand Visibility. Engineer Discoverability. Enable Agents.**
 
 Searqon is an evidence-first open-source toolkit for AI discoverability and agent readiness across SEO, AEO, GEO, and AgEO.
 
@@ -25,6 +25,10 @@ node src/cli.js geo aggregate ./examples/geo-observations.json
 Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The `scan-url` command retrieves only the selected public page, checks robots policy at each redirect, and requires `--confirm-authorized-target` as an operator attestation. The exported `scanPublicUrl` API independently requires `{ confirmAuthorizedTarget: true }`; CLI-only confirmation is not treated as an authorization boundary. Cross-origin redirects require `allowedRedirectOrigins` at the API boundary or repeated `--allow-redirect-origin https://approved.example` CLI options. The allowlist is an operator authorization attestation, not cryptographic proof of ownership. It does not recursively follow page links. The HTTP transport uses validated DNS pinning and bounded redirects, timeouts, headers, and response size; it is not yet a full production crawler.
 
 The JSON report includes a content SHA-256 digest, deterministic evidence identifier, rules version, observation class, summary, observations, and evidence-linked findings. A digest is an integrity reference, not proof of immutable storage or authenticity.
+
+## Evidence ledger (local alpha)
+
+The `src/evidence-ledger.js` module creates sequence-numbered SHA-256 hash-linked evidence entries; `src/evidence-store.js` persists them as bounded JSONL. The local adapter serializes appends within one process, rejects a second writer in that process, syncs each append, uses owner-only file permissions, and verifies the chain when reopening. It stores evidence metadata and digests, not the original content bytes. It is not encrypted, multi-process safe, remotely replicated, WORM-immutable, digitally signed, or protected against an attacker who can rewrite the entire ledger. Retention, deletion/redaction, external root anchoring, and multi-tenant access controls are not implemented. Do not use this local alpha adapter as a regulated audit-retention system.
 
 ## Disciplines
 
