@@ -69,3 +69,16 @@ The transport intentionally exposes no arbitrary request headers, cookies, crede
 The internal `src/security/robots-fetch.js` module retrieves `/robots.txt` through the DNS-pinned bounded transport, allows up to five validated redirects, limits the response to 512 KiB, and applies a bounded per-origin in-memory cache. Successful responses are parsed as UTF-8. Unavailable 4xx responses (except 429) produce an empty policy; 429, 5xx, unresolved redirects, invalid UTF-8, and network failures fail closed with `Disallow: /`. Cache-Control, Expires, and Retry-After are honored within a 24-hour maximum, and the cache has a configurable bounded entry count.
 
 This is a policy retrieval primitive, not a complete crawler. The caller must evaluate the parsed policy for each target URL and declared crawler product token. Robots policy is a coordination mechanism, not authorization or access control. The current cache is process-local and is not shared across workers or restarts.
+
+
+## Single-page remote scan
+
+The CLI supports a caller-selected public URL:
+
+```bash
+node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
+```
+
+The flag is an explicit operator attestation that the target is authorized for assessment; it is not technical proof of ownership. The command retrieves robots policy first, refuses disallowed or unreachable policy, checks robots again before every redirect destination, and fetches only the selected page. It does not recursively follow page links, execute scripts, render a browser, invoke MCP tools, authenticate, or perform transactions. It accepts HTML/XHTML, Markdown, and OpenAPI JSON only, with a 2 MiB response limit. Query parameters are excluded from evidence source labels.
+
+A robots 4xx response other than 429 is treated as unavailable under the documented RFC-aligned policy; 429, 5xx, network failures, invalid policy data, and blocked redirect destinations fail closed. This one-page scanner is not a substitute for an authorized full-site crawl or independent security assessment.
