@@ -20,10 +20,10 @@ npm run scan -- ./examples/site.html --source https://example.test/
 Or run the CLI directly:
 
 ```bash
-node src/cli.js scan ./examples/openapi.json
+node src/cli.js scan ./examples/openapi.json\nnode src/cli.js scan ./examples/api-docs.md
 ```
 
-Supported local inputs: HTML (`.html`, `.htm`) and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The analyzer does not make network requests or follow document links.
+Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The analyzer does not make network requests or follow document links.
 
 The JSON report includes a content SHA-256 digest, deterministic evidence identifier, rules version, observation class, summary, observations, and evidence-linked findings. A digest is an integrity reference, not proof of immutable storage or authenticity.
 
