@@ -28,3 +28,8 @@ The analyzer performs no network I/O, link following, script execution, browser 
 ## Deferred work
 
 A remote acquisition worker requires a separately reviewed SSRF-safe resolver/connector, redirect and retry validation, IP pinning, response bounds, isolation, and a dedicated regression suite. Do not add a generic fetch URL feature to this local analyzer.
+
+
+## Machine-readable contract
+
+The report shape is published in [`schemas/assessment-report.schema.json`](../schemas/assessment-report.schema.json) using JSON Schema 2020-12. The schema fixes required fields and enumerations while leaving observation-specific attributes extensible. Consumers should validate the schema version before interpreting fields.
