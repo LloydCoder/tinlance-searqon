@@ -125,8 +125,11 @@ function wilsonInterval(successes, total) {
  * Aggregate by both observation class and provider. Consumer-facing observations
  * and direct model API observations are never pooled into one rate.
  */
-export function aggregateGeoObservations(observations) {
+export function aggregateGeoObservations(observations, options = {}) {
   if (!Array.isArray(observations)) throw new TypeError("observations must be an array");
+  if (!options || typeof options !== "object" || Array.isArray(options)) throw new TypeError("GEO aggregation options must be an object");
+  const timeBucket = options.timeBucket ?? "none";
+  if (!["none", "day"].includes(timeBucket)) throw new TypeError("timeBucket must be none or day");
   const groups = new Map();
   const seenEvidenceIds = new Set();
   for (const observation of observations) {
@@ -191,7 +194,8 @@ export function aggregateGeoObservations(observations) {
     seenEvidenceIds.add(evidence.id);
 
     const providerKey=[provider.name,provider.model,provider.region,provider.locale];
-    const key=JSON.stringify([observation.observationClass,providerKey,observation.brand,observation.targetDomain]);
+    const samplePeriod=timeBucket === "day" ? observation.sampledAt.slice(0, 10) : null;
+    const key=JSON.stringify([observation.observationClass,providerKey,observation.brand,observation.targetDomain,samplePeriod]);
     let group=groups.get(key);
     if (!group) {
       group={
@@ -199,6 +203,7 @@ export function aggregateGeoObservations(observations) {
         provider:Object.freeze({...provider}),
         brand:observation.brand,
         targetDomain:observation.targetDomain,
+        samplePeriod,
         sampleSize:0,
         mentionCount:0,
         mentionOccurrences:0,
@@ -223,6 +228,7 @@ export function aggregateGeoObservations(observations) {
     a.observationClass.localeCompare(b.observationClass) ||
     a.provider.name.localeCompare(b.provider.name) ||
     a.brand.localeCompare(b.brand) ||
-    String(a.targetDomain ?? "").localeCompare(String(b.targetDomain ?? ""))
+    String(a.targetDomain ?? "").localeCompare(String(b.targetDomain ?? "")) ||
+    String(a.samplePeriod ?? "").localeCompare(String(b.samplePeriod ?? ""))
   );
 }
