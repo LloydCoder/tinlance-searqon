@@ -212,3 +212,42 @@ test("fetch enforces a hard deadline while streaming a response body", async () 
     requestImpl
   }), /timed out/);
 });
+
+test("fetch blocks DNS rebinding when a redirect hop resolves to a private address", async () => {
+  const seen = [];
+  let resolutions = 0;
+  const resolver = async hostname => {
+    assert.equal(hostname, "example.com");
+    resolutions++;
+    return resolutions === 1
+      ? [{ address: "93.184.216.34", family: 4 }]
+      : [{ address: "10.0.0.7", family: 4 }];
+  };
+
+  await assert.rejects(() => fetchPublicUrl("https://example.com/start", {
+    resolver,
+    requestImpl: fakeTransport([
+      { status: 302, headers: { location: "/next" } },
+      { status: 200, body: "must never be requested" }
+    ], seen)
+  }), /non-public/);
+
+  assert.equal(resolutions, 2);
+  assert.equal(seen.length, 1);
+});
+
+test("fetch blocks a redirect to a different hostname that resolves to a private address", async () => {
+  const seen = [];
+  const resolver = async hostname => hostname === "example.com"
+    ? [{ address: "93.184.216.34", family: 4 }]
+    : [{ address: "192.168.1.20", family: 4 }];
+
+  await assert.rejects(() => fetchPublicUrl("https://example.com/start", {
+    resolver,
+    requestImpl: fakeTransport([
+      { status: 302, headers: { location: "https://internal.example.net/admin" } }
+    ], seen)
+  }), /non-public/);
+
+  assert.equal(seen.length, 1);
+});
