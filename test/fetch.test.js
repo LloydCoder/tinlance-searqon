@@ -171,3 +171,44 @@ test("fetch awaits a redirect policy check before resolving the next host", asyn
   assert.equal(checked, 1);
   assert.equal(seen.length, 1);
 });
+
+
+test("fetch enforces a hard deadline while waiting for response headers", async () => {
+  const requestImpl = () => {
+    const request = new EventEmitter();
+    request.setTimeout = () => request;
+    request.end = () => {};
+    request.destroy = error => process.nextTick(() => request.emit("error", error));
+    return request;
+  };
+  await assert.rejects(() => fetchPublicUrl("https://example.com/headers-slow", {
+    resolver: publicResolver,
+    timeoutMs: 100,
+    requestImpl
+  }), /timed out/);
+});
+
+test("fetch enforces a hard deadline while streaming a response body", async () => {
+  let incoming;
+  const requestImpl = (_url, _options, callback) => {
+    const request = new EventEmitter();
+    request.setTimeout = () => request;
+    request.end = () => {
+      incoming = new Readable({ read() {} });
+      incoming.statusCode = 200;
+      incoming.headers = { "content-type": "text/plain" };
+      process.nextTick(() => callback(incoming));
+    };
+    request.destroy = error => {
+      if (error) incoming?.destroy(error);
+      else incoming?.destroy();
+      if (error) process.nextTick(() => request.emit("error", error));
+    };
+    return request;
+  };
+  await assert.rejects(() => fetchPublicUrl("https://example.com/body-slow", {
+    resolver: publicResolver,
+    timeoutMs: 100,
+    requestImpl
+  }), /timed out/);
+});
