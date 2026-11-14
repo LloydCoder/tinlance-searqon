@@ -1,7 +1,7 @@
 # Searqon Implementation Status
 
-**Last reconciled:** 2026-11-14  
-**Base commit for this status revision:** `da935e3141ab72d37bccff351d0025d8cae49547`  
+**Last reconciled:** 2026-11-14 22:41 UTC  
+**Base commit for this status revision:** `ea4e08482168c78c21ec7bfe51bcc4cd7c8970f3`  
 **Product maturity:** Early alpha; not production-ready.
 
 This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification. Status is evidence-based; implementation does not imply independent assurance or product-owner acceptance.
@@ -98,3 +98,7 @@ This register separates implemented repository capabilities from customer, secur
 - PR #44 exact head: CI run 43642728217 and CodeQL run 43642728216 passed. Merge commit: `1b7129c4c06b0cefab09580f12615326d33a4ef1`; push CI 43642821620 and CodeQL 43642821632 passed.
 - PR #45 exact head: CI run 43643006972 and CodeQL run 43643007066 passed. Merge commit: `f889a807ea6cc86cf990c1f63bd1a7377f1b909a`; push CI 43643100523 and CodeQL 43643100508 passed.
 - PR #46 exact head: CI run 43643603194 and CodeQL run 43643603192 passed. Merge commit: `56610e0595d905d95afe084b050916d73befce7d`; push CI 43643706462 and CodeQL 43643706450 passed.
+- PR #51 exact head `bc574dfc0f767df0094e4fbfe33e7ffdce222fe3`: merged after the persistent local JSONL ledger tests and implementation; the merge commit is `5dec145f93546e97ef5a91d10c169cc71e159f93`.
+- PR #53 exact head `67ecce63f0f7ab4e7ff7326db614efedd5c7ed53`: merged hard-link and current-user ownership checks; merge commit `da935e3141ab72d37bccff351d0025d8cae49547`.
+- PR #54 reconciled evidence-store ownership documentation.
+- PR #55 exact main commit `ea4e08482168c78c21ec7bfe51bcc4cd7c8970f3`: push CI run `43649309732` passed on Node.js 22 and 24; CodeQL run `43649309697` passed. The current main head is green for these workflows.
