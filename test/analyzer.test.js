@@ -15,9 +15,9 @@ test("HTML analysis emits deterministic, evidence-linked findings", () => {
 });
 
 test("complete HTML signals are recognized even when attributes are reordered", () => {
-  const content = '<html><head><meta content="A useful summary" name="description"><link href="https://example.test/" rel="canonical"><script type="application/ld+json">{}</script><title>Example</title></head><body><h1>Example</h1></body></html>';
+  const content = '<html lang="en"><head><meta content="A complete guide to the Example API, including authentication, usage, operational details, and integration examples." name="description"><meta content="width=device-width, initial-scale=1" name="viewport"><link href="https://example.test/" rel="canonical"><script type="application/ld+json">{}</script><title>Example API docs for developers and automated agents</title></head><body><h1>Example</h1><img src="/logo.svg" alt="Example logo"></body></html>';
   const result = analyzeDocument({source:"fixture.html",contentType:"text/html",content});
-  assert.deepEqual(result.observations,{titlePresent:true,descriptionPresent:true,h1Present:true,canonicalPresent:true,jsonLdPresent:true,noindex:false});
+  assert.deepEqual(result.observations,{titlePresent:true,titleLength:52,descriptionPresent:true,descriptionLength:116,h1Present:true,h1Count:1,canonicalPresent:true,jsonLdPresent:true,noindex:false,languagePresent:true,viewportPresent:true,imagesMissingAlt:0});
   assert.equal(result.findings.length,0);
 });
 
@@ -44,4 +44,23 @@ test("analysis never fetches source labels or follows links", () => {
   const result = analyzeDocument({source:"http://127.0.0.1/admin",contentType:"text/html",content:'<html><head><title>Docs</title></head><body><a href="http://127.0.0.1/">internal</a></body></html>'});
   assert.equal(result.evidence.source,"http://127.0.0.1/admin");
   assert.ok(result.findings.some(item => item.ruleId === "html.meta_description.missing"));
+});
+
+
+test("HTML SEO analysis reports language, viewport, image-alt, heading, and length gaps", () => {
+  const content = '<html><head><title>A very long document title that is clearly far beyond the recommended sixty character upper bound for search snippets</title><meta name="description" content="' + "x".repeat(180) + '"></head><body><h1>One</h1><h1>Two</h1><img src="/hero.png"><img src="/decorative.svg" alt=""></body></html>';
+  const result = analyzeDocument({source:"seo-gaps.html",contentType:"text/html",content});
+  const ruleIds = result.findings.map(item => item.ruleId);
+  for (const ruleId of [
+    "html.lang.missing",
+    "html.viewport.missing",
+    "html.image.alt_missing",
+    "html.h1.multiple",
+    "html.title.length_out_of_range",
+    "html.meta_description.length_out_of_range"
+  ]) assert.ok(ruleIds.includes(ruleId), "missing rule " + ruleId);
+  assert.equal(result.observations.h1Count, 2);
+  assert.equal(result.observations.imagesMissingAlt, 1);
+  assert.equal(result.observations.languagePresent, false);
+  assert.equal(result.observations.viewportPresent, false);
 });
