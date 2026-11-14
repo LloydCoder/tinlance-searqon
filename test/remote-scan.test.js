@@ -105,3 +105,13 @@ test("remote scanner rejects unsafe targets before robots or HTTP requests", asy
   }), /non-public/);
   assert.equal(called, false);
 });
+
+
+test("remote scanner requires explicit authorization from every API caller before robots or HTTP access", async () => {
+  let contacted = false;
+  await assert.rejects(() => scanPublicUrl("https://example.com/docs", {
+    robotsLoader: async () => { contacted = true; return allowedRobots(); },
+    fetcher: async () => { contacted = true; throw new Error("must not fetch"); }
+  }), /explicit authorization/);
+  assert.equal(contacted, false);
+});
