@@ -200,8 +200,9 @@ test("fetch enforces a hard deadline while streaming a response body", async () 
       process.nextTick(() => callback(incoming));
     };
     request.destroy = error => {
-      incoming?.destroy(error);
-      process.nextTick(() => request.emit("error", error));
+      if (error) incoming?.destroy(error);
+      else incoming?.destroy();
+      if (error) process.nextTick(() => request.emit("error", error));
     };
     return request;
   };
