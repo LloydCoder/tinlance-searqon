@@ -21,7 +21,9 @@ Or run the CLI directly:
 
 ```bash
 node src/cli.js scan ./examples/openapi.json
-node src/cli.js scan ./examples/api-docs.md\nnode src/cli.js geo analyze ./examples/geo-observation.json\nnode src/cli.js geo aggregate ./examples/geo-observations.json
+node src/cli.js scan ./examples/api-docs.md
+node src/cli.js geo analyze ./examples/geo-observation.json
+node src/cli.js geo aggregate ./examples/geo-observations.json\nnode src/cli.js geo analyze ./examples/geo-observation.json\nnode src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
 Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The analyzer does not make network requests or follow document links.
@@ -36,6 +38,8 @@ The JSON report includes a content SHA-256 digest, deterministic evidence identi
 - **AgEO:** machine and agent readiness (an emerging Searqon product discipline, not a universal standard).
 
 Results remain separated by discipline; Searqon does not emit an opaque universal score.
+The GEO CLI accepts supplied observation samples; it does not collect them. Use `geo analyze` for one observation and `geo aggregate` for a JSON array. Synthetic fixtures are provided under `examples/`.
+
 
 ## Project governance
 
