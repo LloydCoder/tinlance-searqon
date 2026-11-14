@@ -15,9 +15,9 @@ test("HTML analysis emits deterministic, evidence-linked findings", () => {
 });
 
 test("complete HTML signals are recognized even when attributes are reordered", () => {
-  const content = '<html lang="en"><head><meta content="A complete guide to the Example API, including authentication, usage, operational details, and integration examples." name="description"><meta content="width=device-width, initial-scale=1" name="viewport"><link href="https://example.test/" rel="canonical"><script type="application/ld+json">{}</script><title>Example API documentation for developers and automated agents</title></head><body><h1>Example</h1><img src="/logo.svg" alt="Example logo"></body></html>';
+  const content = '<html lang="en"><head><meta content="A complete guide to the Example API, including authentication, usage, operational details, and integration examples." name="description"><meta content="width=device-width, initial-scale=1" name="viewport"><link href="https://example.test/" rel="canonical"><script type="application/ld+json">{}</script><title>Example API docs for developers and automated agents</title></head><body><h1>Example</h1><img src="/logo.svg" alt="Example logo"></body></html>';
   const result = analyzeDocument({source:"fixture.html",contentType:"text/html",content});
-  assert.deepEqual(result.observations,{titlePresent:true,titleLength:61,descriptionPresent:true,descriptionLength:116,h1Present:true,h1Count:1,canonicalPresent:true,jsonLdPresent:true,noindex:false,languagePresent:true,viewportPresent:true,imagesMissingAlt:0});
+  assert.deepEqual(result.observations,{titlePresent:true,titleLength:52,descriptionPresent:true,descriptionLength:116,h1Present:true,h1Count:1,canonicalPresent:true,jsonLdPresent:true,noindex:false,languagePresent:true,viewportPresent:true,imagesMissingAlt:0});
   assert.equal(result.findings.length,0);
 });
 
