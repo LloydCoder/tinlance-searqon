@@ -40,7 +40,7 @@ function cacheTtl(headers, status, now) {
     const parsed = Date.parse(expires);
     if (Number.isFinite(parsed)) return Math.min(Math.max(0, parsed - now), MAX_CACHE_TTL_MS);
   }
-  if (!Number.isInteger(status) || status < 200 || status === 429 || status >= 500) {
+  if (!Number.isInteger(status) || status < 200 || (status >= 300 && status < 400) || status === 429 || status >= 500) {
     return retryAfterMs(headers, now) ?? DEFAULT_FAILURE_TTL_MS;
   }
   return DEFAULT_SUCCESS_TTL_MS;
