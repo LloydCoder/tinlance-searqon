@@ -66,3 +66,12 @@ test("additional special-use and local naming suffixes are rejected", () => {
     assert.throws(() => validateTargetUrl(value), /reserved hostnames/);
   }
 });
+
+
+test("IPv6 Segment Routing SIDs are rejected as non-globally-reachable destinations", () => {
+  for (const address of ["5f00::1", "5f00:0:0:1::1", "5f00:ffff:ffff:ffff::1"]) {
+    assert.equal(isPublicIp(address), false, address);
+    assert.throws(() => validateTargetUrl("https://[" + address + "]/"), /non-public/);
+  }
+  assert.throws(() => validateResolvedAddresses("example.com", [{ address: "5f00::1", family: 6 }]), /non-public/);
+});
