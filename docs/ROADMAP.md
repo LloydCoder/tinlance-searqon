@@ -28,7 +28,7 @@ A green CI run is necessary for applicable code changes, but is not sufficient f
 | 8 | User interfaces and reporting | Accessible CLI/API/report experience and end-to-end tests |
 | 9 | Hosted service | Tenant isolation, roles, billing, quotas, scheduling, audit, backups, recovery |
 | 10 | Security and privacy assurance | Threat-model closure, ASVS-aligned evidence, privacy/retention review, independent testing |
-| 11 | Reliability and operations | CI, observability, SLOs, incident/recovery exercises, signed release artifacts |
+| 11 | Reliability and operations | CI, controlled-origin redirect/DNS-rebinding/timeout integration, observability, SLOs, incident/recovery exercises, signed release artifacts |
 | 12 | Design-partner pilots | Measured outcomes, usability evidence, provider cost and support data |
 | 13 | Commercial v1 launch | Security, reliability, documentation, support, pricing, and pilot gates accepted |
 | 14 | SEO and AEO expansion | Versioned methodologies, authorized integrations, verified recommendations |
