@@ -1,6 +1,6 @@
 import test, { afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createEvidenceRecord } from "../src/evidence.js";
@@ -83,4 +83,26 @@ test("persistent evidence ledger rejects appends after close", async () => {
   const store = await openEvidenceLedgerStore(path);
   await store.close();
   await assert.rejects(() => store.append(record("late")), /closed/);
+});
+
+
+test("persistent evidence ledger closes append admission immediately and drains accepted writes", async () => {
+  const path = await temporaryLedgerPath();
+  const store = await openEvidenceLedgerStore(path);
+  const accepted = store.append(record("accepted before close"));
+  const closing = store.close();
+  await assert.rejects(() => store.append(record("submitted after close began")), /closed/);
+  await accepted;
+  await closing;
+  const reopened = await openEvidenceLedgerStore(path);
+  assert.equal(reopened.list().length, 1);
+  await reopened.close();
+});
+
+test("persistent evidence ledger refuses symbolic-link targets", async () => {
+  const path = await temporaryLedgerPath();
+  const target = join(path, "..", "target.jsonl");
+  await writeFile(target, "", "utf8");
+  await symlink(target, path);
+  await assert.rejects(() => openEvidenceLedgerStore(path));
 });
