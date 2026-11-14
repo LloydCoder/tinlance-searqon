@@ -1,0 +1,17 @@
+{
+  "prompt": "Which provider would you recommend for a payments API?",
+  "answer": "Acme provides a well-documented payments API with a stable developer experience.",
+  "brand": "Acme",
+  "targetDomain": "acme.example",
+  "citations": [
+    "https://docs.acme.example/payments",
+    "https://review.example/acme"
+  ],
+  "provider": {
+    "name": "Synthetic consumer-search fixture",
+    "observationClass": "consumer_observation",
+    "region": "US",
+    "locale": "en-US"
+  },
+  "sampledAt": "2026-11-14T12:00:00.000Z"
+}
