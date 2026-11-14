@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tinlance.com/schemas/searqon-assessment-report-1.0.0.json",
+  "title": "Searqon Assessment Report",
+  "description": "Versioned local assessment output. Findings are heuristic and coverage is explicit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "rulesVersion",
+    "observationClass",
+    "evidence",
+    "summary",
+    "observations",
+    "assessments",
+    "findings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "rulesVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observationClass": {
+      "enum": [
+        "crawl",
+        "first_party",
+        "consumer_observation",
+        "model_api",
+        "derived",
+        "estimate"
+      ]
+    },
+    "evidence": {
+      "$ref": "#/$defs/evidence"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "findingCount",
+        "bySeverity"
+      ],
+      "properties": {
+        "findingCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bySeverity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ],
+          "properties": {
+            "critical": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "high": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "medium": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "low": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "info": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "object"
+    },
+    "assessments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "SEO",
+        "AEO",
+        "GEO",
+        "AgEO"
+      ],
+      "properties": {
+        "SEO": {
+          "$ref": "#/$defs/assessment"
+        },
+        "AEO": {
+          "$ref": "#/$defs/assessment"
+        },
+        "GEO": {
+          "$ref": "#/$defs/assessment"
+        },
+        "AgEO": {
+          "$ref": "#/$defs/assessment"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "acquisitionMethod",
+        "observationClass",
+        "collectedAt",
+        "contentType",
+        "byteLength",
+        "sha256",
+        "methodologyVersion",
+        "integrity"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^evidence_[a-f0-9]{20}$"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "acquisitionMethod": {
+          "type": "string",
+          "minLength": 2
+        },
+        "observationClass": {
+          "enum": [
+            "crawl",
+            "first_party",
+            "consumer_observation",
+            "model_api",
+            "derived",
+            "estimate"
+          ]
+        },
+        "collectedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "contentType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "byteLength": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "methodologyVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "integrity": {
+          "const": "sha256-content-digest"
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "coverage",
+        "confidence",
+        "findingCount",
+        "scope",
+        "limitation"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "findings_detected",
+            "no_findings_detected",
+            "not_assessed"
+          ]
+        },
+        "coverage": {
+          "enum": [
+            "none",
+            "partial",
+            "full"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "none",
+            "heuristic",
+            "medium",
+            "high"
+          ]
+        },
+        "findingCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "limitation": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ruleId",
+        "dimension",
+        "severity",
+        "title",
+        "description",
+        "recommendation",
+        "evidenceId"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ruleId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dimension": {
+          "enum": [
+            "SEO",
+            "AEO",
+            "GEO",
+            "AgEO"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recommendation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceId": {
+          "type": "string",
+          "pattern": "^evidence_[a-f0-9]{20}$"
+        }
+      }
+    }
+  }
+}
