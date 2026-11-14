@@ -28,7 +28,7 @@ The JSON report includes a content SHA-256 digest, deterministic evidence identi
 
 ## Evidence ledger (local alpha)
 
-The `src/evidence-ledger.js` module creates sequence-numbered SHA-256 hash-linked evidence entries; `src/evidence-store.js` persists them as bounded JSONL. The local adapter serializes appends within one process, rejects a second writer in that process, syncs each append, uses owner-only file permissions, and verifies the chain when reopening. It stores evidence metadata and digests, not the original content bytes. It is not encrypted, multi-process safe, remotely replicated, WORM-immutable, digitally signed, or protected against an attacker who can rewrite the entire ledger. Retention, deletion/redaction, external root anchoring, and multi-tenant access controls are not implemented. Do not use this local alpha adapter as a regulated audit-retention system.
+The `src/evidence-ledger.js` module creates sequence-numbered SHA-256 hash-linked evidence entries; `src/evidence-store.js` persists them as bounded JSONL. The local adapter serializes appends within one process, rejects a second writer in that process, syncs each append, uses owner-only file permissions, validates parent-directory ownership and write permissions on POSIX, and verifies the chain when reopening. It stores evidence metadata and digests, not the original content bytes. It is not encrypted, multi-process safe, remotely replicated, WORM-immutable, digitally signed, or protected against an attacker who can rewrite the entire ledger. Retention, deletion/redaction, external root anchoring, and multi-tenant access controls are not implemented. Do not use this local alpha adapter as a regulated audit-retention system.
 
 ## Disciplines
 

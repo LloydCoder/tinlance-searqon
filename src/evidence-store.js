@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { mkdir, open, realpath } from "node:fs/promises";
+import { mkdir, open, realpath, stat } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { createEvidenceLedgerEntry, verifyEvidenceLedger } from "./evidence-ledger.js";
 
@@ -119,7 +119,20 @@ export async function openEvidenceLedgerStore(filePath) {
   }
   const requestedPath = resolve(filePath);
   await mkdir(dirname(requestedPath), { recursive: true, mode: 0o700 });
-  const canonicalPath = join(await realpath(dirname(requestedPath)), basename(requestedPath));
+  const canonicalDirectory = await realpath(dirname(requestedPath));
+  if (process.platform !== "win32" && typeof process.getuid === "function") {
+    const directoryMetadata = await stat(canonicalDirectory);
+    if (!directoryMetadata.isDirectory()) {
+      throw new Error("Evidence ledger parent path must be a directory");
+    }
+    if (directoryMetadata.uid !== process.getuid()) {
+      throw new Error("Evidence ledger parent directory must be owned by the current user");
+    }
+    if ((directoryMetadata.mode & 0o022) !== 0) {
+      throw new Error("Evidence ledger parent directory permissions must not be group- or world-writable");
+    }
+  }
+  const canonicalPath = join(canonicalDirectory, basename(requestedPath));
   if (activePaths.has(canonicalPath)) throw new Error("Evidence ledger store is already open in this process");
   activePaths.add(canonicalPath);
   let handle;
