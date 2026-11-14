@@ -6,7 +6,7 @@ Searqon is an evidence-first open-source toolkit for AI discoverability and agen
 
 ## Status
 
-**Early alpha.** Searqon analyzes caller-supplied local documents and supports a bounded, single-page remote scan of an explicitly authorized public URL. Remote scans check robots policy before acquisition and before each redirect destination; they do not recursively crawl links, execute browser scripts, authenticate, or invoke MCP tools. Searqon does not query search engines or LLM providers yet. It can analyze externally supplied GEO observation JSON, but it does not collect those observations itself. No hosted multi-tenant service exists. Deterministic findings are diagnostic heuristics, not ranking predictions or a security certification.
+**Early alpha.** Searqon analyzes caller-supplied local documents and supports a bounded, single-page remote scan of an explicitly authorized public URL. Remote scans check robots policy before acquisition and before each redirect destination. Cross-origin redirects are denied unless each destination origin is explicitly allowlisted with `--allow-redirect-origin`; same-origin redirects remain subject to URL, DNS, and robots checks. Scans do not recursively crawl links, execute browser scripts, authenticate, or invoke MCP tools. Searqon does not query search engines or LLM providers yet. It can analyze externally supplied GEO observation JSON, but it does not collect those observations itself. No hosted multi-tenant service exists. Deterministic findings are diagnostic heuristics, not ranking predictions or a security certification.
 
 ## Quick start
 
@@ -16,11 +16,13 @@ Requirements: Node.js 22+.
 node src/cli.js scan ./examples/openapi.json
 node src/cli.js scan ./examples/api-docs.md
 node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
+# If the selected URL redirects to a separately authorized origin:
+node src/cli.js scan-url https://example.com/docs --confirm-authorized-target --allow-redirect-origin https://docs.example.net
 node src/cli.js geo analyze ./examples/geo-observation.json
 node src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
-Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The `scan-url` command retrieves only the selected public page, checks robots policy at each redirect, and requires `--confirm-authorized-target` as an operator attestation. The exported `scanPublicUrl` API independently requires `{ confirmAuthorizedTarget: true }`; CLI-only confirmation is not treated as an authorization boundary. It does not recursively follow page links. The HTTP transport uses validated DNS pinning and bounded redirects, timeouts, headers, and response size; it is not yet a full production crawler.
+Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The `scan-url` command retrieves only the selected public page, checks robots policy at each redirect, and requires `--confirm-authorized-target` as an operator attestation. The exported `scanPublicUrl` API independently requires `{ confirmAuthorizedTarget: true }`; CLI-only confirmation is not treated as an authorization boundary. Cross-origin redirects require `allowedRedirectOrigins` at the API boundary or repeated `--allow-redirect-origin https://approved.example` CLI options. The allowlist is an operator authorization attestation, not cryptographic proof of ownership. It does not recursively follow page links. The HTTP transport uses validated DNS pinning and bounded redirects, timeouts, headers, and response size; it is not yet a full production crawler.
 
 The JSON report includes a content SHA-256 digest, deterministic evidence identifier, rules version, observation class, summary, observations, and evidence-linked findings. A digest is an integrity reference, not proof of immutable storage or authenticity.
 
