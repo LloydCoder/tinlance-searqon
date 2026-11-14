@@ -23,12 +23,12 @@ The implementation must be threat-modeled against, at minimum:
 Before broader remote crawling or a production release:
 
 1. Parse and normalize target URLs using a standards-compliant URL parser.
-2. Resolve all A and AAAA records and reject loopback, private, link-local, multicast, reserved, and metadata destinations.
+2. Resolve all A and AAAA records and reject loopback, private, link-local, multicast, reserved, and metadata destinations, including Azure WireServer's special platform address 168.63.129.16.
 3. Handle IPv4-mapped IPv6, unusual numeric IP encodings, and relevant translation mechanisms.
 4. Mitigate DNS rebinding by validating the actual connection destination, not only a preflight DNS lookup.
 5. Disable automatic redirects or validate every redirect hop and bind each connection to a validated address.
 6. Revalidate destinations on retries.
-7. Enforce strict response byte, decompression, timeout, redirect, concurrency, depth, and content-type limits.
+7. Enforce strict response byte, decompression, total request deadline, socket inactivity timeout, DNS timeout, redirect, concurrency, depth, and content-type limits.
 8. Isolate browser execution from credentials, internal networks, and host resources.
 9. Treat robots policy as a crawl coordination signal, not authorization to access otherwise restricted resources.
 10. Record the acquisition method and outcome without logging secrets.
