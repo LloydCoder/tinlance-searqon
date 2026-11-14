@@ -1,7 +1,7 @@
 # Searqon Implementation Status
 
 **Last verified:** 2026-11-14  
-**Base commit for this status revision:** `2e71ef01cb3f449549a5202ab8fcd11c3ad9bac4`  
+**Base commit for this status revision:** `c2941679bbd23250268a3325fb03e9468f0e84d1`  
 **Product maturity:** Early alpha; not production-ready.
 
 This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification.
@@ -14,14 +14,14 @@ This register separates implemented repository capabilities from customer, secur
 | 1 — Customer validation | BLOCKED | Interviews, five design partners, and paid-pilot commitments require real customer participation. No interviews or commitments are fabricated or claimed. |
 | 2 — Open-source foundation | VERIFIED | Public Apache-2.0 repository, contribution/security policies, Node 22/24 CI, npm lockfile/audit, package dry-run, and CodeQL v4. Full release provenance, license, SBOM, and signing review remains. |
 | 3 — Domain contracts | IN_PROGRESS | Evidence provenance runtime contract, standalone Evidence Record JSON Schema 2020-12, remote scan result JSON Schema 2020-12, assessment report schema, GEO observation schema, and separate discipline assessments exist. Broader versioned APIs, migrations, compatibility policy, and persistence contracts remain. |
-| 4 — Secure remote acquisition | IN_PROGRESS | URL/IP policy, public DNS validation, pinned socket lookup, redirect validation, bounded HTTP(S) acquisition, and robots parser/retrieval/cache are implemented. The single-page scanner checks robots policy before fetching and before every redirect destination. A GitHub Actions integration test now performs a real IPv4-pinned HTTPS request and verifies TLS against a public test origin. Real redirect/DNS-rebinding/timeout integration coverage, stronger target authorization beyond CLI attestation, and broader crawl isolation remain. |
+| 4 — Secure remote acquisition | IN_PROGRESS | URL/IP policy, public DNS validation, pinned socket lookup, manual redirect validation, hard per-request deadlines, DNS/socket inactivity timeouts, bounded response headers/bytes, and robots parser/retrieval/cache are implemented. Azure WireServer and additional local/special-use hostnames are blocked. The one-page scanner checks robots policy before acquisition and every redirect. A real IPv4-pinned HTTPS/TLS smoke test runs in CI. Controlled-origin redirect/DNS-rebinding integration tests, stronger target authorization beyond CLI attestation, and broader crawl isolation remain. |
 | 5 — Evidence and provenance | IN_PROGRESS | Runtime evidence records, content digests, provenance metadata, and standalone Evidence Record JSON Schema 2020-12 are implemented. Persistent storage, retention, redaction/deletion, tamper-evident audit, and multi-tenant evidence access controls remain. |
 | 6 — Passive scanner | IN_PROGRESS | Local HTML, Markdown, and OpenAPI analysis plus a bounded one-page remote scanner with robots checks, redirect destination policy checks, a 2 MiB response cap, and explicit operator authorization attestation. Findings are evidence-linked with explicit partial coverage. Recursive crawling, browser rendering, MCP metadata acquisition, and complete discipline audits remain. |
 | 7 — GEO intelligence | IN_PROGRESS | Supplied-observation normalization, provider/channel provenance, brand mention/citation extraction, cohort-safe aggregation by channel/provider/model/region/locale/brand/domain, and Wilson 95% intervals. No live provider adapters, consumer-interface observation collection, scheduling, history store, or monitoring. |
 | 8 — Interfaces and reporting | IN_PROGRESS | Local scan, authorized single-page remote scan, and GEO analyze/aggregate CLI commands plus JSON Schema contracts and synthetic fixtures. Hosted API, web UI, accessibility testing, and customer-facing report UX remain. |
 | 9 — Hosted service | NOT_STARTED | No authentication, tenant model, billing, quotas, scheduling service, managed database, or cloud deployment. |
 | 10 — Security/privacy assurance | IN_PROGRESS | Security policy, URL/DNS/robots primitives, CodeQL v4, npm audit, and regression tests exist. CodeQL workflow completion is verified, but alert disposition was not independently reviewed here. No independent penetration test, ASVS assessment, privacy/legal review, secret-scanning workflow, or production threat-model closure. |
-| 11 — Reliability and operations | IN_PROGRESS | CI tests Node.js 22/24, nested source syntax, full tests, documented CLI examples, npm audit, package dry-run, and a live pinned HTTPS/TLS smoke test in GitHub Actions; CodeQL runs on PRs/main and weekly. No production SLOs, deploy/rollback, incident response, backups, or recovery exercise. |
+| 11 — Reliability and operations | IN_PROGRESS | CI tests Node.js 22/24, source syntax, full tests, CLI examples, npm audit, package dry-run, and a live pinned HTTPS/TLS smoke test; CodeQL runs on PRs/main and weekly. No production SLOs, deploy/rollback, incident response, backups, or recovery exercise. |
 | 12 — Design-partner pilots | BLOCKED | Requires recruited organizations and real pilot participation. No pilots or outcomes are claimed. |
 | 13 — Commercial v1 | NOT_STARTED | No production service, accepted customer outcomes, support operations, validated pricing, or measured unit economics. |
 | 14 — SEO/AEO expansion | IN_PROGRESS | A small local HTML/Markdown/OpenAPI rule set only. Search Console integration, technical crawl, Core Web Vitals, broader entity/answer methodology, and verified remediation remain. |
@@ -53,6 +53,7 @@ This register separates implemented repository capabilities from customer, secur
 - [PR #26](https://github.com/LloydCoder/tinlance-searqon/pull/26) — standalone versioned Evidence Record JSON Schema and runtime contract regression tests.
 - [PR #28](https://github.com/LloydCoder/tinlance-searqon/pull/28) — remote scan result JSON Schema and runtime result contract tests.
 - [PR #29](https://github.com/LloydCoder/tinlance-searqon/pull/29) — live pinned IPv4 HTTPS/TLS integration test in GitHub Actions.
+- [PR #34](https://github.com/LloydCoder/tinlance-searqon/pull/34) — hard HTTP acquisition deadlines and Azure WireServer/local special-use SSRF blocking.
 
 ## Current verification gates
 
