@@ -83,11 +83,12 @@ export function parseRobots(content) {
       current._hasDirectives=true;
       if (!value) continue;
       if (!value.startsWith("/") && !value.startsWith("*")) continue;
+      const normalizedPath = normalizeRobotsPath(value);
       current.rules.push(Object.freeze({
         type:field,
         path:value,
-        specificity:Buffer.byteLength(value.replace(/\*/g,"").replace(/\$$/,""),"utf8"),
-        pattern:compileRulePattern(value)
+        specificity:pathSpecificity(normalizedPath),
+        pattern:compileRulePattern(normalizedPath)
       }));
       continue;
     }
