@@ -34,8 +34,9 @@ function normalizeCitation(value) {
 function normalizeTargetDomain(value) {
   if (value === undefined || value === null || value === "") return null;
   const domain = requiredText(value,"targetDomain",253).toLowerCase();
-  if (!/^(?=.{1,253}$)[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/.test(domain) || domain.includes("..")) {
-    throw new TypeError("targetDomain must be a hostname without scheme, path, or credentials");
+  const labels=domain.split(".");
+  if (domain.length>253 || labels.length<2 || labels.some(label=>label.length>63 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label))) {
+    throw new TypeError("targetDomain must be a valid DNS hostname without scheme, path, or credentials");
   }
   return domain;
 }
@@ -148,11 +149,21 @@ export function aggregateGeoObservations(observations) {
         typeof observation.mentioned!=="boolean" || observation.mentioned!==(observation.mentionCount>0)) {
       throw new TypeError("GEO observation mention count is inconsistent");
     }
-    if (!Array.isArray(observation.citations) || !Number.isSafeInteger(observation.citationCount) ||
-        observation.citationCount!==observation.citations.length || observation.citations.some(item=>!item || typeof item.url!=="string" || typeof item.domain!=="string")) {
+    if (!Array.isArray(observation.citations) || observation.citations.length>MAX_CITATIONS || !Number.isSafeInteger(observation.citationCount) ||
+        observation.citationCount!==observation.citations.length) {
       throw new TypeError("GEO observation citation count is inconsistent");
     }
-    if (typeof observation.brandCited!=="boolean" || (observation.targetDomain===null && observation.brandCited)) {
+    for (const citation of observation.citations) {
+      if (!citation || typeof citation.url!=="string" || typeof citation.domain!=="string") throw new TypeError("GEO observation citation URL is invalid");
+      let url;
+      try { url=new URL(citation.url); } catch { throw new TypeError("GEO observation citation URL is invalid"); }
+      if ((url.protocol!=="http:" && url.protocol!=="https:") || url.username || url.password || url.hostname.toLowerCase()!==citation.domain) {
+        throw new TypeError("GEO observation citation URL is invalid");
+      }
+    }
+    const targetDomain=observation.targetDomain;
+    const expectedBrandCited=targetDomain ? observation.citations.some(item=>item.domain===targetDomain || item.domain.endsWith("."+targetDomain)) : false;
+    if (typeof observation.brandCited!=="boolean" || observation.brandCited!==expectedBrandCited) {
       throw new TypeError("GEO observation brand citation state is inconsistent");
     }
     const evidence=observation.evidence;

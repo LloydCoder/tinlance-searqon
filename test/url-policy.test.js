@@ -30,6 +30,10 @@ test("target URL parser normalizes public destinations and drops fragments", () 
   assert.equal(result.isIpLiteral,false);
 });
 
+test("hostname labels reject underscores and leading or trailing hyphens", () => {
+  for (const value of ["https://foo_bar.example.com","https://-bad.example.com","https://bad-.example.com"]) assert.throws(()=>validateTargetUrl(value),/hostname labels/);
+});
+
 test("DNS answers must all be public and match their declared address families", () => {
   const valid=validateResolvedAddresses("example.com",[{address:"8.8.8.8",family:4},{address:"2606:4700:4700::1111",family:6}]);
   assert.equal(valid.length,2);
