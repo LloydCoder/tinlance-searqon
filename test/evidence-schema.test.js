@@ -18,6 +18,8 @@ test("published evidence schema defines the complete versioned provenance contra
   assert.equal(schema.properties.sha256.pattern, "^[a-f0-9]{64}$");
   assert.equal(schema.properties.id.pattern, "^evidence_[a-f0-9]{20}$");
   assert.equal(schema.properties.source.maxLength, 2048);
+  assert.equal(schema.properties.contentType.maxLength, 255);
+  assert.equal(schema.properties.methodologyVersion.maxLength, 128);
   assert.equal(Object.hasOwn(schema.properties, "content"), false);
 });
 

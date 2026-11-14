@@ -32,3 +32,27 @@ test("evidence source labels are bounded and reject control characters", () => {
 test("evidence factory enforces the same payload bound", () => {
   assert.throws(()=>createEvidenceRecord({source:"large",contentType:"text/html",content:"x".repeat(2*1024*1024+1)}),/analysis limit/);
 });
+
+
+test("evidence factory rejects invalid media types that violate the published schema", () => {
+  for (const contentType of ["text", "text /html", "/html", "text/html extra", "a".repeat(256) + "/html", "text/html\nX-Evil: yes"]) {
+    assert.throws(() => createEvidenceRecord({ source: "fixture", content: "x", contentType }), /contentType/);
+  }
+});
+
+test("evidence factory accepts media type parameters but stores only a normalized media type", () => {
+  const record = createEvidenceRecord({ source: "fixture", content: "x", contentType: "Text/HTML; charset=utf-8" });
+  assert.equal(record.contentType, "text/html");
+});
+
+test("evidence factory enforces the published methodology-version length and normalization", () => {
+  assert.throws(() => createEvidenceRecord({ source: "fixture", content: "x", contentType: "text/html", methodologyVersion: "v".repeat(129) }), /methodologyVersion/);
+  const record = createEvidenceRecord({ source: "fixture", content: "x", contentType: "text/html", methodologyVersion: "  2026.11  " });
+  assert.equal(record.methodologyVersion, "2026.11");
+});
+
+test("evidence source length uses Unicode code points consistently with JSON Schema", () => {
+  const source = "😀".repeat(2048);
+  const record = createEvidenceRecord({ source, content: "x", contentType: "text/html" });
+  assert.equal([...record.source].length, 2048);
+});
