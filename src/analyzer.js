@@ -1,15 +1,10 @@
-import { createHash } from "node:crypto";
+import { createEvidenceRecord } from "./evidence.js";
 
-const MAX_BYTES = 2 * 1024 * 1024;
 const RULES_VERSION = "2026-11-14.1";
-
-function digest(value) {
-  return createHash("sha256").update(value).digest("hex");
-}
 
 function finding(data) {
   return Object.freeze({
-    id: "finding_" + digest(data.ruleId + data.evidenceId).slice(0, 16),
+    id: "finding_" + data.ruleId + "_" + data.evidenceId.slice(-8),
     ...data
   });
 }
@@ -36,7 +31,7 @@ function analyzeHtml(html, evidenceId) {
   if (!jsonLd) findings.push(finding({ruleId:"html.structured_data.absent",dimension:"AEO",severity:"low",title:"JSON-LD structured data not detected",description:"No JSON-LD script block was detected; structured data is optional and context-dependent.",recommendation:"Assess whether a supported schema.org type would clarify the page's entities; do not add irrelevant markup.",evidenceId}));
   if (robotsNoIndex) findings.push(finding({ruleId:"html.robots.noindex",dimension:"SEO",severity:"high",title:"Page declares noindex",description:"A robots meta directive appears to request that crawlers not index this page.",recommendation:"Confirm this is intentional for the page's publishing and discovery goals.",evidenceId}));
 
-  return {findings, observations:{titlePresent:Boolean(title),descriptionPresent:description,h1Present:Boolean(h1),canonicalPresent:canonical,jsonLdPresent:jsonLd,noindex:robotsNoIndex}};
+  return {findings,observations:{titlePresent:Boolean(title),descriptionPresent:description,h1Present:Boolean(h1),canonicalPresent:canonical,jsonLdPresent:jsonLd,noindex:robotsNoIndex}};
 }
 
 function analyzeOpenApi(content, evidenceId) {
@@ -59,18 +54,15 @@ export function analyzeDocument(input) {
   if (!input || typeof input !== "object" || typeof input.source !== "string" || !input.source.trim() || typeof input.content !== "string" || typeof input.contentType !== "string") {
     throw new TypeError("source, contentType, and string content are required");
   }
-  const bytes = Buffer.byteLength(input.content, "utf8");
-  if (bytes > MAX_BYTES) throw new RangeError("Document exceeds the " + MAX_BYTES + " byte analysis limit");
   const type = input.contentType.split(";")[0].trim().toLowerCase();
   if (!["text/html","application/json","application/vnd.oai.openapi+json"].includes(type)) throw new TypeError("Unsupported content type: " + type);
-  const sha256 = digest(input.content);
-  const evidenceId = "evidence_" + digest(input.source + "\0" + sha256).slice(0, 20);
-  const analyzed = type === "text/html" ? analyzeHtml(input.content, evidenceId) : analyzeOpenApi(input.content, evidenceId);
+  const evidence = createEvidenceRecord({...input,contentType:type,methodologyVersion:RULES_VERSION});
+  const analyzed = type === "text/html" ? analyzeHtml(input.content,evidence.id) : analyzeOpenApi(input.content,evidence.id);
   return Object.freeze({
     schemaVersion:"1.0.0",
     rulesVersion:RULES_VERSION,
-    observationClass:"first_party",
-    evidence:Object.freeze({id:evidenceId,source:input.source,contentType:type,byteLength:bytes,sha256}),
+    observationClass:evidence.observationClass,
+    evidence,
     summary:Object.freeze({findingCount:analyzed.findings.length,bySeverity:Object.fromEntries(["critical","high","medium","low","info"].map(level => [level,analyzed.findings.filter(item => item.severity === level).length]))}),
     observations:Object.freeze(analyzed.observations),
     findings:Object.freeze(analyzed.findings)

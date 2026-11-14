@@ -1,17 +1,19 @@
 # Passive Scanner: Current Contract
 
-The first executable scanner increment intentionally accepts local files only. This eliminates network-origin SSRF exposure in the current execution path rather than claiming to solve it prematurely.
+The first executable scanner increment intentionally accepts local files only. This avoids network-origin SSRF exposure in the current execution path.
 
 ## Inputs
 
-- HTML: `text/html`
-- OpenAPI JSON: `application/json` or `application/vnd.oai.openapi+json`
+- HTML: \`text/html\`
+- OpenAPI JSON: \`application/json\` or \`application/vnd.oai.openapi+json\`
 - Maximum UTF-8 payload: 2 MiB
 - Caller-supplied source label; it is metadata only and is never fetched.
 
-## Outputs
+## Evidence and outputs
 
-Reports include a schema version, rules version, observation class, source metadata, SHA-256 content digest, deterministic evidence identifier, finding counts, observations, and findings linked to the evidence identifier.
+Each report contains a versioned evidence record with source, acquisition method, observation class, UTC collection timestamp, content type, byte length, SHA-256 digest, methodology version, and an integrity descriptor. The content itself is not copied into the evidence record.
+
+The evidence identifier is deterministic for the same source, acquisition method, and content digest. The collection timestamp is not part of the identifier. A digest supports content-integrity comparison; it does not prove authenticity, append-only storage, or immutability.
 
 ## Rules
 
