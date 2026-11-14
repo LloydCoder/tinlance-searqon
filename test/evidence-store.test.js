@@ -101,7 +101,7 @@ test("persistent evidence ledger closes append admission immediately and drains 
 
 test("persistent evidence ledger refuses symbolic-link targets", async () => {
   const path = await temporaryLedgerPath();
-  const target = join(path, "..", "target.jsonl");
+  const target = path + ".target";
   await writeFile(target, "", "utf8");
   await symlink(target, path);
   await assert.rejects(() => openEvidenceLedgerStore(path));
