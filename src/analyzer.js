@@ -231,7 +231,7 @@ function analyzeMcpSnapshot(content, evidenceId) {
     findings,
     observations:{
       protocolVersion:typeof snapshot.protocolVersion === "string" ? snapshot.protocolVersion : null,
-      serverName:typeof snapshot.serverInfo?.name === "string" ? snapshot.serverInfo.name : null,
+      serverName:typeof (snapshot.serverInfo ?? snapshot._meta?.["io.modelcontextprotocol/serverInfo"])?.name === "string" ? (snapshot.serverInfo ?? snapshot._meta["io.modelcontextprotocol/serverInfo"]).name : null,
       mcpToolCount:snapshot.tools.length,
       duplicateToolNameCount,
       toolsMissingDescription,
