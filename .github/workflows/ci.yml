@@ -36,5 +36,7 @@ jobs:
           done
       - name: Run test suite
         run: npm test
+      - name: Audit dependency tree
+        run: npm audit --audit-level=high
       - name: Validate package contents
         run: npm pack --dry-run
