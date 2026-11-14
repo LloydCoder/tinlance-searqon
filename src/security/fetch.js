@@ -72,9 +72,14 @@ export async function fetchPublicUrl(value, options = {}) {
     const response = await new Promise((resolve, reject) => {
       let settled = false;
       let request;
+      let incomingResponse;
+      let deadlineTimer;
+      const clearDeadline = () => clearTimeout(deadlineTimer);
+      const timeoutError = () => Object.assign(new Error("HTTP acquisition timed out"), { code: "ETIMEDOUT" });
       const fail = error => {
         if (settled) return;
         settled = true;
+        clearDeadline();
         reject(error);
       };
       try {
@@ -83,86 +88,97 @@ export async function fetchPublicUrl(value, options = {}) {
             incoming.destroy();
             return;
           }
+          incomingResponse = incoming;
           settled = true;
-          resolve({ incoming, request });
+          resolve({ incoming, request, clearDeadline });
         });
         request.once("error", fail);
-        request.setTimeout?.(timeoutMs, () => request.destroy(new Error("HTTP acquisition timed out")));
+        deadlineTimer = setTimeout(() => {
+          const error = timeoutError();
+          request.destroy(error);
+          incomingResponse?.destroy(error);
+        }, timeoutMs);
+        request.setTimeout?.(timeoutMs, () => request.destroy(timeoutError()));
         request.end();
       } catch (error) {
         fail(error);
       }
     });
 
-    const { incoming, request } = response;
-    const status = incoming.statusCode ?? 0;
-    const headers = incoming.headers ?? {};
-
-    if (REDIRECT_STATUSES.has(status) && headers.location) {
-      incoming.destroy();
-      if (redirects >= maxRedirects) throw new Error("HTTP acquisition redirect limit exceeded");
-      const next = resolveRedirectTarget(current.href, headers.location);
-      if (current.protocol === "https:" && next.protocol === "http:") {
-        throw new Error("HTTPS-to-HTTP redirect downgrade is not permitted");
-      }
-      if (options.validateRedirect) {
-        const allowed = await options.validateRedirect(Object.freeze({ from: current.href, to: next.href, redirectCount: redirects + 1 }));
-        if (allowed !== true) {
-          throw Object.assign(new Error("HTTP acquisition redirect blocked by destination policy"), { code: "ERR_REDIRECT_POLICY" });
-        }
-      }
-      current = next;
-      redirects++;
-      continue;
-    }
-
-    const encoding = String(headers["content-encoding"] ?? "identity").toLowerCase();
-    if (encoding !== "identity") {
-      incoming.destroy();
-      request.destroy();
-      throw new Error("HTTP acquisition rejected unexpected content encoding");
-    }
-
-    const declaredLength = headers["content-length"];
-    if (declaredLength !== undefined) {
-      const length = Number(declaredLength);
-      if (!Number.isSafeInteger(length) || length < 0) {
-        incoming.destroy();
-        request.destroy();
-        throw new Error("HTTP acquisition received an invalid content length");
-      }
-      if (length > maxBytes) {
-        incoming.destroy();
-        request.destroy();
-        throw new RangeError("HTTP acquisition response exceeds the configured byte limit");
-      }
-    }
-
-    const chunks = [];
-    let byteLength = 0;
+    const { incoming, request, clearDeadline } = response;
     try {
-      for await (const chunk of incoming) {
-        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-        byteLength += buffer.length;
-        if (byteLength > maxBytes) {
+      const status = incoming.statusCode ?? 0;
+      const headers = incoming.headers ?? {};
+
+      if (REDIRECT_STATUSES.has(status) && headers.location) {
+        incoming.destroy();
+        clearDeadline();
+        if (redirects >= maxRedirects) throw new Error("HTTP acquisition redirect limit exceeded");
+        const next = resolveRedirectTarget(current.href, headers.location);
+        if (current.protocol === "https:" && next.protocol === "http:") {
+          throw new Error("HTTPS-to-HTTP redirect downgrade is not permitted");
+        }
+        if (options.validateRedirect) {
+          const allowed = await options.validateRedirect(Object.freeze({ from: current.href, to: next.href, redirectCount: redirects + 1 }));
+          if (allowed !== true) {
+            throw Object.assign(new Error("HTTP acquisition redirect blocked by destination policy"), { code: "ERR_REDIRECT_POLICY" });
+          }
+        }
+        current = next;
+        redirects++;
+        continue;
+      }
+
+      const encoding = String(headers["content-encoding"] ?? "identity").toLowerCase();
+      if (encoding !== "identity") {
+        incoming.destroy();
+        request.destroy();
+        throw new Error("HTTP acquisition rejected unexpected content encoding");
+      }
+
+      const declaredLength = headers["content-length"];
+      if (declaredLength !== undefined) {
+        const length = Number(declaredLength);
+        if (!Number.isSafeInteger(length) || length < 0) {
+          incoming.destroy();
+          request.destroy();
+          throw new Error("HTTP acquisition received an invalid content length");
+        }
+        if (length > maxBytes) {
           incoming.destroy();
           request.destroy();
           throw new RangeError("HTTP acquisition response exceeds the configured byte limit");
         }
-        chunks.push(buffer);
       }
-    } catch (error) {
-      request.destroy();
-      throw error;
-    }
 
-    return Object.freeze({
-      status,
-      headers: Object.freeze({ ...headers }),
-      body: Buffer.concat(chunks, byteLength),
-      finalUrl: current.href,
-      redirects,
-      byteLength
-    });
+      const chunks = [];
+      let byteLength = 0;
+      try {
+        for await (const chunk of incoming) {
+          const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+          byteLength += buffer.length;
+          if (byteLength > maxBytes) {
+            incoming.destroy();
+            request.destroy();
+            throw new RangeError("HTTP acquisition response exceeds the configured byte limit");
+          }
+          chunks.push(buffer);
+        }
+      } catch (error) {
+        request.destroy();
+        throw error;
+      }
+
+      return Object.freeze({
+        status,
+        headers: Object.freeze({ ...headers }),
+        body: Buffer.concat(chunks, byteLength),
+        finalUrl: current.href,
+        redirects,
+        byteLength
+      });
+    } finally {
+      clearDeadline();
+    }
   }
 }
