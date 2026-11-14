@@ -47,3 +47,22 @@ test("redirect targets are revalidated against the same destination policy", () 
   assert.throws(()=>resolveRedirectTarget("https://example.com/a","http://127.0.0.1/admin"),/non-public/);
   assert.throws(()=>resolveRedirectTarget("https://example.com/a","file:///etc/passwd"),/HTTP or HTTPS/);
 });
+
+
+test("Azure WireServer platform address is blocked as a cloud-internal destination", () => {
+  assert.equal(isPublicIp("168.63.129.16"), false);
+  assert.throws(() => validateTargetUrl("http://168.63.129.16/metadata"), /non-public/);
+  assert.throws(() => validateResolvedAddresses("metadata.azure.internal", [{ address: "168.63.129.16", family: 4 }]), /non-public/);
+});
+
+test("additional special-use and local naming suffixes are rejected", () => {
+  for (const value of [
+    "https://router.home.arpa/",
+    "https://service.lan/",
+    "https://service.corp/",
+    "https://service.intranet/",
+    "https://service.alt/"
+  ]) {
+    assert.throws(() => validateTargetUrl(value), /reserved hostnames/);
+  }
+});
