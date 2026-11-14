@@ -122,28 +122,35 @@ export async function scanPublicUrl(value, options = {}) {
 
   let redirectBlockReason = null;
   const validateRedirect = async ({ to }) => {
+    let destination;
     try {
-      const destination = validateTargetUrl(to);
-      const destinationOrigin = new URL(destination.href).origin;
-      if (destinationOrigin !== origin && !allowedRedirectOrigins.has(destinationOrigin)) {
-        redirectBlockReason = "redirect_not_authorized";
-        return false;
-      }
-      const destinationRobots = await robotsLoader(destinationOrigin, userAgent, robotsOptions);
-      const decision = evaluatePolicy(destinationRobots, destination.href, userAgent);
-      if (decision.outcome === "unreachable") {
-        redirectBlockReason = "robots_unreachable";
-        return false;
-      }
-      if (!decision.allowed) {
-        redirectBlockReason = "robots_disallowed";
-        return false;
-      }
-      return true;
+      destination = validateTargetUrl(to);
+    } catch {
+      redirectBlockReason = "redirect_blocked_by_policy";
+      return false;
+    }
+    const destinationOrigin = new URL(destination.href).origin;
+    if (destinationOrigin !== origin && !allowedRedirectOrigins.has(destinationOrigin)) {
+      redirectBlockReason = "redirect_not_authorized";
+      return false;
+    }
+    let destinationRobots;
+    try {
+      destinationRobots = await robotsLoader(destinationOrigin, userAgent, robotsOptions);
     } catch {
       redirectBlockReason = "robots_unreachable";
       return false;
     }
+    const decision = evaluatePolicy(destinationRobots, destination.href, userAgent);
+    if (decision.outcome === "unreachable") {
+      redirectBlockReason = "robots_unreachable";
+      return false;
+    }
+    if (!decision.allowed) {
+      redirectBlockReason = "robots_disallowed";
+      return false;
+    }
+    return true;
   };
 
   let response;
@@ -161,6 +168,12 @@ export async function scanPublicUrl(value, options = {}) {
         return result("redirect_not_authorized", {
           target: publicLabel(target.href),
           error: "Cross-origin redirect destination was not explicitly authorized"
+        });
+      }
+      if (redirectBlockReason === "redirect_blocked_by_policy") {
+        return result("redirect_blocked_by_policy", {
+          target: publicLabel(target.href),
+          error: "Redirect destination failed the public URL and destination security policy"
         });
       }
       const status = redirectBlockReason === "robots_unreachable" ? "robots_unreachable" : "blocked_by_robots";
