@@ -1,0 +1,110 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "type": "geo_observation",
+    "observationClass": "consumer_observation",
+    "provider": {
+      "name": "Synthetic consumer-search fixture",
+      "model": null,
+      "region": "US",
+      "locale": "en-US"
+    },
+    "sampledAt": "2026-11-14T12:00:00.000Z",
+    "brand": "Acme",
+    "targetDomain": "acme.example",
+    "mentioned": true,
+    "mentionCount": 1,
+    "citationCount": 1,
+    "brandCited": true,
+    "citations": [
+      {
+        "url": "https://docs.acme.example/",
+        "domain": "docs.acme.example"
+      }
+    ],
+    "evidence": {
+      "id": "evidence_00131e78035bb2fb96d5",
+      "source": "Synthetic consumer-search fixture",
+      "acquisitionMethod": "provider_observation",
+      "observationClass": "consumer_observation",
+      "collectedAt": "2026-11-14T12:00:00.000Z",
+      "contentType": "application/json",
+      "byteLength": 358,
+      "sha256": "854d83507ebb02adff73eff5fdcf187c546231a36bd3281b8a13ad070b4c5b42",
+      "methodologyVersion": "geo-2026-11-14.1",
+      "integrity": "sha256-content-digest"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "type": "geo_observation",
+    "observationClass": "consumer_observation",
+    "provider": {
+      "name": "Synthetic consumer-search fixture",
+      "model": null,
+      "region": "US",
+      "locale": "en-US"
+    },
+    "sampledAt": "2026-11-14T12:05:00.000Z",
+    "brand": "Acme",
+    "targetDomain": "acme.example",
+    "mentioned": false,
+    "mentionCount": 0,
+    "citationCount": 1,
+    "brandCited": true,
+    "citations": [
+      {
+        "url": "https://acme.example/",
+        "domain": "acme.example"
+      }
+    ],
+    "evidence": {
+      "id": "evidence_44e75e739445cb630390",
+      "source": "Synthetic consumer-search fixture",
+      "acquisitionMethod": "provider_observation",
+      "observationClass": "consumer_observation",
+      "collectedAt": "2026-11-14T12:05:00.000Z",
+      "contentType": "application/json",
+      "byteLength": 346,
+      "sha256": "7aec42bbdbf6f36ffe66b74118ec1ff640ecbf9bfd4ce5d1687e1b49f5034a0a",
+      "methodologyVersion": "geo-2026-11-14.1",
+      "integrity": "sha256-content-digest"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "type": "geo_observation",
+    "observationClass": "model_api",
+    "provider": {
+      "name": "Synthetic model API fixture",
+      "model": "fixture-model",
+      "region": "US",
+      "locale": "en-US"
+    },
+    "sampledAt": "2026-11-14T12:10:00.000Z",
+    "brand": "Acme",
+    "targetDomain": "acme.example",
+    "mentioned": true,
+    "mentionCount": 1,
+    "citationCount": 1,
+    "brandCited": true,
+    "citations": [
+      {
+        "url": "https://docs.acme.example/",
+        "domain": "docs.acme.example"
+      }
+    ],
+    "evidence": {
+      "id": "evidence_b3d764f72b9b4a271ace",
+      "source": "Synthetic model API fixture",
+      "acquisitionMethod": "provider_observation",
+      "observationClass": "model_api",
+      "collectedAt": "2026-11-14T12:10:00.000Z",
+      "contentType": "application/json",
+      "byteLength": 348,
+      "sha256": "14cad647ce63702c55dae27937f8322608bf0267b6e2c82608c33c12c7ef1dc7",
+      "methodologyVersion": "geo-2026-11-14.1",
+      "integrity": "sha256-content-digest"
+    }
+  }
+]

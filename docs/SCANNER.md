@@ -54,4 +54,4 @@ Aggregate a JSON array of normalized GEO observations:
 node src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
-These commands do not call a provider or fetch citations. The bundled example is synthetic fixture data, not a live measurement. The output contract is [`schemas/geo-observation.schema.json`](../schemas/geo-observation.schema.json).
+These commands do not call a provider or fetch citations. Both bundled GEO examples are synthetic fixture data, not live measurements. `geo aggregate` groups by provider and observation class and never pools consumer-facing and model API samples. The output contract is [`schemas/geo-observation.schema.json`](../schemas/geo-observation.schema.json).
