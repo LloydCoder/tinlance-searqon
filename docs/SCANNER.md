@@ -1,6 +1,6 @@
 # Passive Scanner: Current Contract
 
-Searqon supports caller-supplied local documents and a bounded, single-page remote scan. The remote path uses the SSRF-resistant transport and robots policy checks; it does not recursively crawl links or render browser content.
+Searqon supports caller-supplied local documents and a bounded, single-page remote scan. The remote path uses the SSRF-resistant transport and robots policy checks; it does not recursively crawl links or render browser content. Every caller of the exported `scanPublicUrl` API must explicitly pass `confirmAuthorizedTarget: true`; CLI confirmation alone is not relied upon to protect programmatic callers.
 
 ## Inputs
 
