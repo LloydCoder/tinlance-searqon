@@ -48,7 +48,7 @@ async function runScanUrl(args) {
   const agentIndex = args.indexOf("--user-agent");
   const userAgent = agentIndex >= 0 ? args[agentIndex + 1] : undefined;
   if (agentIndex >= 0 && (!userAgent || userAgent.startsWith("--"))) throw new Error("--user-agent requires a product token");
-  await emitResult(await scanPublicUrl(args[1], { userAgent }), args);
+  await emitResult(await scanPublicUrl(args[1], { userAgent, confirmAuthorizedTarget: true }), args);
 }
 
 async function runGeo(args) {
