@@ -257,7 +257,7 @@ function analyzeMcpSnapshot(content, evidenceId) {
           for (const [propertyName, propertySchema] of Object.entries(value)) {
             const previous = currentPropertyName;
             currentPropertyName = propertyName;
-            inspectSchema(propertySchema, reachable && node.type === "object", depth + 1);
+            inspectSchema(propertySchema, reachable, depth + 1);
             currentPropertyName = previous;
           }
         } else if (value && typeof value === "object") {
