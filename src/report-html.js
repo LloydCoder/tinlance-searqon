@@ -116,6 +116,7 @@ footer {
   th, td { padding: .65rem .7rem; }
   .header-meta { display: grid; }
 }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 @media print {
   body { background: white; }
   .site-header { background: white; color: var(--ink); border-bottom: 2px solid var(--amber); }
