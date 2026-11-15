@@ -150,9 +150,25 @@ function analyzeMcpSnapshot(content, evidenceId) {
   }
   if (!Array.isArray(snapshot.tools)) throw new TypeError("MCP snapshot tools must be an array");
   if (snapshot.tools.length > 1000) throw new RangeError("MCP snapshot may contain at most 1000 tools");
+  const requestProtocolVersion = snapshot._meta?.["io.modelcontextprotocol/protocolVersion"];
   if (snapshot.protocolVersion !== undefined &&
       (typeof snapshot.protocolVersion !== "string" || !snapshot.protocolVersion.trim() || snapshot.protocolVersion.length > 64)) {
     throw new TypeError("MCP snapshot protocolVersion must be a non-empty string of at most 64 characters");
+  }
+  if (requestProtocolVersion !== undefined &&
+      (typeof requestProtocolVersion !== "string" || !requestProtocolVersion.trim() || requestProtocolVersion.length > 64)) {
+    throw new TypeError("MCP request metadata protocolVersion must be a non-empty string of at most 64 characters");
+  }
+  const protocolVersion = requestProtocolVersion ?? snapshot.protocolVersion ?? null;
+  const uses2026Protocol = protocolVersion === "2026-07-28";
+  if (snapshot.toolsListMetadata !== undefined) {
+    const metadata = snapshot.toolsListMetadata;
+    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata) ||
+        !Number.isSafeInteger(metadata.ttlMs) || metadata.ttlMs < 0 ||
+        !["public", "private"].includes(metadata.cacheScope) ||
+        typeof metadata.resultType !== "string" || !metadata.resultType.trim()) {
+      throw new TypeError("MCP toolsListMetadata must contain a non-negative integer ttlMs, public/private cacheScope, and non-empty resultType");
+    }
   }
   if (snapshot.capabilities !== undefined &&
       (!snapshot.capabilities || typeof snapshot.capabilities !== "object" || Array.isArray(snapshot.capabilities))) {
@@ -178,6 +194,10 @@ function analyzeMcpSnapshot(content, evidenceId) {
   let toolsMissingDescription = 0;
   let toolsWithDestructiveHint = 0;
   let toolsWithOpenWorldHint = 0;
+  let toolsWithInvalidHeaderAnnotations = 0;
+  let mcpHeaderAnnotationCount = 0;
+  let toolsWithSensitiveHeaderAnnotations = 0;
+  let toolsWithInvalidNames = 0;
   for (const tool of snapshot.tools) {
     if (!tool || typeof tool !== "object" || Array.isArray(tool) ||
         typeof tool.name !== "string" || !tool.name.trim() || [...tool.name].length > 128) {
@@ -205,9 +225,50 @@ function analyzeMcpSnapshot(content, evidenceId) {
       }
     }
     nameCounts.set(tool.name, (nameCounts.get(tool.name) ?? 0) + 1);
+    if (!/^[A-Za-z0-9_.-]{1,128}$/.test(tool.name)) toolsWithInvalidNames++;
     if (typeof tool.description !== "string" || !tool.description.trim()) toolsMissingDescription++;
     if (tool.annotations?.destructiveHint === true) toolsWithDestructiveHint++;
     if (tool.annotations?.openWorldHint === true) toolsWithOpenWorldHint++;
+
+    const headerNames = new Set();
+    let invalidHeaderAnnotation = false;
+    let sensitiveHeaderAnnotation = false;
+    const inspectSchema = (node, reachable = true, depth = 0) => {
+      if (!node || typeof node !== "object" || Array.isArray(node) || depth > 32) return;
+      if (Object.hasOwn(node, "x-mcp-header")) {
+        const headerName = node["x-mcp-header"];
+        const tokenValid = typeof headerName === "string" && /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(headerName);
+        const primitiveTypeValid = ["string", "integer", "boolean"].includes(node.type);
+        const duplicate = tokenValid && headerNames.has(headerName.toLowerCase());
+        if (!reachable || !tokenValid || !primitiveTypeValid || duplicate) {
+          invalidHeaderAnnotation = true;
+        } else {
+          headerNames.add(headerName.toLowerCase());
+          mcpHeaderAnnotationCount++;
+          const propertyName = currentPropertyName;
+          if (propertyName && /(?:^|[_-])(api[_-]?key|token|secret|password|authorization|credential)(?:$|[_-])/i.test(propertyName)) {
+            sensitiveHeaderAnnotation = true;
+          }
+        }
+      }
+      for (const [key, value] of Object.entries(node)) {
+        if (key === "x-mcp-header") continue;
+        if (key === "properties" && value && typeof value === "object" && !Array.isArray(value)) {
+          for (const [propertyName, propertySchema] of Object.entries(value)) {
+            const previous = currentPropertyName;
+            currentPropertyName = propertyName;
+            inspectSchema(propertySchema, reachable && node.type === "object", depth + 1);
+            currentPropertyName = previous;
+          }
+        } else if (value && typeof value === "object") {
+          inspectSchema(value, false, depth + 1);
+        }
+      }
+    };
+    let currentPropertyName = null;
+    inspectSchema(tool.inputSchema);
+    if (invalidHeaderAnnotation) toolsWithInvalidHeaderAnnotations++;
+    if (sensitiveHeaderAnnotation) toolsWithSensitiveHeaderAnnotations++;
   }
 
   const duplicateToolNameCount = [...nameCounts.values()].filter(count => count > 1).length;
@@ -248,6 +309,43 @@ function analyzeMcpSnapshot(content, evidenceId) {
     evidenceId
   }));
 
+  if (toolsWithInvalidNames > 0) findings.push(finding({
+    ruleId:"mcp.tool.name.invalid",
+    dimension:"AgEO",
+    severity:"high",
+    title:"MCP tool names contain unsupported characters",
+    description:toolsWithInvalidNames + " tools use names outside the MCP-recommended ASCII letter, digit, underscore, hyphen, and dot character set.",
+    recommendation:"Use unique, stable tool names containing only ASCII letters, digits, underscore, hyphen, and dot.",
+    evidenceId
+  }));
+  if (uses2026Protocol && snapshot.toolsListMetadata === undefined) findings.push(finding({
+    ruleId:"mcp.cache_metadata.missing",
+    dimension:"AgEO",
+    severity:"medium",
+    title:"MCP tools/list cache metadata is missing",
+    description:"The 2026-07-28 protocol requires resultType, ttlMs, and cacheScope on cacheable list results; the supplied snapshot has no tools/list cache metadata.",
+    recommendation:"Capture the tools/list resultType, non-negative ttlMs, and public/private cacheScope fields from the same protocol response.",
+    evidenceId
+  }));
+  if (toolsWithInvalidHeaderAnnotations > 0) findings.push(finding({
+    ruleId:"mcp.tool.header_annotation.invalid",
+    dimension:"AgEO",
+    severity:"high",
+    title:"MCP custom header annotations are invalid",
+    description:toolsWithInvalidHeaderAnnotations + " tools contain x-mcp-header annotations that violate token, uniqueness, primitive-type, or static-reachability constraints.",
+    recommendation:"Use unique HTTP token header names only on statically reachable string, integer, or boolean properties; never annotate array, composition, conditional, or referenced schema paths.",
+    evidenceId
+  }));
+  if (toolsWithSensitiveHeaderAnnotations > 0) findings.push(finding({
+    ruleId:"mcp.tool.header_annotation.sensitive",
+    dimension:"AgEO",
+    severity:"high",
+    title:"MCP custom headers may expose sensitive parameters",
+    description:toolsWithSensitiveHeaderAnnotations + " tools annotate parameter names that appear to contain credentials or secrets for forwarding into HTTP headers visible to intermediaries.",
+    recommendation:"Do not mark passwords, API keys, tokens, credentials, authorization values, or personal data for x-mcp-header forwarding.",
+    evidenceId
+  }));
+
   const capabilities = snapshot.capabilities ?? {};
   const toolsCapabilityAdvertised = Object.hasOwn(capabilities, "tools");
   if (!toolsCapabilityAdvertised && snapshot.tools.length > 0) findings.push(finding({
@@ -263,19 +361,26 @@ function analyzeMcpSnapshot(content, evidenceId) {
   return {
     findings,
     observations:{
-      protocolVersion:typeof snapshot.protocolVersion === "string" ? snapshot.protocolVersion : null,
+      protocolVersion,
       serverName:typeof (snapshot.serverInfo ?? snapshot._meta?.["io.modelcontextprotocol/serverInfo"])?.name === "string" ? (snapshot.serverInfo ?? snapshot._meta["io.modelcontextprotocol/serverInfo"]).name : null,
       mcpToolCount:snapshot.tools.length,
       duplicateToolNameCount,
       toolsMissingDescription,
       toolsWithDestructiveHint,
       toolsWithOpenWorldHint,
+      toolsWithInvalidHeaderAnnotations,
+      mcpHeaderAnnotationCount,
+      toolsWithSensitiveHeaderAnnotations,
+      toolsWithInvalidNames,
+      toolsListTtlMs:snapshot.toolsListMetadata?.ttlMs ?? null,
+      toolsListCacheScope:snapshot.toolsListMetadata?.cacheScope ?? null,
+      toolsListResultType:snapshot.toolsListMetadata?.resultType ?? null,
       toolsCapabilityAdvertised
     },
     assessedDimensions:["AEO","AgEO"],
     scopes:{
       AEO:"MCP tool names and descriptions in a caller-supplied metadata snapshot",
-      AgEO:"MCP tool catalog uniqueness, input-schema root shape, advertised tool capability, and declared side-effect hints"
+      AgEO:"MCP tool catalog uniqueness, input-schema root shape, advertised tool capability, declared side-effect hints, protocol cache metadata, and Streamable HTTP custom-header annotation safety"
     }
   };
 }
