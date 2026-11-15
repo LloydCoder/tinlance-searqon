@@ -286,7 +286,7 @@ export function renderHtmlReport(report) {
   </section>
   <section aria-labelledby="disciplines">
     <h2 id="disciplines">Discipline coverage</h2>
-    <div class="table-wrap">
+    <div class="table-wrap" role="region" aria-label="Discipline assessment table" tabindex="0">
       <table>
         <caption>Discipline coverage and limitations</caption>
         <thead><tr><th scope="col">Discipline</th><th scope="col">Status</th><th scope="col">Coverage</th><th scope="col">Confidence</th><th scope="col">Findings</th><th scope="col">Scope</th><th scope="col">Limitations</th></tr></thead>
