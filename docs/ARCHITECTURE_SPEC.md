@@ -90,8 +90,15 @@ Recommendation lifecycle: proposed → validated → approved → applied → ve
 
 Use TypeScript for domain logic, contracts, adapters and orchestration. Consider Rust only after profiling identifies a material CPU/memory bottleneck. Prefer a modular monolith before microservices. Every paid adapter declares pricing, cost estimator, quota, timeout, retry, cache, retention and fallback behavior. Enforce per-tenant budgets, hard spend caps, sampling limits and circuit breakers. Continuous monitoring is opt-in.
 
-Standards policy: support OpenAPI 3.2.x with explicit 3.1.x compatibility where required; pin schemas and fixtures. Version MCP adapters against dated protocol specifications. Treat robots rules as crawler guidance, not authorization. Treat llms.txt as an optional community convention. Evaluate OAuth/MCP audience binding and never forward client tokens upstream.
+Standards policy: Support OpenAPI 3.2.1 (and the 3.2 feature line) with explicit 3.1.x compatibility where required; pin the official schema revision and conformance fixtures. Target MCP specification revision 2026-07-28 through a versioned adapter and maintain compatibility with 2025-11-25 only where supported and tested. MCP tool descriptions/annotations are untrusted; require explicit consent and validate OAuth token audience; never pass tokens through to upstream servers. Treat robots rules as crawler guidance, not authorization. Treat llms.txt as an optional community convention. Evaluate OAuth/MCP audience binding and never forward client tokens upstream.
 
 ## Decision record
 
 Accepted direction: modular TypeScript-first architecture; evidence-ledger methodology; four distinct engines; optional ecosystem integrations; narrow passive AgEO scanner first; the four painkiller modules are approved architectural extensions but remain unimplemented until their phase gates pass.
+
+## External specification references
+
+- OpenAPI 3.2.1 is the current published patch version as of this architecture review; pin official schemas and follow the normative specification text where schema validation differs: https://spec.openapis.org/oas/v3.2.1.html
+- MCP target revision: 2026-07-28. Its security guidance treats tool descriptions as untrusted and requires user consent; authorization guidance requires resource/audience binding and token validation: https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs/specification/2026-07-28
+- Robots Exclusion Protocol: RFC 9309 defines crawler access guidance; it is not an authorization or access-control mechanism: https://www.rfc-editor.org/rfc/rfc9309.html
+- llms.txt: the llmstxt.org document is a community proposal. Searqon treats it as an optional artifact and makes no guarantee that engines consume it: https://llmstxt.org/
