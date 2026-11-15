@@ -1,6 +1,6 @@
 import { createEvidenceRecord } from "./evidence.js";
 
-const RULES_VERSION = "2026-11-14.4";
+const RULES_VERSION = "2026-11-15.1";
 
 function finding(data) {
   return Object.freeze({
@@ -246,7 +246,7 @@ function analyzeMcpSnapshot(content, evidenceId) {
           headerNames.add(headerName.toLowerCase());
           mcpHeaderAnnotationCount++;
           const propertyName = currentPropertyName;
-          if (propertyName && /(?:^|[_-])(api[_-]?key|token|secret|password|authorization|credential)(?:$|[_-])/i.test(propertyName)) {
+          if (propertyName && /(api.?key|token|secret|password|authorization|credential)/i.test(propertyName)) {
             sensitiveHeaderAnnotation = true;
           }
         }
