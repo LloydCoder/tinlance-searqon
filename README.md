@@ -30,7 +30,7 @@ The JSON report includes a content SHA-256 digest, deterministic evidence identi
 
 The `src/evidence-ledger.js` module creates sequence-numbered SHA-256 hash-linked evidence entries; `src/evidence-store.js` persists them as bounded JSONL. The local adapter serializes appends within one process, rejects a second writer in that process, syncs each append, uses owner-only file permissions, validates parent-directory ownership and write permissions on POSIX, and verifies the chain when reopening. It stores evidence metadata and digests, not the original content bytes. The local ledger is not encrypted, multi-process safe, remotely replicated, or WORM-immutable. The `src/evidence-checkpoint.js` module can create detached Ed25519 signatures over a verified ledger root using a caller-supplied private key; it does not store the key. Store the checkpoint and trusted public key separately from the ledger to detect later truncation or full-chain replacement. The checkpoint timestamp is not a trusted timestamp, and the feature does not prevent rewriting if the attacker can also replace the checkpoint or compromise the signing key. Retention, deletion/redaction, out-of-band checkpoint custody, and multi-tenant access controls are not implemented. Do not use this local alpha adapter as a regulated audit-retention system.
 
-## Disciplines
+## Release integrity\n\nPublished GitHub Releases include a CycloneDX SBOM, SHA-256 checksums, and a GitHub artifact attestation. See [Release and Artifact Provenance](docs/RELEASING.md). The repository also runs full-history secret scanning and weekly dependency updates.\n\n## Disciplines
 
 - **SEO:** technical discovery and indexability signals.
 - **AEO:** answer clarity and structured information.
