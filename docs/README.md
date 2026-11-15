@@ -1,0 +1,40 @@
+# Searqon Documentation
+
+This index organizes the documentation by the reader's goal. Existing root-level documents remain canonical where noted; the guides below add task-oriented entry points.
+
+## Tutorials
+- [Run your first local assessment](tutorials/first-assessment.md)
+
+## How-to guides
+- [Scan one authorized public URL](how-to/authorized-remote-scan.md)
+- [Analyze supplied GEO observations](how-to/analyze-geo-observations.md)
+
+## Explanation
+- [Assessment and evidence boundaries](explanation/assessment-boundaries.md)
+- [Architecture and system boundaries](ARCHITECTURE.md)
+- [Product scope and intended users](PRODUCT_CHARTER.md)
+- [Security policy and threat boundaries](../SECURITY.md)
+
+## Reference
+- [CLI reference](reference/cli.md)
+- [Scanner contract](SCANNER.md)
+- [Assessment report schema](../schemas/assessment-report.schema.json)
+- [Evidence record schema](../schemas/evidence-record.schema.json)
+- [GEO observation schema](../schemas/geo-observation.schema.json)
+- [MCP snapshot schema](../schemas/mcp-snapshot.schema.json)
+- [Remote scan result schema](../schemas/remote-scan-result.schema.json)
+
+## Project operations
+- [Reporting](REPORTING.md)
+- [Release process](RELEASING.md)
+- [Delivery roadmap](ROADMAP.md)
+- [Implementation status](EXECUTION_STATUS.md)
+- [Contributing](../CONTRIBUTING.md)
+- [Support](../SUPPORT.md)
+
+## Documentation conventions
+
+- Commands are written for the current Node.js CLI.
+- Examples use repository fixtures and synthetic GEO observations.
+- Security-sensitive procedures identify authorization requirements.
+- A documented feature is not considered accepted or production-ready solely because code exists.
