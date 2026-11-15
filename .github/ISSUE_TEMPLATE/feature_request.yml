@@ -1,0 +1,60 @@
+name: Feature request
+description: Propose a capability or improvement within Searqon's product scope.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the user problem and desired outcome. Proposals are not commitments to implement.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Who experiences this problem, and in what workflow?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the expected user-visible behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Include alternatives or constraints if known.
+    validations:
+      required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and use case
+      description: Share anonymized examples, research or workflow evidence.
+    validations:
+      required: false
+  - type: dropdown
+    id: discipline
+    attributes:
+      label: Relevant discipline
+      options:
+        - SEO
+        - AEO
+        - GEO
+        - AgEO
+        - Cross-cutting infrastructure
+        - Documentation / DevEx
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: I understand this is a proposal, not a delivery commitment.
+          required: true

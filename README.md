@@ -1,59 +1,216 @@
-# Searqon
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/searqon-wordmark-ivory.svg">
+    <img src="assets/brand/searqon-wordmark-navy.svg" alt="Searqon" width="360">
+  </picture>
+</p>
 
-**Understand Visibility. Engineer Discoverability. Enable Agents.**
+<h1 align="center">Searqon — AI Discoverability and Agent-Readiness Toolkit</h1>
 
-Searqon is an evidence-first open-source toolkit for AI discoverability and agent readiness across SEO, AEO, GEO, and AgEO.
+<p align="center">An evidence-first open-source toolkit for developers and technical teams assessing how websites, APIs, documentation and published agent interfaces can be discovered, understood and used.</p>
 
-## Status
+<p align="center"><strong>Understand Visibility. Engineer Discoverability. Enable Agents.</strong></p>
 
-**Early alpha.** Searqon analyzes caller-supplied local documents and supports a bounded, single-page remote scan of an explicitly authorized public URL. Remote scans check robots policy before acquisition and before each redirect destination. Cross-origin redirects are denied unless each destination origin is explicitly allowlisted with `--allow-redirect-origin`; same-origin redirects remain subject to URL, DNS, and robots checks. Scans do not recursively crawl links, execute browser scripts, authenticate, or invoke MCP tools. Searqon does not query search engines or LLM providers yet. It can analyze externally supplied GEO observation JSON, but it does not collect those observations itself. No hosted multi-tenant service exists. Deterministic findings are diagnostic heuristics, not ranking predictions or a security certification.
+<p align="center">
+  <a href="https://github.com/LloydCoder/tinlance-searqon/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/LloydCoder/tinlance-searqon/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/LloydCoder/tinlance-searqon/actions/workflows/codeql.yml"><img alt="CodeQL" src="https://github.com/LloydCoder/tinlance-searqon/actions/workflows/codeql.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/LloydCoder/tinlance-searqon/actions/workflows/secret-scan.yml"><img alt="Secret scanning" src="https://github.com/LloydCoder/tinlance-searqon/actions/workflows/secret-scan.yml/badge.svg?branch=main"></a>
+  <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
+</p>
 
-## Quick start
+> **Early alpha.** Searqon is a local-first scanner and analysis toolkit. Read [current capabilities and limitations](docs/SCANNER.md) before using it against a remote target.
 
-Requirements: Node.js 22+.
+## Current workflow
 
-```bash
-node src/cli.js scan ./examples/openapi.json
-node src/cli.js scan ./examples/api-docs.md
-node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
-# If the selected URL redirects to a separately authorized origin:
-node src/cli.js scan-url https://example.com/docs --confirm-authorized-target --allow-redirect-origin https://docs.example.net
-node src/cli.js geo analyze ./examples/geo-observation.json
-node src/cli.js geo aggregate ./examples/geo-observations.json
-node src/cli.js scan ./examples/site.html --out ./site-assessment.json
-node src/cli.js report ./site-assessment.json --out ./site-assessment.html
+The diagram describes the implemented data paths. It is an architecture illustration, not a screenshot or claim of a hosted service.
+
+```mermaid
+flowchart TD
+  A[Local HTML / Markdown / OpenAPI] --> B[Deterministic analyzer]
+  C[Caller-supplied MCP snapshot] --> B
+  D[Authorized public URL] --> E[URL and DNS policy]
+  E --> F[Robots policy and bounded fetch]
+  F --> B
+  G[Supplied GEO observation JSON] --> H[GEO normalization and aggregation]
+  B --> I[Evidence-linked assessment JSON]
+  I --> J[Standalone HTML report]
+  H --> K[Separate GEO result]
 ```
 
-Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The `scan-url` command retrieves only the selected public page, checks robots policy at each redirect, and requires `--confirm-authorized-target` as an operator attestation. The exported `scanPublicUrl` API independently requires `{ confirmAuthorizedTarget: true }`; CLI-only confirmation is not treated as an authorization boundary. Cross-origin redirects require `allowedRedirectOrigins` at the API boundary or repeated `--allow-redirect-origin https://approved.example` CLI options. The allowlist is an operator authorization attestation, not cryptographic proof of ownership. It does not recursively follow page links. The HTTP transport uses validated DNS pinning and bounded redirects, timeouts, headers, and response size; it is not yet a full production crawler.
+## Why Searqon
 
-The JSON report includes a content SHA-256 digest, deterministic evidence identifier, rules version, observation class, summary, observations, and evidence-linked findings. A digest is an integrity reference, not proof of immutable storage or authenticity.
+Searqon keeps different kinds of discoverability evidence separate instead of hiding them behind one unexplained score.
 
-## Evidence ledger (local alpha)
+| Discipline | What it examines | Current implementation |
+|---|---|---|
+| SEO | Technical discovery, indexability and page signals | Partial local and single-page diagnostics |
+| AEO | Answer structure, clarity and source-oriented content signals | Partial diagnostics |
+| GEO | Mentions and citations in generative-system observations | Analyzes caller-supplied observations; no live collection |
+| AgEO | Documentation and interface readiness for software agents | Partial API, OpenAPI and passive MCP snapshot diagnostics |
 
-The `src/evidence-ledger.js` module creates sequence-numbered SHA-256 hash-linked evidence entries; `src/evidence-store.js` persists them as bounded JSONL. The local adapter serializes appends within one process, rejects a second writer in that process, syncs each append, uses owner-only file permissions, validates parent-directory ownership and write permissions on POSIX, and verifies the chain when reopening. It stores evidence metadata and digests, not the original content bytes. The local ledger is not encrypted, multi-process safe, remotely replicated, or WORM-immutable. The `src/evidence-checkpoint.js` module can create detached Ed25519 signatures over a verified ledger root using a caller-supplied private key; it does not store the key. Store the checkpoint and trusted public key separately from the ledger to detect later truncation or full-chain replacement. The checkpoint timestamp is not a trusted timestamp, and the feature does not prevent rewriting if the attacker can also replace the checkpoint or compromise the signing key. Retention, deletion/redaction, out-of-band checkpoint custody, and multi-tenant access controls are not implemented. Do not use this local alpha adapter as a regulated audit-retention system.
+Searqon is not a search-rank tracker, a general-purpose crawler, an MCP execution runtime or a hosted monitoring service. It does not guarantee rankings, citations, recommendations or agent adoption. AgEO is Searqon's proposed product discipline, not a universal industry standard.
 
-## HTML reports
+## Quick Start
 
-Generate a standalone, accessible HTML report from an assessment JSON file. Reports keep SEO/AEO/GEO/AgEO coverage separate, escape untrusted content, and load no remote assets. See [Reporting](docs/REPORTING.md).
+Requirements: Node.js 22 or later. No runtime package dependencies are currently required.
 
-## Release integrity
+```bash
+git clone https://github.com/LloydCoder/tinlance-searqon.git
+cd tinlance-searqon
+node src/cli.js scan ./examples/site.html
+```
 
-Published GitHub Releases include a CycloneDX SBOM, SHA-256 checksums, and a GitHub artifact attestation. See [Release and Artifact Provenance](docs/RELEASING.md). The repository also runs full-history secret scanning and weekly dependency updates.
+The command prints a JSON assessment to standard output. Try the [sample HTML input](examples/site.html).
 
-## Disciplines
+## Installation
 
-- **SEO:** technical discovery and indexability signals.
-- **AEO:** answer clarity and structured information.
-- **GEO:** measured representation and citation across identified generative systems (provider observation adapters are not implemented yet).
-- **AgEO:** machine and agent readiness (an emerging Searqon product discipline, not a universal standard).
+### Run from a source checkout
 
-Results remain separated by discipline; Searqon does not emit an opaque universal score.
-The GEO CLI accepts supplied observation samples; it does not collect them. Use `geo analyze` for one observation and `geo aggregate` for a JSON array. Synthetic fixtures are provided under `examples/`.
+```bash
+git clone https://github.com/LloydCoder/tinlance-searqon.git
+cd tinlance-searqon
+npm ci
+npm test
+```
 
-## Project governance
+### Optional local CLI installation
 
-Read [Product Charter](docs/PRODUCT_CHARTER.md), [Architecture](docs/ARCHITECTURE.md), [Roadmap](docs/ROADMAP.md), [Security](SECURITY.md), [Contributing](CONTRIBUTING.md), and [Implementation Status](docs/EXECUTION_STATUS.md).
+From the repository root, run `npm link` to expose the package's `searqon` executable on your local PATH. The package is not currently published to the npm registry; do not use `npm install -g @tinlance/searqon` as an installation method.
 
-## License
+## Usage
 
-Apache-2.0.
+### Analyze a local document
+
+```bash
+node src/cli.js scan ./examples/site.html
+node src/cli.js scan ./examples/api-docs.md
+node src/cli.js scan ./examples/openapi.json
+```
+
+Supported local inputs are HTML, Markdown and OpenAPI JSON. The maximum input payload is 2 MiB. MCP analysis accepts a caller-supplied JSON snapshot:
+
+```bash
+node src/cli.js scan ./examples/mcp-snapshot.json --format mcp
+```
+
+This parses supplied metadata only. It does not connect to an MCP server or invoke tools.
+
+### Scan one authorized public page
+
+```bash
+node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
+```
+
+The command requires an explicit operator attestation. The scanner retrieves only the selected page, checks robots policy and validates DNS and redirect destinations. Cross-origin redirects are denied unless each destination origin is explicitly authorized:
+
+```bash
+node src/cli.js scan-url https://example.com/docs \
+  --confirm-authorized-target \
+  --allow-redirect-origin https://docs.example.net
+```
+
+An allowlist is an operator authorization attestation, not independent proof of ownership. The scanner does not recursively follow page links or render browser JavaScript. See [authorized remote scanning](docs/how-to/authorized-remote-scan.md).
+
+### Analyze supplied GEO observations
+
+```bash
+node src/cli.js geo analyze ./examples/geo-observation.json
+node src/cli.js geo aggregate ./examples/geo-observations.json
+```
+
+These commands do not query AI providers, scrape consumer interfaces or fetch citation URLs. The bundled observations are synthetic fixtures, not live measurements.
+
+### Generate a standalone HTML report
+
+```bash
+node src/cli.js scan ./examples/site.html --out ./assessment.json
+node src/cli.js report ./assessment.json --out ./assessment.html
+```
+
+File output uses exclusive-create semantics and refuses to overwrite an existing file. The report is self-contained, escapes untrusted content and loads no remote assets.
+
+## Configuration and options
+
+Searqon currently uses command-line options rather than a configuration file or environment-variable configuration.
+
+| Command | Option | Default / behavior |
+|---|---|---|
+| `scan` | `--format mcp` | Omit for ordinary HTML, Markdown or OpenAPI analysis |
+| `scan` | `--source <label>` | Input filename |
+| `scan`, `scan-url`, `geo`, `report` | `--out <path>` | Write JSON or HTML to stdout when omitted |
+| `scan-url` | `--confirm-authorized-target` | Required; no default authorization |
+| `scan-url` | `--allow-redirect-origin <origin>` | No cross-origin redirects allowed unless explicitly listed; repeatable |
+| `scan-url` | `--user-agent <token>` | Product default user agent |
+| GEO aggregation API | `timeBucket: "day"` | API default is `"none"`; optional UTC-day cohorts |
+
+The CLI prints usage when invoked without a valid command. Run `node src/cli.js` to see the current command synopsis.
+
+## Features
+
+| Capability | Status and boundary |
+|---|---|
+| HTML, Markdown and OpenAPI diagnostics | Implemented, rule-based and partial |
+| Passive MCP snapshot analysis | Implemented for supplied local JSON; no network connection |
+| Authorized remote scan | Implemented for one bounded public page |
+| SSRF-oriented URL and DNS controls | Implemented with regression tests; not a complete SSRF certification |
+| Robots Exclusion Protocol | Bounded parser, retrieval and process-local cache |
+| Evidence records | Versioned records with content digests and provenance metadata |
+| Local evidence ledger | Hash-linked JSONL adapter; single-process, not encrypted or WORM-immutable |
+| Detached evidence checkpoints | Ed25519 signatures using caller-supplied keys |
+| GEO analysis | Normalizes supplied observations and keeps observation classes separate |
+| GEO monitoring and provider collection | Not implemented |
+| Standalone HTML reports | Implemented; local output only |
+| Hosted API, UI and multi-tenant service | Not implemented |
+
+## Documentation
+
+| Guide | Purpose |
+|---|---|
+| [Documentation index](docs/README.md) | Browse documentation by task |
+| [First assessment tutorial](docs/tutorials/first-assessment.md) | Run a first local assessment |
+| [Authorized remote scan](docs/how-to/authorized-remote-scan.md) | Scan one public URL safely |
+| [Analyze GEO observations](docs/how-to/analyze-geo-observations.md) | Work with supplied GEO samples |
+| [CLI reference](docs/reference/cli.md) | Commands and flags |
+| [Product charter](docs/PRODUCT_CHARTER.md) | Product scope and intended users |
+| [Architecture](docs/ARCHITECTURE.md) | Components and system boundaries |
+| [Scanner contract](docs/SCANNER.md) | Inputs, rules and limitations |
+| [Reporting](docs/REPORTING.md) | HTML report contract |
+| [Security policy](SECURITY.md) | Vulnerability reporting and security controls |
+| [Release process](docs/RELEASING.md) | SBOMs, checksums and attestations |
+| [Roadmap](docs/ROADMAP.md) | Phases and acceptance gates |
+| [Implementation status](docs/EXECUTION_STATUS.md) | Evidence-based delivery status |
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Security-sensitive changes require dedicated regression tests and a threat-model update.
+
+## License and acknowledgements
+
+Searqon is licensed under the [Apache License 2.0](LICENSE). The package metadata declares the SPDX identifier `Apache-2.0`. Searqon is developed by [Tinlance](https://github.com/LloydCoder).
+
+The Searqon wordmark is approved for use in this project. Light and dark variants are included in [`assets/brand/`](assets/brand/); use the navy variant on light backgrounds and the ivory variant on dark backgrounds. Preserve the supplied proportions, clear space and colors.
+
+<details>
+<summary>Roadmap and maturity</summary>
+
+Searqon is in early alpha. The public toolkit is intended to remain independently useful. Live GEO collection, broader crawling, browser rendering, hosted monitoring, tenant management and commercial service capabilities are future work subject to validation and security gates. See [the delivery roadmap](docs/ROADMAP.md).
+
+</details>
+
+<details>
+<summary>Troubleshooting</summary>
+
+- **Node version error:** use Node.js 22 or later.
+- **Unsupported input:** local scanning currently accepts HTML, Markdown and JSON; MCP snapshots require `--format mcp`.
+- **Remote scan rejected:** confirm that you control or are authorized to assess the target, then check DNS, URL, redirect and robots policy.
+- **Output already exists:** choose a new `--out` path; file output intentionally does not overwrite.
+- **GEO results look empty:** bundled samples are synthetic; the CLI does not collect live provider observations.
+
+</details>
+
+<details>
+<summary>Support</summary>
+
+See [SUPPORT.md](SUPPORT.md) for questions, bug reports and security-reporting guidance.
+
+</details>

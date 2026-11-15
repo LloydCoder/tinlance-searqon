@@ -1,0 +1,58 @@
+# Searqon
+
+> Evidence-first open-source toolkit for assessing AI discoverability and agent readiness across SEO, AEO, GEO and AgEO.
+
+Searqon by Tinlance analyzes local HTML, Markdown, OpenAPI documents, caller-supplied MCP snapshots, caller-supplied GEO observations and one explicitly authorized public web page. It produces evidence-linked, versioned assessment data and optional standalone HTML reports.
+
+## Project status
+
+- Maturity: early alpha; not production-ready.
+- Runtime: Node.js 22 or later.
+- Implementation: JavaScript ES modules; package name `@tinlance/searqon`.
+- License: Apache-2.0.
+- Current package version in package.json: 0.2.0.
+- Runtime dependencies: none currently declared.
+
+## Start here
+
+- [README](README.md): supported workflows and quick start.
+- [Product Charter](docs/PRODUCT_CHARTER.md): intended users, product boundaries and non-goals.
+- [Documentation Index](docs/README.md): guides organized by documentation purpose.
+- [Scanner Contract](docs/SCANNER.md): inputs, rules, outputs and limitations.
+- [CLI Reference](docs/reference/cli.md): commands and options.
+- [Architecture](docs/ARCHITECTURE.md): system boundaries and evidence model.
+- [Security Policy](SECURITY.md): vulnerability reporting and security controls.
+- [Roadmap](docs/ROADMAP.md): phases and acceptance gates.
+- [Implementation Status](docs/EXECUTION_STATUS.md): implementation and remaining acceptance work.
+- [Release Process](docs/RELEASING.md): release artifacts and provenance.
+
+## Current commands
+
+```bash
+node src/cli.js scan ./examples/site.html
+node src/cli.js scan ./examples/openapi.json
+node src/cli.js scan ./examples/mcp-snapshot.json --format mcp
+node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
+node src/cli.js geo analyze ./examples/geo-observation.json
+node src/cli.js geo aggregate ./examples/geo-observations.json
+node src/cli.js report ./assessment.json --out ./assessment.html
+```
+
+## Important capability boundaries
+
+- Remote scanning is limited to one selected public page; it does not recursively crawl or render browser JavaScript.
+- Remote scanning requires an explicit operator authorization attestation. Cross-origin redirect destinations require explicit origin allowlisting.
+- MCP analysis is passive and accepts a local snapshot; Searqon does not connect to an MCP server or invoke tools.
+- GEO commands analyze supplied observations; there are no live provider adapters, consumer-interface scrapers, scheduler or historical monitoring store.
+- The local evidence ledger is hash-linked but is not encrypted, multi-process safe, remotely replicated or WORM-immutable.
+- Searqon does not guarantee rankings, AI citations, recommendations or agent adoption. AgEO is a proposed Searqon discipline, not a universal standard.
+
+## Ownership and contribution
+
+- Maintainer: [@LloydCoder](https://github.com/LloydCoder).
+- Contributions: [CONTRIBUTING.md](CONTRIBUTING.md).
+- Community standards: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- Support: [SUPPORT.md](SUPPORT.md).
+- Vulnerability reporting: [SECURITY.md](SECURITY.md).
+
+When describing Searqon, distinguish implemented behavior from roadmap items and label synthetic examples as synthetic.
