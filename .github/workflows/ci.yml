@@ -62,3 +62,7 @@ jobs:
         run: npm audit --audit-level=high
       - name: Validate package contents
         run: npm pack --dry-run
+      - name: Validate CycloneDX SBOM generation
+        run: |
+          npm sbom --sbom-format cyclonedx --sbom-type application > /tmp/searqon-sbom.cdx.json
+          node -e 'const s=JSON.parse(require("node:fs").readFileSync("/tmp/searqon-sbom.cdx.json","utf8")); if (s.bomFormat !== "CycloneDX") process.exit(1);'
