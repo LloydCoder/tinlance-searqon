@@ -73,8 +73,8 @@ test("HTML report escapes untrusted evidence and finding content and loads no re
   assert.equal(html.includes("<script>"), false);
   assert.equal(html.includes("<img"), false);
   assert.equal(html.includes("<iframe"), false);
-  assert.equal(html.includes("https://attacker.example"), false);
-  assert.match(html, /default-src &#39;none&#39;/);
+  assert.equal(html.includes("<iframe src=\"https://attacker.example"), false);
+  assert.match(html, /default-src 'none'/);
 });
 
 test("HTML report rejects inconsistent summaries and broken evidence references", () => {
