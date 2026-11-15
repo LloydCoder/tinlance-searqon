@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/LloydCoder/tinlance-searqon/tree/main/docs
+    about: Read the product, scanner, architecture and CLI documentation.
+  - name: Security vulnerability reporting
+    url: https://github.com/LloydCoder/tinlance-searqon/security/advisories/new
+    about: Report security vulnerabilities privately. Do not create a public issue.
+  - name: Support guidance
+    url: https://github.com/LloydCoder/tinlance-searqon/blob/main/SUPPORT.md
+    about: Choose the appropriate channel before opening an issue.
