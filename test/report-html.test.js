@@ -94,3 +94,13 @@ test("HTML report validates discipline assessment counts and severity totals", (
   wrongAssessment.assessments.SEO.findingCount = 0;
   assert.throws(() => renderHtmlReport(wrongAssessment), /assessment findingCount/);
 });
+
+test("zero-finding reports retain explicit scope and do not imply proof of absence", () => {
+  const input = report();
+  input.findings = [];
+  input.summary = { findingCount: 0, bySeverity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 } };
+  input.assessments.SEO = { status: "no_findings_detected", coverage: "partial", confidence: "heuristic", findingCount: 0, scope: "HTML metadata", limitation: "Heuristic checks only." };
+  const html = renderHtmlReport(input);
+  assert.match(html, /No findings were recorded for the assessed scope/);
+  assert.match(html, /not proof that a system is issue-free/);
+});
