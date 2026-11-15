@@ -53,6 +53,9 @@ jobs:
       - name: Smoke-test documented CLI examples
         run: |
           node src/cli.js scan ./examples/site.html >/dev/null
+          node src/cli.js scan ./examples/site.html --out /tmp/searqon-assessment.json
+          node src/cli.js report /tmp/searqon-assessment.json --out /tmp/searqon-assessment.html
+          test -s /tmp/searqon-assessment.html
           node src/cli.js scan ./examples/openapi.json >/dev/null
           node src/cli.js scan ./examples/api-docs.md >/dev/null
           node src/cli.js scan ./examples/mcp-snapshot.json --format mcp >/dev/null
