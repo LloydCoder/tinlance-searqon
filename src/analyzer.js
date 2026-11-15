@@ -260,6 +260,8 @@ function analyzeMcpSnapshot(content, evidenceId) {
             inspectSchema(propertySchema, reachable, depth + 1);
             currentPropertyName = previous;
           }
+        } else if (Array.isArray(value)) {
+          for (const item of value) inspectSchema(item, false, depth + 1);
         } else if (value && typeof value === "object") {
           inspectSchema(value, false, depth + 1);
         }
