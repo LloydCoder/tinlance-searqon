@@ -358,3 +358,59 @@ test("MCP x-mcp-header rejects duplicate names, invalid tokens, non-primitive ty
   assert.ok(result.findings.some(item => item.ruleId === "mcp.tool.header_annotation.invalid"));
   assert.ok(result.findings.some(item => item.ruleId === "mcp.tool.name.invalid"));
 });
+
+test("MCP 2026 cache metadata rejects invalid TTL and cache scope", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    toolsListMetadata: { resultType: "complete", ttlMs: -1, cacheScope: "shared" },
+    tools: []
+  };
+  assert.throws(() => analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  }), /toolsListMetadata/);
+});
+
+test("MCP warns when credential-like parameters are forwarded as custom headers", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    toolsListMetadata: { resultType: "complete", ttlMs: 0, cacheScope: "private" },
+    tools: [{
+      name: "lookup",
+      description: "Lookup.",
+      inputSchema: { type: "object", properties: {
+        apiKey: { type: "string", "x-mcp-header": "Api-Key" }
+      } }
+    }]
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.ok(result.findings.some(item => item.ruleId === "mcp.tool.header_annotation.sensitive"));
+});
+
+test("MCP custom header annotations inside schema composition are rejected", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    toolsListMetadata: { resultType: "complete", ttlMs: 0, cacheScope: "private" },
+    tools: [{
+      name: "lookup",
+      description: "Lookup.",
+      inputSchema: { type: "object", properties: {
+        query: { type: "string" }
+      }, allOf: [{ properties: { hidden: { type: "string", "x-mcp-header": "Hidden" } } }] }
+    }]
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.equal(result.observations.toolsWithInvalidHeaderAnnotations, 1);
+});
