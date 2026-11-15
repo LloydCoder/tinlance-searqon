@@ -24,7 +24,9 @@ These checks are syntactic heuristics. Character-length ranges are review prompt
 
 ## Safety
 
-The local analyzer performs no network I/O, link following, script execution, browser rendering, authentication, or MCP tool invocation. The separate remote scanner retrieves only the caller-selected public URL, applies robots policy at the initial URL and each redirect destination, denies cross-origin redirects unless the destination origin is explicitly authorized, and does not follow page links. HTML and JSON are treated as untrusted text. Local report output uses exclusive-create semantics.
+The local analyzer performs no network I/O, link following, script execution, browser rendering, authentication, or MCP tool invocation. The MCP snapshot importer is passive and version-aware. For protocol `2026-07-28`, it reads the per-request protocol version from `_meta.io.modelcontextprotocol/protocolVersion`, supports server identity under `_meta.io.modelcontextprotocol/serverInfo`, and validates normalized `toolsListMetadata` (`resultType`, non-negative `ttlMs`, and `cacheScope: public|private`). It also checks MCP tool-name character guidance and Streamable HTTP `x-mcp-header` constraints: HTTP token syntax, case-insensitive uniqueness, primitive parameter types, and static reachability through `properties` only. Sensitive-looking parameter names annotated for header forwarding receive a separate warning because those values are exposed to intermediaries. Tool annotations remain untrusted declarations and never grant authority. These checks analyze supplied metadata only; Searqon does not connect to an MCP server or invoke tools.
+
+The separate remote scanner retrieves only the caller-selected public URL, applies robots policy at the initial URL and each redirect destination, denies cross-origin redirects unless the destination origin is explicitly authorized, and does not follow page links. HTML and JSON are treated as untrusted text. Local report output uses exclusive-create semantics.
 
 ## Deferred work
 

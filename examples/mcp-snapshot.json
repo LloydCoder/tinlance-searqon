@@ -1,9 +1,4 @@
 {
-  "protocolVersion": "2026-07-28",
-  "serverInfo": {
-    "name": "Example Documentation MCP",
-    "version": "1.0.0"
-  },
   "capabilities": {
     "tools": {}
   },
@@ -56,5 +51,17 @@
         "openWorldHint": true
       }
     }
-  ]
+  ],
+  "_meta": {
+    "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+    "io.modelcontextprotocol/serverInfo": {
+      "name": "Example Documentation MCP",
+      "version": "1.0.0"
+    }
+  },
+  "toolsListMetadata": {
+    "resultType": "complete",
+    "ttlMs": 60000,
+    "cacheScope": "public"
+  }
 }

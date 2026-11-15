@@ -265,3 +265,152 @@ test("MCP snapshot analysis rejects malformed capability and annotation metadata
     })
   }), /annotation.*boolean/);
 });
+
+test("MCP 2026-07-28 metadata validates cache hints and request metadata", () => {
+  const snapshot = {
+    _meta: {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/serverInfo": { name: "Cache-aware MCP", version: "1.0.0" }
+    },
+    capabilities: { tools: {} },
+    toolsListMetadata: { resultType: "complete", ttlMs: 60000, cacheScope: "private" },
+    tools: [{ name: "search.docs", description: "Search docs.", inputSchema: { type: "object" } }]
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.equal(result.observations.protocolVersion, "2026-07-28");
+  assert.equal(result.observations.toolsListTtlMs, 60000);
+  assert.equal(result.observations.toolsListCacheScope, "private");
+  assert.equal(result.observations.toolsWithInvalidHeaderAnnotations, 0);
+  assert.equal(result.findings.some(item => item.ruleId === "mcp.cache_metadata.missing"), false);
+});
+
+test("MCP 2026-07-28 reports missing cache metadata on tools/list snapshots", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    tools: [{ name: "search", description: "Search.", inputSchema: { type: "object" } }]
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.ok(result.findings.some(item => item.ruleId === "mcp.cache_metadata.missing"));
+});
+
+test("MCP x-mcp-header annotations validate nested reachability and unique HTTP tokens", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    tools: [{
+      name: "search",
+      description: "Search.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          region: { type: "string", "x-mcp-header": "Region" },
+          options: { type: "object", properties: { page: { type: "integer", "x-mcp-header": "Page-Number" } } }
+        }
+      }
+    }],
+    toolsListMetadata: { resultType: "complete", ttlMs: 0, cacheScope: "private" }
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.equal(result.observations.toolsWithInvalidHeaderAnnotations, 0);
+  assert.equal(result.observations.mcpHeaderAnnotationCount, 2);
+  assert.equal(result.findings.some(item => item.ruleId === "mcp.tool.header_annotation.invalid"), false);
+});
+
+test("MCP x-mcp-header rejects duplicate names, invalid tokens, non-primitive types and array paths", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    tools: [{
+      name: "bad tool name",
+      description: "Search.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          one: { type: "string", "x-mcp-header": "Region" },
+          two: { type: "boolean", "x-mcp-header": "region" },
+          amount: { type: "number", "x-mcp-header": "Amount" },
+          nested: { type: "array", items: { type: "string", "x-mcp-header": "Nested" } },
+          invalid: { type: "string", "x-mcp-header": "Bad Header" }
+        }
+      }
+    }],
+    toolsListMetadata: { resultType: "complete", ttlMs: 1000, cacheScope: "public" }
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.equal(result.observations.toolsWithInvalidHeaderAnnotations, 1);
+  assert.ok(result.findings.some(item => item.ruleId === "mcp.tool.header_annotation.invalid"));
+  assert.ok(result.findings.some(item => item.ruleId === "mcp.tool.name.invalid"));
+});
+
+test("MCP 2026 cache metadata rejects invalid TTL and cache scope", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    toolsListMetadata: { resultType: "complete", ttlMs: -1, cacheScope: "shared" },
+    tools: []
+  };
+  assert.throws(() => analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  }), /toolsListMetadata/);
+});
+
+test("MCP warns when credential-like parameters are forwarded as custom headers", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    toolsListMetadata: { resultType: "complete", ttlMs: 0, cacheScope: "private" },
+    tools: [{
+      name: "lookup",
+      description: "Lookup.",
+      inputSchema: { type: "object", properties: {
+        apiKey: { type: "string", "x-mcp-header": "Api-Key" }
+      } }
+    }]
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.ok(result.findings.some(item => item.ruleId === "mcp.tool.header_annotation.sensitive"));
+});
+
+test("MCP custom header annotations inside schema composition are rejected", () => {
+  const snapshot = {
+    protocolVersion: "2026-07-28",
+    capabilities: { tools: {} },
+    toolsListMetadata: { resultType: "complete", ttlMs: 0, cacheScope: "private" },
+    tools: [{
+      name: "lookup",
+      description: "Lookup.",
+      inputSchema: { type: "object", properties: {
+        query: { type: "string" }
+      }, allOf: [{ properties: { hidden: { type: "string", "x-mcp-header": "Hidden" } } }] }
+    }]
+  };
+  const result = analyzeDocument({
+    source: "mcp-snapshot.json",
+    contentType: "application/vnd.searqon.mcp-snapshot+json",
+    content: JSON.stringify(snapshot)
+  });
+  assert.equal(result.observations.toolsWithInvalidHeaderAnnotations, 1);
+});

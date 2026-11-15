@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tinlance.com/schemas/searqon-mcp-snapshot-1.0.0.json",
+  "$id": "https://tinlance.com/schemas/searqon-mcp-snapshot-1.1.0.json",
   "title": "Searqon MCP Metadata Snapshot",
-  "description": "Normalized caller-supplied MCP metadata for passive analysis. This is an import contract, not a wire-level MCP response schema.",
+  "description": "Normalized caller-supplied MCP metadata for passive analysis. This is an import contract, not a wire-level MCP response schema. MCP 2026-07-28 tools/list cache metadata is represented by toolsListMetadata.",
   "type": "object",
   "required": [
     "tools"
@@ -12,6 +12,34 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 64
+    },
+    "toolsListMetadata": {
+      "type": "object",
+      "required": [
+        "resultType",
+        "ttlMs",
+        "cacheScope"
+      ],
+      "properties": {
+        "resultType": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "ttlMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "cacheScope": {
+          "type": "string",
+          "enum": [
+            "public",
+            "private"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "serverInfo": {
       "type": "object",
@@ -46,7 +74,8 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_.-]+$"
           },
           "description": {
             "type": "string",
@@ -92,6 +121,11 @@
     "_meta": {
       "type": "object",
       "properties": {
+        "io.modelcontextprotocol/protocolVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
         "io.modelcontextprotocol/serverInfo": {
           "type": "object",
           "properties": {
