@@ -35,7 +35,7 @@ A full-site acquisition worker still requires real socket/TLS integration testin
 
 ## Machine-readable contract
 
-The report shape is published in [`schemas/assessment-report.schema.json`](../schemas/assessment-report.schema.json) using JSON Schema 2020-12. Evidence metadata is also published independently in [`schemas/evidence-record.schema.json`](../schemas/evidence-record.schema.json), and the remote scan result envelope is published in [`schemas/remote-scan-result.schema.json`](../schemas/remote-scan-result.schema.json). The schemas fix required fields and enumerations while leaving observation-specific attributes extensible. Consumers should validate the schema version before interpreting fields.
+The report shape is published in [`schemas/assessment-report.schema.json`](../schemas/assessment-report.schema.json) using JSON Schema 2020-12. Evidence metadata is also published independently in [`schemas/evidence-record.schema.json`](../schemas/evidence-record.schema.json), signed ledger checkpoints in [`schemas/evidence-ledger-checkpoint.schema.json`](../schemas/evidence-ledger-checkpoint.schema.json), the passive MCP snapshot import in [`schemas/mcp-snapshot.schema.json`](../schemas/mcp-snapshot.schema.json), and the remote scan result envelope in [`schemas/remote-scan-result.schema.json`](../schemas/remote-scan-result.schema.json). The schemas fix required fields and enumerations while leaving observation-specific attributes extensible. Consumers should validate the schema version before interpreting fields.
 
 
 ## GEO observation engine
