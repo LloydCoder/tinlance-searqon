@@ -4,13 +4,15 @@ import { basename, extname, resolve } from "node:path";
 import { analyzeDocument } from "./analyzer.js";
 import { analyzeGeoObservation, aggregateGeoObservations } from "./geo.js";
 import { scanPublicUrl } from "./remote-scan.js";
+import { renderHtmlReport } from "./report-html.js";
 
 const usage = [
   "Usage:",
   "  searqon scan <local-file> [--format mcp] [--source <label>] [--out <json-file>]",
   "  searqon scan-url <public-url> --confirm-authorized-target [--allow-redirect-origin <origin>]... [--user-agent <token>] [--out <json-file>]",
   "  searqon geo analyze <observation.json> [--out <json-file>]",
-  "  searqon geo aggregate <observations.json> [--out <json-file>]"
+  "  searqon geo aggregate <observations.json> [--out <json-file>]",
+  "  searqon report <assessment.json> [--out <html-file>]"
 ].join("\n");
 
 async function readJson(file) {
@@ -73,12 +75,28 @@ async function runGeo(args) {
   await emitResult(result,args);
 }
 
+async function runReport(args) {
+  if (!args[1]) throw new Error(usage);
+  const file = resolve(args[1]);
+  if (extname(file).toLowerCase() !== ".json") throw new Error("Report input must be a local .json assessment file");
+  const html = renderHtmlReport(await readJson(file));
+  const outIndex = args.indexOf("--out");
+  if (outIndex < 0) {
+    process.stdout.write(html);
+    return;
+  }
+  const outputPath = args[outIndex + 1];
+  if (!outputPath || outputPath.startsWith("--")) throw new Error("--out requires a path");
+  await writeFile(resolve(outputPath), html, { flag: "wx" });
+}
+
 async function main() {
   const args=process.argv.slice(2);
   try {
     if (args[0]==="scan") await runScan(args);
     else if (args[0]==="scan-url") await runScanUrl(args);
     else if (args[0]==="geo") await runGeo(args);
+    else if (args[0]==="report") await runReport(args);
     else { process.stderr.write(usage+"\n"); process.exitCode=2; }
   } catch (error) {
     process.stderr.write("Searqon: "+error.message+"\n");

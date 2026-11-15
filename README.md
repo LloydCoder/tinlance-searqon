@@ -20,6 +20,8 @@ node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
 node src/cli.js scan-url https://example.com/docs --confirm-authorized-target --allow-redirect-origin https://docs.example.net
 node src/cli.js geo analyze ./examples/geo-observation.json
 node src/cli.js geo aggregate ./examples/geo-observations.json
+node src/cli.js scan ./examples/site.html --out ./site-assessment.json
+node src/cli.js report ./site-assessment.json --out ./site-assessment.html
 ```
 
 Supported local inputs: HTML (`.html`, `.htm`), Markdown (`.md`, `.markdown`), and OpenAPI JSON (`.json`). Maximum input size: 2 MiB. The `scan-url` command retrieves only the selected public page, checks robots policy at each redirect, and requires `--confirm-authorized-target` as an operator attestation. The exported `scanPublicUrl` API independently requires `{ confirmAuthorizedTarget: true }`; CLI-only confirmation is not treated as an authorization boundary. Cross-origin redirects require `allowedRedirectOrigins` at the API boundary or repeated `--allow-redirect-origin https://approved.example` CLI options. The allowlist is an operator authorization attestation, not cryptographic proof of ownership. It does not recursively follow page links. The HTTP transport uses validated DNS pinning and bounded redirects, timeouts, headers, and response size; it is not yet a full production crawler.
@@ -29,6 +31,10 @@ The JSON report includes a content SHA-256 digest, deterministic evidence identi
 ## Evidence ledger (local alpha)
 
 The `src/evidence-ledger.js` module creates sequence-numbered SHA-256 hash-linked evidence entries; `src/evidence-store.js` persists them as bounded JSONL. The local adapter serializes appends within one process, rejects a second writer in that process, syncs each append, uses owner-only file permissions, validates parent-directory ownership and write permissions on POSIX, and verifies the chain when reopening. It stores evidence metadata and digests, not the original content bytes. The local ledger is not encrypted, multi-process safe, remotely replicated, or WORM-immutable. The `src/evidence-checkpoint.js` module can create detached Ed25519 signatures over a verified ledger root using a caller-supplied private key; it does not store the key. Store the checkpoint and trusted public key separately from the ledger to detect later truncation or full-chain replacement. The checkpoint timestamp is not a trusted timestamp, and the feature does not prevent rewriting if the attacker can also replace the checkpoint or compromise the signing key. Retention, deletion/redaction, out-of-band checkpoint custody, and multi-tenant access controls are not implemented. Do not use this local alpha adapter as a regulated audit-retention system.
+
+## HTML reports
+
+Generate a standalone, accessible HTML report from an assessment JSON file. Reports keep SEO/AEO/GEO/AgEO coverage separate, escape untrusted content, and load no remote assets. See [Reporting](docs/REPORTING.md).
 
 ## Release integrity
 
