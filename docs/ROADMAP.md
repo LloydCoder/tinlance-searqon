@@ -22,7 +22,7 @@ A green CI run is necessary for applicable code changes, but is not sufficient f
 | 2 | Open-source governance and repository foundation | License/provenance review, contribution/security policies, CI, release conventions |
 | 3 | Domain contracts and architecture | Versioned contracts, threat model, ADRs, testable boundaries |
 | 4 | Secure acquisition | SSRF regression suite, DNS/redirect defenses, bounded fetch tests, explicit caller attestation, cross-origin origin allowlist, RFC 9309 robots path matching |
-| 5 | Evidence and provenance | Reproducible evidence records, retention/deletion/redaction tests |
+| 5 | Evidence and provenance | Reproducible evidence records, tamper-evident ledger, detached signed checkpoints with out-of-band custody, retention/deletion/redaction tests |
 | 6 | Passive Agent Readiness Scanner | Deterministic HTML/Markdown/OpenAPI checks, passive caller-supplied MCP metadata snapshot analysis, fixtures, CLI report, JSON output |
 | 7 | GEO Intelligence Engine | Permitted observation adapters, sampling methodology, citation/mention analysis, cost controls |
 | 8 | User interfaces and reporting | Accessible CLI/API/report experience and end-to-end tests |
