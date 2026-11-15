@@ -1,4 +1,11 @@
-# Searqon — AI Discoverability and Agent-Readiness Toolkit
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/searqon-wordmark-ivory.svg">
+    <img src="assets/brand/searqon-wordmark-navy.svg" alt="Searqon" width="360">
+  </picture>
+</p>
+
+<h1 align="center">Searqon — AI Discoverability and Agent-Readiness Toolkit</h1>
 
 <p align="center">An evidence-first open-source toolkit for developers and technical teams assessing how websites, APIs, documentation and published agent interfaces can be discovered, understood and used.</p>
 
@@ -181,7 +188,7 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before openin
 
 Searqon is licensed under the [Apache License 2.0](LICENSE). The package metadata declares the SPDX identifier `Apache-2.0`. Searqon is developed by [Tinlance](https://github.com/LloydCoder).
 
-The Searqon visual identity supplied with this project is a draft: the brand guide records that trademark clearance and designer review remain open. Do not treat the draft wordmark as a cleared registered mark.
+The Searqon wordmark is approved for use in this project. Light and dark variants are included in [`assets/brand/`](assets/brand/); use the navy variant on light backgrounds and the ivory variant on dark backgrounds. Preserve the supplied proportions, clear space and colors.
 
 <details>
 <summary>Roadmap and maturity</summary>
