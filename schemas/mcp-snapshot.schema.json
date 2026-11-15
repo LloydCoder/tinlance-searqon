@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tinlance.com/schemas/searqon-mcp-snapshot-1.0.0.json",
   "title": "Searqon MCP Metadata Snapshot",
-  "description": "Normalized caller-supplied MCP metadata for passive analysis. This is an import contract, not a wire-level MCP response schema.",
+  "description": "Normalized caller-supplied MCP metadata for passive analysis. This is an import contract, not a wire-level MCP response schema. MCP 2026-07-28 tools/list cache metadata is represented by toolsListMetadata.",
   "type": "object",
   "required": [
     "tools"
@@ -13,7 +13,7 @@
       "minLength": 1,
       "maxLength": 64
     },
-    "serverInfo": {
+    "toolsListMetadata": {\n      "type": "object",\n      "required": ["resultType", "ttlMs", "cacheScope"],\n      "properties": {\n        "resultType": { "type": "string", "minLength": 1, "maxLength": 64 },\n        "ttlMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },\n        "cacheScope": { "type": "string", "enum": ["public", "private"] }\n      },\n      "additionalProperties": false\n    },\n    "serverInfo": {
       "type": "object",
       "properties": {
         "name": {
@@ -92,7 +92,7 @@
     "_meta": {
       "type": "object",
       "properties": {
-        "io.modelcontextprotocol/serverInfo": {
+        "io.modelcontextprotocol/protocolVersion": { "type": "string", "minLength": 1, "maxLength": 64 },\n        "io.modelcontextprotocol/serverInfo": {
           "type": "object",
           "properties": {
             "name": {
