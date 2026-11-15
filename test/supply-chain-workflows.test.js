@@ -23,4 +23,5 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   assert.match(ci, /actionlint_1\\.7\\.12_linux_amd64/);
   assert.match(ci, /8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8/);
+  assert.match(ci, /npm sbom --sbom-format cyclonedx/);
 });
