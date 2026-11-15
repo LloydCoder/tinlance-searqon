@@ -1,0 +1,33 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+test("supply-chain workflows pin actions and enforce least-privilege release permissions", async () => {
+  const secrets = await readFile(new URL("../.github/workflows/secret-scan.yml", import.meta.url), "utf8");
+  const release = await readFile(new URL("../.github/workflows/release-provenance.yml", import.meta.url), "utf8");
+  const dependabot = await readFile(new URL("../.github/dependabot.yml", import.meta.url), "utf8");
+  assert.match(secrets, /version="8\.30\.1"/);
+  assert.match(secrets, /archive="gitleaks_\$\{version\}_linux_x64\.tar\.gz"/);
+  assert.match(secrets, /551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb/);
+  assert.match(secrets, /actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/);
+  assert.match(secrets, /fetch-depth: 0/);
+  assert.match(release, /actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/);
+  assert.match(release, /actions\/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1/);
+  assert.match(release, /actions\/attest@1e69f48acb82d1966a394da916b4c1698aa569d6/);
+  assert.match(release, /attestations: write/);
+  assert.match(release, /artifact-metadata: write/);
+  assert.match(release, /npm sbom --sbom-format cyclonedx/);
+  assert.match(release, /git merge-base --is-ancestor/);
+  assert.match(release, /fetch-depth: 0/);
+  assert.match(dependabot, /package-ecosystem: "github-actions"/);
+  assert.match(dependabot, /package-ecosystem: "npm"/);
+  const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  assert.match(ci, /actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/);
+  assert.match(ci, /actions\/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1/);
+  assert.match(ci, /version="1\.7\.12"/);
+  assert.match(ci, /8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8/);
+  assert.match(ci, /npm sbom --sbom-format cyclonedx/);
+  const codeql = await readFile(new URL("../.github/workflows/codeql.yml", import.meta.url), "utf8");
+  assert.match(codeql, /github\/codeql-action\/init@33d7b85da1a04171e211befe2c739303b9a4c066/);
+  assert.match(codeql, /github\/codeql-action\/analyze@33d7b85da1a04171e211befe2c739303b9a4c066/);
+});

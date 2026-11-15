@@ -18,6 +18,10 @@ The implementation must be threat-modeled against, at minimum:
 - Relevant MCP security requirements when MCP integration is introduced
 - NIST AI Risk Management Framework and its Generative AI Profile where AI-specific risks apply
 
+## Automated security controls
+
+The repository runs CodeQL analysis, `npm audit`, and a full-history Gitleaks secret scan on pull requests, pushes to `main`, and a daily schedule. The Gitleaks binary is version-pinned and SHA-256 verified before execution. Published GitHub Releases generate a CycloneDX SBOM, checksums, and a GitHub artifact attestation for the package and SBOM. These controls do not replace secret rotation, independent penetration testing, or a formal ASVS assessment.
+
 ## Mandatory acquisition controls
 
 Before broader remote crawling or a production release:

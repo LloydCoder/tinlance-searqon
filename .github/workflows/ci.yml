@@ -24,11 +24,25 @@ jobs:
         node-version: [22, 24]
     steps:
       - name: Check out source
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Download and verify pinned actionlint
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="1.7.12"
+          archive="actionlint_${version}_linux_amd64.tar.gz"
+          url="https://github.com/rhysd/actionlint/releases/download/v${version}/${archive}"
+          curl --fail --location --silent --show-error --retry 3 "${url}" --output "/tmp/${archive}"
+          printf '%s  %s\n' "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8" "/tmp/${archive}" | sha256sum --check --strict
+          tar -xzf "/tmp/${archive}" -C /tmp actionlint
+
+      - name: Lint GitHub Actions workflows
+        run: /tmp/actionlint -color .github/workflows/*.yml
+
       - name: Check JavaScript syntax
         run: |
           for file in src/*.js src/security/*.js test/*.js; do
@@ -48,3 +62,7 @@ jobs:
         run: npm audit --audit-level=high
       - name: Validate package contents
         run: npm pack --dry-run
+      - name: Validate CycloneDX SBOM generation
+        run: |
+          npm sbom --sbom-format cyclonedx --sbom-type application > /tmp/searqon-sbom.cdx.json
+          node -e 'const s=JSON.parse(require("node:fs").readFileSync("/tmp/searqon-sbom.cdx.json","utf8")); if (s.bomFormat !== "CycloneDX") process.exit(1);'

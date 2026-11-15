@@ -1,0 +1,82 @@
+name: Release provenance
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+jobs:
+  package-and-attest:
+    name: Build, publish SBOM, and attest release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run tests and dependency audit
+        run: |
+          npm test
+          npm audit --audit-level=high
+
+      - name: Verify release commit is reachable from main
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$RELEASE_COMMIT" FETCH_HEAD
+
+      - name: Verify release tag matches package version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          node -e 'const p=require("./package.json"); if (process.env.RELEASE_TAG !== "v" + p.version) { console.error("Release tag does not match package.json version"); process.exit(1); }'
+
+      - name: Pack npm artifact
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm pack --json > pack.json
+          filename="$(node -e 'const p=JSON.parse(require("node:fs").readFileSync("pack.json","utf8")); if (p.length !== 1) process.exit(1); process.stdout.write(p[0].filename)')"
+          test -s "$filename"
+          echo "filename=$filename" >> "$GITHUB_OUTPUT"
+
+      - name: Generate CycloneDX SBOM
+        run: |
+          npm sbom --sbom-format cyclonedx --sbom-type application > sbom.cdx.json
+          node -e 'const s=JSON.parse(require("node:fs").readFileSync("sbom.cdx.json","utf8")); if (s.bomFormat !== "CycloneDX") process.exit(1);'
+
+      - name: Generate release checksums
+        env:
+          PACKAGE_FILE: ${{ steps.package.outputs.filename }}
+        run: sha256sum "$PACKAGE_FILE" sbom.cdx.json > SHA256SUMS
+
+      - name: Attach package, SBOM, and checksums to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          PACKAGE_FILE: ${{ steps.package.outputs.filename }}
+        run: gh release upload "$RELEASE_TAG" "$PACKAGE_FILE" sbom.cdx.json SHA256SUMS --clobber
+
+      - name: Attest package provenance and SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ github.workspace }}/${{ steps.package.outputs.filename }}
+          sbom-path: ${{ github.workspace }}/sbom.cdx.json
