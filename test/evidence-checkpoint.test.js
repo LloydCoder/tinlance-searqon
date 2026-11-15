@@ -5,10 +5,10 @@ import { createEvidenceRecord } from "../src/evidence.js";
 import { createEvidenceLedgerEntry } from "../src/evidence-ledger.js";
 import { createEvidenceLedgerCheckpoint, verifyEvidenceLedgerCheckpoint } from "../src/evidence-checkpoint.js";
 
-function entries() {
+function entries(content = "signed checkpoint fixture") {
   const record = createEvidenceRecord({
     source: "fixture.html",
-    content: "signed checkpoint fixture",
+    content,
     contentType: "text/html",
     collectedAt: "2026-11-15T00:00:00.000Z"
   });
@@ -36,8 +36,8 @@ test("signed checkpoint detects ledger truncation and full-chain replacement", (
     createdAt: "2026-11-15T00:02:00.000Z"
   });
   assert.equal(verifyEvidenceLedgerCheckpoint(checkpoint, [], keys.publicKey).valid, false);
-  const replacement = entries();
-  assert.equal(verifyEvidenceLedgerCheckpoint(checkpoint, replacement, keys.publicKey).valid, true);
+  const replacement = entries("different payload produces a different ledger root");
+  assert.equal(verifyEvidenceLedgerCheckpoint(checkpoint, replacement, keys.publicKey).valid, false);
 });
 
 test("signed checkpoint rejects altered checkpoint fields and wrong public keys", () => {
