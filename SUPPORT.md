@@ -8,7 +8,7 @@ Searqon is an early-alpha open-source toolkit. Support is provided on a best-eff
 |---|---|
 | Bug or reproducible defect | [Open a bug report](https://github.com/LloydCoder/tinlance-searqon/issues/new?template=bug_report.yml) |
 | Feature proposal | [Open a feature request](https://github.com/LloydCoder/tinlance-searqon/issues/new?template=feature_request.yml) |
-| Usage question | [GitHub Discussions](https://github.com/LloydCoder/tinlance-searqon/discussions) if enabled; otherwise open an issue with the `question` label |
+| Usage question | Open an issue describing the question and the smallest reproducible context |
 | Security vulnerability | Follow [SECURITY.md](SECURITY.md); do not use public issues |
 | Documentation correction | Open an issue or submit a focused pull request |
 
