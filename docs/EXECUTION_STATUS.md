@@ -118,3 +118,11 @@ This register separates implemented repository capabilities from customer, secur
 - PR #53 exact head `67ecce63f0f7ab4e7ff7326db614efedd5c7ed53`: merged hard-link and current-user ownership checks; merge commit `da935e3141ab72d37bccff351d0025d8cae49547`.
 - PR #54 reconciled evidence-store ownership documentation.
 - PR #55 exact main commit `ea4e08482168c78c21ec7bfe51bcc4cd7c8970f3`: push CI run `43649309732` passed on Node.js 22 and 24; CodeQL run `43649309697` passed. The main head at the time of this revision is green for CI and CodeQL.
+
+
+## 2026-11-15 — Approved architecture expansion (documentation only)
+
+- Added `docs/ARCHITECTURE_SPEC.md`, `docs/MODULE_CONTRACTS.md`, and `docs/ROADMAP_16_PHASE.md` on branch `docs/painkiller-modules-architecture-roadmap`.
+- Updated forward architecture to include Brand Hallucination & Citation Defense, Competitor Citation-Change Alerts, Agent Artifact Compiler, and Simulated Agent Sandbox.
+- Reconciled protocol targets to OpenAPI 3.2.1 and MCP 2026-07-28; llms.txt remains an optional community proposal, not a guaranteed discovery/ranking mechanism.
+- No feature implementation is claimed by this documentation change. Phase status remains governed by existing code, CI evidence, forensic audit and explicit acceptance records.
