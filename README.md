@@ -1,8 +1,8 @@
-# Searqon
-
-<p align="center"><strong>Understand Visibility. Engineer Discoverability. Enable Agents.</strong></p>
+# Searqon — AI Discoverability and Agent-Readiness Toolkit
 
 <p align="center">An evidence-first open-source toolkit for developers and technical teams assessing how websites, APIs, documentation and published agent interfaces can be discovered, understood and used.</p>
+
+<p align="center"><strong>Understand Visibility. Engineer Discoverability. Enable Agents.</strong></p>
 
 <p align="center">
   <a href="https://github.com/LloydCoder/tinlance-searqon/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/LloydCoder/tinlance-searqon/actions/workflows/ci.yml/badge.svg?branch=main"></a>
