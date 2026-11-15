@@ -107,5 +107,5 @@ test("zero-finding reports retain explicit scope and do not imply proof of absen
   input.assessments.SEO = { status: "no_findings_detected", coverage: "partial", confidence: "heuristic", findingCount: 0, scope: "HTML metadata", limitation: "Heuristic checks only." };
   const html = renderHtmlReport(input);
   assert.match(html, /No findings were recorded for the assessed scope/);
-  assert.match(html, /not proof that a system is issue-free/);
+  assert.match(html, /not proof that the system is free of issues/);
 });
