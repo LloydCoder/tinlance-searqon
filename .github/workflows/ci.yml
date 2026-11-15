@@ -29,6 +29,20 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Download and verify pinned actionlint
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="1.7.12"
+          archive="actionlint_${version}_linux_amd64.tar.gz"
+          url="https://github.com/rhysd/actionlint/releases/download/v${version}/${archive}"
+          curl --fail --location --silent --show-error --retry 3 "${url}" --output "/tmp/${archive}"
+          printf '%s  %s\n' "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8" "/tmp/${archive}" | sha256sum --check --strict
+          tar -xzf "/tmp/${archive}" -C /tmp actionlint
+
+      - name: Lint GitHub Actions workflows
+        run: /tmp/actionlint -color .github/workflows/*.yml
+
       - name: Check JavaScript syntax
         run: |
           for file in src/*.js src/security/*.js test/*.js; do
