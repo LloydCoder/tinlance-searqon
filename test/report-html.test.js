@@ -76,7 +76,7 @@ test("HTML report escapes untrusted evidence and finding content and loads no re
   assert.equal(html.includes("<iframe"), false);
   assert.equal(html.includes("<iframe src=\"https://attacker.example"), false);
   assert.match(html, /default-src 'none'/);
-  const inlineStyle = html.match(/<style>([\\s\\S]*?)<\\/style>/)?.[1];
+  const inlineStyle = html.match(/<style>([\s\S]*?)<\/style>/)?.[1];
   assert.ok(inlineStyle);
   const styleHash = createHash("sha256").update(inlineStyle, "utf8").digest("base64");
   assert.ok(html.includes("style-src 'sha256-" + styleHash + "'"));
