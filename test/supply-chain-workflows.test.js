@@ -7,7 +7,7 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   const release = await readFile(new URL("../.github/workflows/release-provenance.yml", import.meta.url), "utf8");
   const dependabot = await readFile(new URL("../.github/dependabot.yml", import.meta.url), "utf8");
   assert.match(secrets, /version="8\.30\.1"/);
-  assert.match(secrets, /archive="gitleaks_\\$\\{version\\}_linux_x64\\.tar\\.gz"/);
+  assert.match(secrets, /archive="gitleaks_\$\{version\}_linux_x64\.tar\.gz"/);
   assert.match(secrets, /551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb/);
   assert.match(secrets, /actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/);
   assert.match(secrets, /fetch-depth: 0/);
