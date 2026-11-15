@@ -273,7 +273,7 @@ test("MCP 2026-07-28 metadata validates cache hints and request metadata", () =>
       "io.modelcontextprotocol/serverInfo": { name: "Cache-aware MCP", version: "1.0.0" }
     },
     capabilities: { tools: {} },
-    toolsListMetadata: { ttlMs: 60000, cacheScope: "private" },
+    toolsListMetadata: { resultType: "complete", ttlMs: 60000, cacheScope: "private" },
     tools: [{ name: "search.docs", description: "Search docs.", inputSchema: { type: "object" } }]
   };
   const result = analyzeDocument({
@@ -317,7 +317,7 @@ test("MCP x-mcp-header annotations validate nested reachability and unique HTTP 
         }
       }
     }],
-    toolsListMetadata: { ttlMs: 0, cacheScope: "private" }
+    toolsListMetadata: { resultType: "complete", ttlMs: 0, cacheScope: "private" }
   };
   const result = analyzeDocument({
     source: "mcp-snapshot.json",
@@ -347,7 +347,7 @@ test("MCP x-mcp-header rejects duplicate names, invalid tokens, non-primitive ty
         }
       }
     }],
-    toolsListMetadata: { ttlMs: 1000, cacheScope: "public" }
+    toolsListMetadata: { resultType: "complete", ttlMs: 1000, cacheScope: "public" }
   };
   const result = analyzeDocument({
     source: "mcp-snapshot.json",
