@@ -25,4 +25,7 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(ci, /version="1\.7\.12"/);
   assert.match(ci, /8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8/);
   assert.match(ci, /npm sbom --sbom-format cyclonedx/);
+  const codeql = await readFile(new URL("../.github/workflows/codeql.yml", import.meta.url), "utf8");
+  assert.match(codeql, /github\\/codeql-action\\/init@33d7b85da1a04171e211befe2c739303b9a4c066/);
+  assert.match(codeql, /github\\/codeql-action\\/analyze@33d7b85da1a04171e211befe2c739303b9a4c066/);
 });
