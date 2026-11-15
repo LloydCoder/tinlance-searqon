@@ -13,7 +13,35 @@
       "minLength": 1,
       "maxLength": 64
     },
-    "toolsListMetadata": {\n      "type": "object",\n      "required": ["resultType", "ttlMs", "cacheScope"],\n      "properties": {\n        "resultType": { "type": "string", "minLength": 1, "maxLength": 64 },\n        "ttlMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },\n        "cacheScope": { "type": "string", "enum": ["public", "private"] }\n      },\n      "additionalProperties": false\n    },\n    "serverInfo": {
+    "toolsListMetadata": {
+      "type": "object",
+      "required": [
+        "resultType",
+        "ttlMs",
+        "cacheScope"
+      ],
+      "properties": {
+        "resultType": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "ttlMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "cacheScope": {
+          "type": "string",
+          "enum": [
+            "public",
+            "private"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "serverInfo": {
       "type": "object",
       "properties": {
         "name": {
@@ -46,7 +74,8 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 128
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_.-]+$"
           },
           "description": {
             "type": "string",
@@ -92,7 +121,12 @@
     "_meta": {
       "type": "object",
       "properties": {
-        "io.modelcontextprotocol/protocolVersion": { "type": "string", "minLength": 1, "maxLength": 64 },\n        "io.modelcontextprotocol/serverInfo": {
+        "io.modelcontextprotocol/protocolVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "io.modelcontextprotocol/serverInfo": {
           "type": "object",
           "properties": {
             "name": {
