@@ -34,6 +34,13 @@ jobs:
           npm test
           npm audit --audit-level=high
 
+      - name: Verify release commit is reachable from main
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$RELEASE_COMMIT" FETCH_HEAD
+
       - name: Verify release tag matches package version
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
