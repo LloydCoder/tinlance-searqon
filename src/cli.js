@@ -11,7 +11,8 @@ const usage = [
   "  searqon scan <local-file> [--format mcp] [--source <label>] [--out <json-file>]",
   "  searqon scan-url <public-url> --confirm-authorized-target [--allow-redirect-origin <origin>]... [--user-agent <token>] [--out <json-file>]",
   "  searqon geo analyze <observation.json> [--out <json-file>]",
-  "  searqon geo aggregate <observations.json> [--out <json-file>]"
+  "  searqon geo aggregate <observations.json> [--out <json-file>]",
+  "  searqon report <assessment.json> [--out <html-file>]"
 ].join("\n");
 
 async function readJson(file) {
