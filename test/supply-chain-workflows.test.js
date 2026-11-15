@@ -15,7 +15,7 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(release, /actions\/attest@1e69f48acb82d1966a394da916b4c1698aa569d6/);
   assert.match(release, /attestations: write/);
   assert.match(release, /artifact-metadata: write/);
-  assert.match(release, /npm sbom --sbom-format cyclonedx/);
+  assert.match(release, /npm sbom --sbom-format cyclonedx/);\n  assert.match(release, /git merge-base --is-ancestor/);\n  assert.match(release, /fetch-depth: 0/);
   assert.match(dependabot, /package-ecosystem: "github-actions"/);
   assert.match(dependabot, /package-ecosystem: "npm"/);
 });
