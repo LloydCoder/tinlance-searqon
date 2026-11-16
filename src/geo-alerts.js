@@ -651,7 +651,7 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
  */
 export function createWebhookReplayGuard({ maxEntries = 10_000, ttlSeconds = 900, timestampToleranceSeconds = 300 } = {}) {
   boundedInteger(maxEntries, "maxEntries", 1, 100_000);
-  boundedInteger(ttlSeconds, "ttlSeconds", 301, 86_400);
+  boundedInteger(ttlSeconds, "ttlSeconds", 1, 86_400);
   boundedInteger(timestampToleranceSeconds, "timestampToleranceSeconds", 1, 900);
   if (ttlSeconds <= timestampToleranceSeconds) throw new RangeError("ttlSeconds must exceed timestampToleranceSeconds");
   const seen = new Map();
