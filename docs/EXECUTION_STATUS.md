@@ -224,3 +224,13 @@ This register separates implemented repository capabilities from customer, secur
 - Added an in-memory, bounded webhook replay guard for deterministic tests/prototypes. Production replay protection still requires a durable shared event-ID store with a unique constraint and retention beyond timestamp tolerance.
 - Both aggregate and raw-observation reports now disclose observation lag and classify data as fresh/stale against an explicit age threshold.
 - Delivery payload/receipt tests cover formatting and retry metadata, but actual provider delivery, durable retries, idempotent outbox processing and delivery-latency SLOs remain unimplemented.
+
+
+## 2026-11-16 — Phase 9 implementation increment merged
+
+- PR #96 merged to main as `8d6c8e106872ab29a50ebd6ff62f07715e570f51`.
+- Exact-head verification passed: Node.js 22 and 24 test/package pipelines, PostgreSQL 16 tenant/auth/workspace integration, CodeQL and full-history Gitleaks.
+- Implemented aggregate snapshot alerts, raw-observation citation-domain disappearance, evidence provenance checks, cohort comparability, freshness disclosure, labelled synthetic quality evaluation, in-memory replay guard, HMAC event envelopes, bounded delivery receipts and Slack/Teams/PagerDuty payload builders.
+- The quality fixture is synthetic regression data only. No real-world false-positive/recall claim is made.
+- Phase 9 remains IN_PROGRESS. Live provider collection, consumer-interface automation, citation appearance/replacement/order, durable alert state, persistent replay dedupe, encrypted destination management, outbound delivery, durable retry/outbox, scheduling, monitoring and customer-labelled validation remain.
+- The merge does not change the overall product maturity: Searqon remains early alpha and is not production-ready.
