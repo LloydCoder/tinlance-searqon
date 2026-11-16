@@ -80,7 +80,9 @@ test("recovery verifier accepts a fully checkpointed ledger and redaction journa
 
 test("recovery verifier fails closed when either checkpoint is absent or invalid", async () => {
   const bundle = await validBundle();
-  assert.equal(verifyEvidenceRecoveryBundle({ ...bundle, ledgerCheckpoint: null }).valid, false);
+  const missingLedgerCheckpoint = verifyEvidenceRecoveryBundle({ ...bundle, ledgerCheckpoint: null });
+  assert.equal(missingLedgerCheckpoint.valid, false);
+  assert.deepEqual(missingLedgerCheckpoint.suppressedEvidenceIds, []);
   assert.equal(verifyEvidenceRecoveryBundle({ ...bundle, redactionCheckpoint: null }).valid, false);
   assert.equal(verifyEvidenceRecoveryBundle({
     ...bundle,
