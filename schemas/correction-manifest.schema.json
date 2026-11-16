@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.com/schemas/correction-manifest.schema.json",
+  "title": "Searqon Human-Approved Correction Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "type",
+    "status",
+    "approvalRequired",
+    "autoPublish",
+    "items",
+    "manifestId"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "type": {
+      "const": "correction_manifest"
+    },
+    "status": {
+      "enum": [
+        "requires_review",
+        "clear"
+      ]
+    },
+    "approvalRequired": {
+      "type": "boolean"
+    },
+    "autoPublish": {
+      "const": false
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claimId",
+          "issueTypes",
+          "proposedCorrection",
+          "sourceUrls",
+          "approvalRequired"
+        ],
+        "properties": {
+          "claimId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "issueTypes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          "proposedCorrection": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048
+          },
+          "sourceUrls": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://"
+            }
+          },
+          "approvalRequired": {
+            "const": true
+          }
+        }
+      }
+    },
+    "manifestId": {
+      "type": "string",
+      "pattern": "^correction_[a-f0-9]{20}$"
+    }
+  }
+}

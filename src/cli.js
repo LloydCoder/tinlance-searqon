@@ -4,6 +4,7 @@ import { basename, extname, resolve } from "node:path";
 import { analyzeDocument } from "./analyzer.js";
 import { analyzeGeoObservation, aggregateGeoObservations } from "./geo.js";
 import { createBrandTruthRegistry, createPromptCohort, buildGeoSamplingPlan } from "./geo-registry.js";
+import { evaluateBrandClaims } from "./claim-defense.js";
 import { scanPublicUrl } from "./remote-scan.js";
 import { renderHtmlReport } from "./report-html.js";
 
@@ -16,6 +17,7 @@ const usage = [
   "  searqon geo registry <registry-input.json> [--out <json-file>]",
   "  searqon geo cohort <cohort-input.json> [--out <json-file>]",
   "  searqon geo plan <sampling-input.json> [--out <json-file>]",
+  "  searqon claims audit <claim-input.json> [--out <json-file>]",
   "  searqon report <assessment.json> [--out <html-file>]"
 ].join("\n");
 
@@ -69,6 +71,16 @@ async function runScanUrl(args) {
   await emitResult(await scanPublicUrl(args[1], { userAgent, confirmAuthorizedTarget: true, allowedRedirectOrigins }), args);
 }
 
+async function runClaims(args) {
+  const command = args[1];
+  const fileArg = args[2];
+  if (command !== "audit" || !fileArg) throw new Error(usage);
+  const file = resolve(fileArg);
+  if (extname(file).toLowerCase() !== ".json") throw new Error("Claim defense accepts local .json files only");
+  const input = await readJson(file);
+  await emitResult(evaluateBrandClaims(input), args);
+}
+
 async function runGeo(args) {
   const command=args[1], fileArg=args[2];
   if (!["analyze","aggregate","registry","cohort","plan"].includes(command) || !fileArg) throw new Error(usage);
@@ -106,6 +118,7 @@ async function main() {
     if (args[0]==="scan") await runScan(args);
     else if (args[0]==="scan-url") await runScanUrl(args);
     else if (args[0]==="geo") await runGeo(args);
+    else if (args[0]==="claims") await runClaims(args);
     else if (args[0]==="report") await runReport(args);
     else { process.stderr.write(usage+"\n"); process.exitCode=2; }
   } catch (error) {

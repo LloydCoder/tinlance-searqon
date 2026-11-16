@@ -10,6 +10,7 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Scan one authorized public URL](how-to/authorized-remote-scan.md)
 - [Analyze supplied GEO observations](how-to/analyze-geo-observations.md)
 - [Create a governed GEO sampling plan](how-to/create-geo-sampling-plan.md)
+- [Audit brand claims and citations](how-to/audit-brand-claims.md)
 
 ## Explanation
 - [Assessment and evidence boundaries](explanation/assessment-boundaries.md)
