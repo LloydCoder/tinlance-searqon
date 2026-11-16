@@ -76,3 +76,10 @@ There is no repository-level configuration file or required environment variable
 - `searqon geo analyze` and `searqon geo aggregate` continue to analyze supplied observations only.
 
 See [Create a governed GEO sampling plan](../how-to/create-geo-sampling-plan.md) for input contracts and safety boundaries.
+
+
+## Claim and citation defense
+
+- `searqon claims audit <claim-input.json> [--out <json-file>]` evaluates supplied or sentence-extracted brand claims against a versioned Brand Truth Registry and emits a correction manifest that cannot auto-publish.
+
+See [Audit brand claims and citations](../how-to/audit-brand-claims.md) for assessment semantics and limitations.
