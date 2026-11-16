@@ -188,3 +188,10 @@ This register separates implemented repository capabilities from customer, secur
 - Checkpoint signing and manifest approval support separate Ed25519 keys. Checkpoint objects are portable, but independent storage of the checkpoint and trusted public key remains an operator/custody responsibility. The createdAt value is not a trusted timestamp.
 - PR #78 exact-head Node.js 22/24 CI, CodeQL and full-history secret scanning passed; merge-commit CI, CodeQL and secret scanning also passed.
 - Phase 5 remains IN_PROGRESS pending physical deletion/sanitization, legal holds, backup lifecycle, identity binding and verified recovery procedures.
+
+
+## 2026-11-16 — Phase 5 recovery verification gate (in progress)
+
+- Added `verifyEvidenceRecoveryBundle` to validate the evidence-ledger chain and detached checkpoint, signed redaction journal and detached checkpoint, duplicate evidence IDs, and redaction-to-ledger references before a restored bundle is exposed.
+- Added fail-closed tests for missing/invalid checkpoints, unknown redaction references, duplicate evidence identifiers and malformed input.
+- This is an offline integrity gate only. It does not restore files, verify backup completeness against a remote source, sanitize storage, enforce legal holds, expire backups or authenticate human/key custody.
