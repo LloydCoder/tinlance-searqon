@@ -31,11 +31,12 @@ function normalizeMarkdown(content) {
   return content.replace(/\r\n?/g, "\n").split("\n").map(line => line.replace(/[ \t]+$/g, "")).join("\n").replace(/^\n+|\n+$/g, "") + "\n";
 }
 
-function canonicalize(value) {
-  if (Array.isArray(value)) return value.map(canonicalize);
+function canonicalize(value, depth = 0) {
+  if (depth > 64) throw new RangeError("OpenAPI JSON nesting exceeds the compiler limit");
+  if (Array.isArray(value)) return value.map(item => canonicalize(item, depth + 1));
   if (value && typeof value === "object") {
-    const output = {};
-    for (const key of Object.keys(value).sort()) output[key] = canonicalize(value[key]);
+    const output = Object.create(null);
+    for (const key of Object.keys(value).sort()) output[key] = canonicalize(value[key], depth + 1);
     return output;
   }
   return value;
@@ -200,9 +201,12 @@ export function compileAgentArtifacts(input) {
   const sourceBytes = sources.reduce((sum, source) => sum + Buffer.byteLength(source.originalContent, "utf8"), 0);
   if (sourceBytes > MAX_TOTAL_BYTES) throw new RangeError("Combined source content exceeds the 2 MiB compiler limit");
   const paths = new Set();
+  const sourceIds = new Set();
   for (const source of sources) {
     if (paths.has(source.path)) throw new TypeError("duplicate artifact path: " + source.path);
+    if (sourceIds.has(source.sourceId)) throw new TypeError("duplicate sourceId: " + source.sourceId);
     paths.add(source.path);
+    sourceIds.add(source.sourceId);
   }
   const artifacts = sources.map(compileSource);
   const options = input.options ?? {};
