@@ -78,7 +78,7 @@
     {
       "name": "evidence-ledger-checkpoint",
       "file": "evidence-ledger-checkpoint.schema.json",
-      "schemaId": "https://tinlance.com/schemas/searqon-evidence-ledger-checkpoint-1.0.0.json",
+      "schemaId": "https://tinlance.com/schemas/evidence-ledger-checkpoint-1.0.0.json",
       "contractVersion": "1.0.0",
       "versionField": "schemaVersion",
       "status": "stable",
