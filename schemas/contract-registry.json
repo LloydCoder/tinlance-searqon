@@ -235,6 +235,20 @@
         "remote-scan-cli"
       ],
       "notes": "References assessment-report.schema.json for nested assessment."
+    },
+    {
+      "name": "geo-citation-change-report",
+      "file": "geo-citation-change-report.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-citation-change-report.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-alerts",
+        "local-cli",
+        "reporting"
+      ],
+      "notes": "Cohort-relative citation presence changes with sample thresholds and Wilson intervals; does not claim ranking, causality, real-time monitoring or provider acquisition."
     }
   ]
 }
