@@ -35,14 +35,12 @@ test("PostgreSQL pool applies transaction-local tenant identity and RLS on real 
     );
 
     const resultA = await withUserTransaction(pool, userA, async client => {
-      await client.query("SET LOCAL ROLE searqon_app");
       const result = await client.query("SELECT id FROM searqon.projects ORDER BY id");
       return result.rows.map(row => row.id);
     });
     assert.deepEqual(resultA, [projectA]);
 
     const resultB = await withUserTransaction(pool, userB, async client => {
-      await client.query("SET LOCAL ROLE searqon_app");
       const result = await client.query("SELECT id FROM searqon.projects ORDER BY id");
       return result.rows.map(row => row.id);
     });
@@ -50,8 +48,7 @@ test("PostgreSQL pool applies transaction-local tenant identity and RLS on real 
 
     await assert.rejects(
       withUserTransaction(pool, userA, async client => {
-        await client.query("SET LOCAL ROLE searqon_app");
-        await client.query(
+          await client.query(
           "INSERT INTO searqon.projects (organization_id, name, target_url, created_by) VALUES ($1, $2, $3, $4)",
           [orgB, "Unauthorized", "https://unauthorized.example.test", userA]
         );
