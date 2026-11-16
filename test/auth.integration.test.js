@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createHmac, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { createDatabase } from "../src/platform/database.js";
 import { createAuthService, AuthError } from "../src/platform/auth.js";
 
@@ -13,7 +13,7 @@ if (databaseUrl && process.env.SEARQON_TEST_DATABASE === "1") {
   } catch {}
 }
 
-test("passwordless auth completes registration, token replacement, session lookup and logout on PostgreSQL", { skip: !databaseUrl }, async () => {
+test("passwordless auth completes registration, token replacement, session lookup and logout on PostgreSQL", { skip: !isDisposableDatabase }, async () => {
   const database = createDatabase({ connectionString: databaseUrl, maxConnections: 1 });
   const email = "auth-integration-" + randomUUID() + "@example.test";
   const ip = "198.51.100.19";
