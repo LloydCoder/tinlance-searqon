@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
+
+const TEST_WEBHOOK_SECRET = "x".repeat(40);
 import { analyzeGeoObservation, wilsonInterval } from "../src/geo.js";
 import {
   detectCitationChanges,
@@ -176,7 +178,7 @@ test("dedupe keys and cooldown suppress repeated notifications without hiding ev
 
 test("signed alert webhooks verify HMAC, reject tampering and enforce timestamp tolerance", () => {
   const alert = buildGeoAlerts(input()).alerts[0];
-  const secret = "test-signing-secret-with-at-least-32-bytes";
+  const secret = TEST_WEBHOOK_SECRET;
   const timestampSeconds = 1_800_000_000;
   const signed = createSignedAlertEvent(alert, secret, timestampSeconds);
   const verified = verifySignedAlertEvent({
@@ -271,10 +273,10 @@ test("invalid aggregate counts, normalized metadata and stale time windows fail 
 
 test("webhook verification binds the event id and rejects malformed envelopes", () => {
   const alert = buildGeoAlerts(input()).alerts[0];
-  const signed = createSignedAlertEvent(alert, "test-signing-secret-with-at-least-32-bytes", 1_800_000_000);
+  const signed = createSignedAlertEvent(alert, TEST_WEBHOOK_SECRET, 1_800_000_000);
   assert.throws(() => verifySignedAlertEvent({
     rawBody: signed.body,
-    secret: "test-signing-secret-with-at-least-32-bytes",
+    secret: TEST_WEBHOOK_SECRET,
     timestamp: signed.headers["x-searqon-timestamp"],
     signature: signed.headers["x-searqon-signature"],
     eventId: "00000000-0000-4000-8000-000000000000",
@@ -308,16 +310,16 @@ test("citation disappearance requires valid evidence provenance", () => {
 
 test("signed webhook envelope creation time must match the signed timestamp header", () => {
   const alert = buildGeoAlerts(input()).alerts[0];
-  const signed = createSignedAlertEvent(alert, "test-signing-secret-with-at-least-32-bytes", 1_800_000_000);
+  const signed = createSignedAlertEvent(alert, TEST_WEBHOOK_SECRET, 1_800_000_000);
   const altered = JSON.parse(signed.body);
   altered.createdAt = "2026-11-16T13:00:00.000Z";
   const rawBody = JSON.stringify(altered);
-  const signature = "v1=" + createHmac("sha256", "test-signing-secret-with-at-least-32-bytes")
+  const signature = "v1=" + createHmac("sha256", TEST_WEBHOOK_SECRET)
     .update(signed.headers["x-searqon-timestamp"] + "." + rawBody)
     .digest("hex");
   assert.throws(() => verifySignedAlertEvent({
     rawBody,
-    secret: "test-signing-secret-with-at-least-32-bytes",
+    secret: TEST_WEBHOOK_SECRET,
     timestamp: signed.headers["x-searqon-timestamp"],
     signature,
     eventId: signed.headers["x-searqon-event-id"],
