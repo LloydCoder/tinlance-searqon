@@ -23,8 +23,15 @@ function connectionOptions(connectionString, maxConnections) {
   }
 
   const loopback = LOOPBACK_HOSTS.has(parsed.hostname.toLowerCase());
+  // pg-connection-string SSL query options can override the explicit TLS object.
+  // Strip all URL-level SSL controls so a remote URL cannot downgrade certificate verification.
+  for (const key of [...parsed.searchParams.keys()]) {
+    if (["ssl", "sslmode", "sslcert", "sslkey", "sslrootcert", "sslpassword"].includes(key.toLowerCase())) {
+      parsed.searchParams.delete(key);
+    }
+  }
   return {
-    connectionString,
+    connectionString: parsed.toString(),
     max: maxConnections,
     min: 0,
     idleTimeoutMillis: 30_000,
