@@ -219,7 +219,12 @@ export function compileAgentArtifacts(input) {
   if (options.includeLlmsTxt === true) {
     if (paths.has("llms.txt")) throw new TypeError("llms.txt output path conflicts with a supplied source");
     const content = buildLlmsArtifact(options, sources);
-    const evidenceSource = sources.map(source => source.path).sort().join("\n");
+    const evidenceSource = JSON.stringify({
+      sources: sources.map(source => ({ sourceId: source.sourceId, path: source.path, sha256: sha256(source.originalContent) })).sort((a, b) => a.path.localeCompare(b.path)),
+      productName: options.productName,
+      summary: options.summary,
+      links: options.links ?? null
+    });
     artifacts.push(Object.freeze({
       path: "llms.txt",
       kind: "derived",
