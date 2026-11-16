@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
+import { createEvidenceRecord } from "../src/evidence.js";
+import { evaluateEvidenceRetention } from "../src/evidence-retention.js";
 import {
   createEvidenceLegalHoldEvent,
   deriveActiveEvidenceHolds,
