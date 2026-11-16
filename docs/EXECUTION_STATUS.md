@@ -1,7 +1,7 @@
 # Searqon Implementation Status
 
 **Last reconciled:** 2026-11-16  
-**Base commit for this status revision:** `726d552f05eba3682d8fd2629e163d5866b451d1`  
+**Base commit for this status revision:** `4e7a8677d7a37d557e8bdf4b748e1f0790cae653`  
 **Product maturity:** Early alpha; not production-ready.
 
 This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification. Status is evidence-based; implementation does not imply independent assurance or product-owner acceptance.
@@ -208,7 +208,7 @@ This register separates implemented repository capabilities from customer, secur
 
 ## 2026-11-16 — Roadmap Phase 9 citation-change alert foundation (in progress)
 
-- Added deterministic GEO baseline/current aggregate comparisons with strict matching across observation class, provider, model, region, locale, brand, target domain and sample period.
+- Added deterministic GEO baseline/current aggregate comparisons with strict matching across observation class, provider, model, region, locale, brand, target domain and sample period. Aggregates preserve up to 500 evidence IDs per cohort, total counts and truncation metadata; emitted alerts carry baseline/current references and reject reused evidence IDs.
 - Added minimum sample/effect thresholds, conservative non-overlapping Wilson 95% interval screening, explicit new/missing cohort evaluations, stable deduplication keys and caller-managed cooldown suppression.
 - Added raw observation citation-domain disappearance detection with evidence-record integrity/provenance verification, strict same-cohort checks and baseline/current evidence references.
 - Added signed HMAC-SHA256 webhook event envelopes, timestamp tolerance, raw-body/event-ID binding, bounded delivery receipts, and Slack/Teams Workflows/PagerDuty payload builders.
@@ -224,13 +224,3 @@ This register separates implemented repository capabilities from customer, secur
 - Added an in-memory, bounded webhook replay guard for deterministic tests/prototypes. Production replay protection still requires a durable shared event-ID store with a unique constraint and retention beyond timestamp tolerance.
 - Both aggregate and raw-observation reports now disclose observation lag and classify data as fresh/stale against an explicit age threshold.
 - Delivery payload/receipt tests cover formatting and retry metadata, but actual provider delivery, durable retries, idempotent outbox processing and delivery-latency SLOs remain unimplemented.
-
-
-## 2026-11-16 — Phase 9 implementation increment merged
-
-- PR #96 merged to main as `8d6c8e106872ab29a50ebd6ff62f07715e570f51`.
-- Exact-head verification passed: Node.js 22 and 24 test/package pipelines, PostgreSQL 16 tenant/auth/workspace integration, CodeQL and full-history Gitleaks.
-- Implemented aggregate snapshot alerts, raw-observation citation-domain disappearance, evidence provenance checks, cohort comparability, freshness disclosure, labelled synthetic quality evaluation, in-memory replay guard, HMAC event envelopes, bounded delivery receipts and Slack/Teams/PagerDuty payload builders.
-- The quality fixture is synthetic regression data only. No real-world false-positive/recall claim is made.
-- Phase 9 remains IN_PROGRESS. Live provider collection, consumer-interface automation, citation appearance/replacement/order, durable alert state, persistent replay dedupe, encrypted destination management, outbound delivery, durable retry/outbox, scheduling, monitoring and customer-labelled validation remain.
-- The merge does not change the overall product maturity: Searqon remains early alpha and is not production-ready.
