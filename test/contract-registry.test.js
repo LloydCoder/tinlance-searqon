@@ -43,10 +43,17 @@ test("local schema references resolve to a registered contract", async () => {
     };
     visit(schema);
     for (const ref of refs) {
-      assert.ok(!ref.includes("://"), "external schema reference must be explicitly reviewed: " + ref);
-      const target = basename(ref.split("#", 1)[0]);
-      assert.ok(registered.has(target), contract.name + " has unregistered reference " + ref);
-      await readJson(new URL("../schemas/" + target, import.meta.url));
+      const referenceTarget = ref.split("#", 1)[0];
+      if (/^https?:\\/\\//i.test(referenceTarget)) {
+        const targetContract = registry.contracts.find(item => item.schemaId === referenceTarget);
+        assert.ok(targetContract, contract.name + " has an unregistered absolute schema reference " + ref);
+        assert.ok(registered.has(targetContract.file));
+        await readJson(new URL("../schemas/" + targetContract.file, import.meta.url));
+      } else {
+        const target = basename(referenceTarget);
+        assert.ok(registered.has(target), contract.name + " has unregistered reference " + ref);
+        await readJson(new URL("../schemas/" + target, import.meta.url));
+      }
     }
   }
 });
