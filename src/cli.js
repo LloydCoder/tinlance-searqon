@@ -5,6 +5,7 @@ import { analyzeDocument } from "./analyzer.js";
 import { analyzeGeoObservation, aggregateGeoObservations } from "./geo.js";
 import { createBrandTruthRegistry, createPromptCohort, buildGeoSamplingPlan } from "./geo-registry.js";
 import { evaluateBrandClaims } from "./claim-defense.js";
+import { buildGeoAlerts } from "./geo-alerts.js";
 import { scanPublicUrl } from "./remote-scan.js";
 import { renderHtmlReport } from "./report-html.js";
 
@@ -17,6 +18,7 @@ const usage = [
   "  searqon geo registry <registry-input.json> [--out <json-file>]",
   "  searqon geo cohort <cohort-input.json> [--out <json-file>]",
   "  searqon geo plan <sampling-input.json> [--out <json-file>]",
+  "  searqon geo alerts <baseline-current-input.json> [--out <json-file>]",
   "  searqon claims audit <claim-input.json> [--out <json-file>]",
   "  searqon report <assessment.json> [--out <html-file>]"
 ].join("\n");
@@ -83,7 +85,7 @@ async function runClaims(args) {
 
 async function runGeo(args) {
   const command=args[1], fileArg=args[2];
-  if (!["analyze","aggregate","registry","cohort","plan"].includes(command) || !fileArg) throw new Error(usage);
+  if (!["analyze","aggregate","registry","cohort","plan","alerts"].includes(command) || !fileArg) throw new Error(usage);
   const file=resolve(fileArg);
   if (extname(file).toLowerCase()!==".json") throw new Error("GEO commands accept local .json files only");
   const input=await readJson(file);
@@ -92,7 +94,8 @@ async function runGeo(args) {
     aggregate: aggregateGeoObservations,
     registry: createBrandTruthRegistry,
     cohort: createPromptCohort,
-    plan: buildGeoSamplingPlan
+    plan: buildGeoSamplingPlan,
+    alerts: buildGeoAlerts
   };
   await emitResult(handlers[command](input),args);
 }
