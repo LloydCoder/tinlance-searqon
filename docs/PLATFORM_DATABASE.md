@@ -46,14 +46,13 @@ Audit events can be selected and appended by an authorized workspace member. A d
 ## Explicitly not implemented
 
 - OAuth/OIDC, passkeys, MFA, recovery codes, enterprise SSO and session-management UI.
-- Invitation and additional membership administration.
 - Asynchronous worker database integration and job orchestration.
-- Project update/archive/delete endpoints and membership invitation/administration flows.
+- Project update/archive/delete endpoints and invitation/role administration flows.
 - Queue, scheduler, quotas, billing, provider adapters or live monitoring.
 - Encryption/key management, backup/restore automation, data residency or physical deletion workflows.
 - Production DB roles, network policies, secrets, backups, SLOs or deployment.
 
-The passwordless authentication service uses narrowly scoped SECURITY DEFINER functions for account provisioning and session lookup; the runtime role cannot directly access authentication-token or rate-limit tables. The Node.js adapter is wired into registration, magic-link verification, session lookup/logout and authenticated profile loading. Project/assessment persistence and worker execution are not yet wired into the running HTTP API.
+The passwordless authentication service uses narrowly scoped SECURITY DEFINER functions for account provisioning and session lookup; the runtime role cannot directly access authentication-token or rate-limit tables. The Node.js adapter is wired into registration, magic-link verification, session lookup/logout and authenticated profile loading. The workspace service also persists projects and synchronous project assessments through tenant-scoped RLS transactions; worker execution and asynchronous orchestration are not yet wired into the running HTTP API.
 
 
 ## Node.js database adapter
