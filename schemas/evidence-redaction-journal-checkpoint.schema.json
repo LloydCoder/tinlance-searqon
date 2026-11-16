@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.tinlance.com/schemas/evidence-redaction-journal-checkpoint/1.0.0",
+  "title": "Searqon Evidence Redaction Journal Checkpoint",
+  "description": "Detached Ed25519 checkpoint anchoring a redaction journal prefix.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "algorithm",
+    "keyId",
+    "entryCount",
+    "headHash",
+    "createdAt",
+    "signature"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "algorithm": {
+      "const": "Ed25519"
+    },
+    "keyId": {
+      "type": "string",
+      "pattern": "^ed25519:[a-f0-9]{64}$"
+    },
+    "entryCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "headHash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "signature": {
+      "type": "string",
+      "minLength": 88,
+      "maxLength": 88,
+      "pattern": "^[A-Za-z0-9+/]{86}==$"
+    }
+  }
+}
