@@ -51,6 +51,94 @@ CREATE POLICY audit_events_update_test ON searqon.audit_events
     WHERE m.organization_id = audit_events.organization_id AND m.user_id = searqon.current_user_id()
   ));
 
+DO $body$
+DECLARE
+  v_user_id uuid;
+  v_organization_id uuid;
+  v_registration_token uuid;
+  v_login_token uuid;
+  v_session_id uuid;
+  v_session_user uuid;
+  v_expiry timestamptz;
+  v_attempt integer;
+BEGIN
+  SELECT user_id, organization_id, token_id
+    INTO v_user_id, v_organization_id, v_registration_token
+  FROM searqon.register_account(
+    'auth-flow@example.test', 'Auth Flow', 'Auth Workspace', 'auth-workspace',
+    decode(repeat('a', 64), 'hex'), now() + interval '15 minutes'
+  );
+  IF v_user_id IS NULL OR v_organization_id IS NULL OR v_registration_token IS NULL THEN
+    RAISE EXCEPTION 'registration did not provision an account and workspace';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM searqon.memberships
+    WHERE user_id = v_user_id AND organization_id = v_organization_id AND role = 'owner'
+  ) THEN RAISE EXCEPTION 'new account was not assigned workspace owner membership'; END IF;
+
+  SELECT user_id, token_id INTO v_session_user, v_login_token
+  FROM searqon.issue_magic_link(
+    'auth-flow@example.test', decode(repeat('b', 64), 'hex'), now() + interval '15 minutes'
+  );
+  IF v_session_user <> v_user_id OR v_login_token IS NULL THEN
+    RAISE EXCEPTION 'magic link was not issued for the existing account';
+  END IF;
+
+  -- Issuing a replacement invalidates the earlier unconsumed registration link.
+  IF EXISTS (
+    SELECT 1 FROM searqon.consume_magic_link_and_create_session(
+      decode(repeat('a', 64), 'hex'), decode(repeat('d', 64), 'hex'), now() + interval '1 day'
+    )
+  ) THEN RAISE EXCEPTION 'superseded magic link was accepted'; END IF;
+
+  SELECT user_id, session_id, session_expires_at
+    INTO v_session_user, v_session_id, v_expiry
+  FROM searqon.consume_magic_link_and_create_session(
+    decode(repeat('b', 64), 'hex'), decode(repeat('c', 64), 'hex'), now() + interval '1 day'
+  );
+  IF v_session_user <> v_user_id OR v_session_id IS NULL OR v_expiry <= now() THEN
+    RAISE EXCEPTION 'magic link did not create a valid session';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM searqon.lookup_session(decode(repeat('c', 64), 'hex'))
+    WHERE user_id = v_user_id
+  ) THEN RAISE EXCEPTION 'new session could not be looked up'; END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM searqon.consume_magic_link_and_create_session(
+      decode(repeat('b', 64), 'hex'), decode(repeat('e', 64), 'hex'), now() + interval '1 day'
+    )
+  ) THEN RAISE EXCEPTION 'one-time magic link replay was accepted'; END IF;
+
+  IF NOT searqon.revoke_session(decode(repeat('c', 64), 'hex')) THEN
+    RAISE EXCEPTION 'session revocation did not update an active session';
+  END IF;
+  IF EXISTS (SELECT 1 FROM searqon.lookup_session(decode(repeat('c', 64), 'hex'))) THEN
+    RAISE EXCEPTION 'revoked session remained valid';
+  END IF;
+
+  FOR v_attempt IN 1..3 LOOP
+    IF NOT searqon.consume_auth_rate_limit(decode(repeat('f', 64), 'hex'), 3, 900) THEN
+      RAISE EXCEPTION 'rate limiter rejected an allowed request';
+    END IF;
+  END LOOP;
+  IF searqon.consume_auth_rate_limit(decode(repeat('f', 64), 'hex'), 3, 900) THEN
+    RAISE EXCEPTION 'rate limiter allowed a request beyond the configured threshold';
+  END IF;
+
+  IF has_table_privilege('searqon_app', 'searqon.auth_tokens', 'SELECT')
+     OR has_table_privilege('searqon_app', 'searqon.auth_tokens', 'INSERT')
+     OR has_table_privilege('searqon_app', 'searqon.auth_rate_limits', 'SELECT') THEN
+    RAISE EXCEPTION 'application role has direct access to authentication internals';
+  END IF;
+  IF NOT has_function_privilege(
+    'searqon_app',
+    'searqon.consume_magic_link_and_create_session(bytea, bytea, timestamp with time zone)',
+    'EXECUTE'
+  ) THEN RAISE EXCEPTION 'application role cannot execute the scoped session function'; END IF;
+END
+$body$;
+
 SET LOCAL ROLE searqon_app;
 SET LOCAL searqon.user_id = '10000000-0000-4000-8000-000000000001';
 
