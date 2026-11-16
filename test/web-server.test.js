@@ -223,3 +223,22 @@ test("auth API rejects unsupported methods and missing request origins", async (
     assert.equal(missingOrigin.status, 403);
   }, { authService });
 });
+
+test("serves directory-based authentication and workspace routes", async () => {
+  await withServer(async base => {
+    for (const [path, marker] of [
+      ["/auth/register/", "Create your workspace"],
+      ["/auth/login/", "Sign in to Searqon"],
+      ["/auth/verify/", "Confirm your sign-in"],
+      ["/app/", "Your visibility baseline"]
+    ]) {
+      const response = await fetch(base + path);
+      assert.equal(response.status, 200, path);
+      assert.match(response.headers.get("content-type"), /text\/html/, path);
+      assert.match(await response.text(), new RegExp(marker), path);
+    }
+    const script = await fetch(base + "/auth/auth.js");
+    assert.equal(script.status, 200);
+    assert.match(script.headers.get("content-type"), /javascript/);
+  });
+});
