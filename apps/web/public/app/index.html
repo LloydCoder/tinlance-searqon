@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F6F3EC">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Your Searqon intelligence workspace.">
+  <title>Workspace — Searqon</title>
+  <link rel="icon" href="/assets/searqon-wordmark-navy.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/app/workspace.css">
+  <script src="/app/workspace.js" defer></script>
+</head>
+<body class="workspace-body">
+  <a class="skip-link" href="#workspace-main">Skip to workspace</a>
+  <header class="workspace-header">
+    <a class="workspace-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+    <div class="workspace-header-right">
+      <span class="workspace-mode">WORKSPACE</span>
+      <button class="button button-light button-small" id="sign-out" type="button">Sign out</button>
+    </div>
+  </header>
+  <div class="workspace-layout">
+    <aside class="workspace-sidebar" aria-label="Workspace navigation">
+      <div class="workspace-org"><span class="org-mark" aria-hidden="true">S</span><div><strong id="organization-name">Loading workspace</strong><small id="organization-role">Workspace</small></div></div>
+      <nav class="workspace-nav">
+        <a class="active" href="#overview" aria-current="page">Overview</a>
+        <a href="#projects">Projects</a>
+        <a href="#insights">Insights</a>
+        <a href="#agents">Agent readiness</a>
+        <a href="#settings">Settings</a>
+      </nav>
+      <div class="sidebar-note"><span class="status-dot"></span> Evidence first. Measured, not guessed.</div>
+    </aside>
+    <main class="workspace-main" id="workspace-main">
+      <div class="workspace-welcome">
+        <div><div class="eyebrow">INTELLIGENCE WORKSPACE</div><h1>Good to have you here, <span id="user-name">…</span>.</h1><p>One place to understand how your digital properties are discovered, represented and used.</p></div>
+        <div class="workspace-account"><strong id="user-email">Loading account…</strong><span>Verified account</span></div>
+      </div>
+      <section id="overview" class="workspace-section">
+        <div class="section-heading"><div><span class="eyebrow">OVERVIEW</span><h2>Your visibility baseline</h2><p>Scores appear after a real assessment. No sample values are shown in your workspace.</p></div><span class="workspace-state">AWAITING FIRST PROJECT</span></div>
+        <div class="workspace-dimensions">
+          <article class="dimension-card"><span class="dimension-mark">01</span><h3>SEO Health</h3><strong>Not assessed</strong><p>Technical quality, crawlability, structure and search fundamentals.</p><span class="dimension-foot">Evidence pending</span></article>
+          <article class="dimension-card"><span class="dimension-mark">02</span><h3>AEO Readiness</h3><strong>Not assessed</strong><p>Answer coverage, entity clarity, direct answers and source eligibility.</p><span class="dimension-foot">Evidence pending</span></article>
+          <article class="dimension-card"><span class="dimension-mark">03</span><h3>GEO Visibility</h3><strong>Not assessed</strong><p>Representation and citation presence across generative answer systems.</p><span class="dimension-foot">Observation pending</span></article>
+          <article class="dimension-card"><span class="dimension-mark">04</span><h3>Agent Readiness</h3><strong>Not assessed</strong><p>Machine-readable interfaces, documentation and authorized agent pathways.</p><span class="dimension-foot">Capability review pending</span></article>
+        </div>
+      </section>
+      <section id="projects" class="workspace-section workspace-empty">
+        <div class="empty-symbol" aria-hidden="true">+</div><div><span class="eyebrow">PROJECTS</span><h2>Connect your first property</h2><p>Projects group the domains, evidence, assessments and recommendations you want to manage. Project creation and scan orchestration are the next backend increment.</p></div>
+      </section>
+      <section id="insights" class="workspace-section workspace-empty">
+        <div class="empty-symbol" aria-hidden="true">↗</div><div><span class="eyebrow">INSIGHTS</span><h2>Evidence before recommendations</h2><p>Findings, citations, confidence, methodology and remediation history will appear here after the first assessment.</p></div>
+      </section>
+      <section id="agents" class="workspace-section workspace-empty">
+        <div class="empty-symbol" aria-hidden="true">⌘</div><div><span class="eyebrow">AGENT READINESS</span><h2>Discoverability with permission boundaries</h2><p>Agent capability checks will distinguish discoverable interfaces from explicitly authorized actions.</p></div>
+      </section>
+      <section id="settings" class="workspace-section workspace-settings">
+        <div><span class="eyebrow">ACCOUNT</span><h2>Workspace identity</h2><p id="settings-summary">Loading membership…</p></div>
+        <a href="/" class="auth-back">Back to Searqon</a>
+      </section>
+      <p id="workspace-status" class="workspace-status" role="status" aria-live="polite"></p>
+    </main>
+  </div>
+</body>
+</html>
