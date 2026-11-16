@@ -19,7 +19,7 @@ The browser UI is available at `/auth/register/`, `/auth/login/`, `/auth/verify/
 - The email link carries the token in the URL fragment, not a query string. Fragments are not sent in HTTP requests or Referer headers.
 - Opening the link does not consume it. The user must activate the confirmation button; the page removes the fragment from browser history before submitting the token.
 - The database consumes the token and creates the session atomically. A token can only be consumed once. Workspace creation, magic-link issuance, session creation and session revocation are recorded in the append-only workspace audit ledger; raw tokens, email addresses and IP values are not copied into event metadata.
-- Session secrets are 32 random bytes; only their SHA-256 digests are stored. Sessions expire after 24 hours.
+- Session secrets are 32 random bytes; only their SHA-256 digests are stored. Sessions expire after 30 minutes of inactivity and 24 hours absolute.
 - Cookies are HttpOnly, SameSite=Lax, Path=/, and Secure in production. Production uses the `__Host-searqon_session` prefix; local HTTP development uses `searqon_session`.
 - Logout revokes the server-side session. Invalid or expired cookies do not authenticate a request.
 
@@ -78,3 +78,8 @@ The migration owner is a privileged trust anchor and must not be used by the req
 - Email bounce/complaint webhooks, deliverability monitoring and retry queue.
 - Data retention/cleanup for expired tokens and rate-limit rows.
 - Production secrets, runtime roles, domain verification, deployment, monitoring, backups and recovery drills.
+
+
+## Session lifetime
+
+Sessions expire after 30 minutes of inactivity and 24 hours absolute. The database-backed session lookup updates `last_seen_at` only for a valid, unrevoked, unexpired session. A session that has been idle for more than 30 minutes is rejected and requires a new one-time sign-in link. This is an initial risk-based setting and must be reviewed before production launch against the Searqon threat model and ASVS 5.0 session-management requirements.

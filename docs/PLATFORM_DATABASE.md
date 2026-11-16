@@ -5,7 +5,7 @@
 ## Requirements
 
 - PostgreSQL 16 or later.
-- Apply ordered migrations with `npm run db:migrate` using `MIGRATION_DATABASE_URL` (or `DATABASE_URL` as a fallback) and a dedicated migration owner with CREATEROLE permission. Keep the runtime `DATABASE_URL` separate and least-privileged. The runner verifies SHA-256 checksums and serializes concurrent migration runs.
+- Apply ordered migrations with `npm run db:migrate` using `MIGRATION_DATABASE_URL` (or `DATABASE_URL` as a fallback) and a dedicated migration owner with CREATEROLE permission. Keep the runtime `DATABASE_URL` separate and least-privileged. The runner verifies SHA-256 checksums, serializes concurrent migration runs, and commits each migration plus its checksum in one transaction after removing any standalone outer transaction wrappers from the SQL file.
 - Do not run migrations with the request-serving database identity.
 - The CI workflow runs the migration against a disposable PostgreSQL 16 service and exercises the row-level security policies.
 
@@ -16,7 +16,7 @@
 - `memberships`: user-to-workspace relationship and role.
 - `projects`: organization-scoped target properties.
 - `assessments`: organization/project-scoped assessment lifecycle and JSON report.
-- `sessions`: token digest, expiry, last-seen and revocation metadata.
+- `sessions`: token digest, 30-minute inactivity timeout via `last_seen_at`, 24-hour absolute expiry and revocation metadata.
 - `auth_tokens`: one-time magic-link token digests and consumption state.
 - `auth_rate_limits`: HMAC-keyed distributed abuse-control windows; raw email/IP values are not stored.
 - `schema_migrations`: ordered migration names and SHA-256 checksums.
@@ -46,14 +46,13 @@ Audit events can be selected and appended by an authorized workspace member. A d
 ## Explicitly not implemented
 
 - OAuth/OIDC, passkeys, MFA, recovery codes, enterprise SSO and session-management UI.
-- Invitation and additional membership administration.
-- Project/assessment runtime persistence and worker database integration.
-- Project and assessment CRUD endpoints.
+- Asynchronous worker database integration and job orchestration.
+- Project update/archive/delete endpoints and invitation/role administration flows.
 - Queue, scheduler, quotas, billing, provider adapters or live monitoring.
 - Encryption/key management, backup/restore automation, data residency or physical deletion workflows.
 - Production DB roles, network policies, secrets, backups, SLOs or deployment.
 
-The passwordless authentication service uses narrowly scoped SECURITY DEFINER functions for account provisioning and session lookup; the runtime role cannot directly access authentication-token or rate-limit tables. The Node.js adapter is wired into registration, magic-link verification, session lookup/logout and authenticated profile loading. Project/assessment persistence and worker execution are not yet wired into the running HTTP API.
+The passwordless authentication service uses narrowly scoped SECURITY DEFINER functions for account provisioning and session lookup; the runtime role cannot directly access authentication-token or rate-limit tables. The Node.js adapter is wired into registration, magic-link verification, session lookup/logout and authenticated profile loading. The workspace service also persists projects and synchronous project assessments through tenant-scoped RLS transactions; worker execution and asynchronous orchestration are not yet wired into the running HTTP API.
 
 
 ## Node.js database adapter
@@ -64,4 +63,4 @@ The repository pins `pg@8.23.1` (node-postgres) and commits the generated npm lo
 
 Unit tests cover URL validation, pool bounds, TLS policy, safe error reporting, commit/rollback behavior and connection disposal. A PostgreSQL integration test runs the helper against a disposable PostgreSQL 16 service with a one-connection pool, proving RLS isolation across sequential identities and absence of tenant context when no identity is set.
 
-The adapter is wired into the passwordless authentication service. Customer-facing project/assessment persistence, background workers and production operations remain incomplete.
+The adapter is wired into passwordless authentication and the tenant-scoped project/assessment service. Project creation/list/detail and synchronous persisted assessments run through RLS transactions and append-only audit events. Background workers, asynchronous jobs and production operations remain incomplete.

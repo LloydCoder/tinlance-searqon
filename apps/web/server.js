@@ -6,6 +6,7 @@ import { analyzeDocument } from "../../src/analyzer.js";
 import { createDatabase } from "../../src/platform/database.js";
 import { createAuthService } from "../../src/platform/auth.js";
 import { createEmailSender } from "../../src/platform/email.js";
+import { createWorkspaceService } from "../../src/platform/workspaces.js";
 
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
@@ -174,8 +175,9 @@ async function serveStatic(pathname, response, headOnly = false) {
   }
 }
 
-export function createAppServer({ database = null, authService = null } = {}) {
+export function createAppServer({ database = null, authService = null, workspaceService = null } = {}) {
   const auth = authService ?? (database ? createAuthService({ database, emailSender: createEmailSender() }) : null);
+  const workspace = workspaceService ?? (database ? createWorkspaceService({ database }) : null);
   const server = createServer(async (request, response) => {
     applySecurityHeaders(response);
     let url;
@@ -258,6 +260,90 @@ export function createAppServer({ database = null, authService = null } = {}) {
       }
     }
 
+
+    if (url.pathname === "/api/v1/projects") {
+      if (request.method !== "GET" && request.method !== "POST") {
+        response.setHeader("allow", "GET, POST");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or POST." } });
+        return;
+      }
+      if (!auth || !workspace) {
+        sendJson(response, 503, { error: { code: "workspace_unavailable", message: "The authenticated workspace service is not configured." } });
+        return;
+      }
+      if (request.method === "POST" && !isSameOrigin(request, auth.publicOrigin)) {
+        sendJson(response, 403, { error: { code: "origin_rejected", message: "The request origin is not allowed." } });
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response, 401, { error: { code: "unauthenticated", message: "Sign in to manage projects." } });
+          return;
+        }
+        if (request.method === "GET") {
+          const organizationId = url.searchParams.get("organizationId");
+          sendJson(response, 200, { projects: await workspace.listProjects(profile.user.id, organizationId) });
+          return;
+        }
+        if (!requireJsonContentType(request, response)) return;
+        const body = await readJsonBody(request, MAX_AUTH_BODY_BYTES);
+        const project = await workspace.createProject(profile.user.id, body);
+        sendJson(response, 201, { project });
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response, status, { error: { code: status < 500 ? (error.code ?? "invalid_request") : "workspace_error", message: status < 500 ? error.message : "The workspace request could not be completed." } });
+      }
+      return;
+    }
+
+    const projectRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)(?:\/(assessments))?$/);
+    if (projectRoute) {
+      const projectId = projectRoute[1];
+      const isAssessmentsRoute = Boolean(projectRoute[2]);
+      if ((!isAssessmentsRoute && request.method !== "GET") || (isAssessmentsRoute && request.method !== "GET" && request.method !== "POST")) {
+        response.setHeader("allow", isAssessmentsRoute ? "GET, POST" : "GET");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: isAssessmentsRoute ? "Use GET or POST." : "Use GET." } });
+        return;
+      }
+      if (!auth || !workspace) {
+        sendJson(response, 503, { error: { code: "workspace_unavailable", message: "The authenticated workspace service is not configured." } });
+        return;
+      }
+      if (request.method === "POST" && !isSameOrigin(request, auth.publicOrigin)) {
+        sendJson(response, 403, { error: { code: "origin_rejected", message: "The request origin is not allowed." } });
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response, 401, { error: { code: "unauthenticated", message: "Sign in to access this project." } });
+          return;
+        }
+        if (!isAssessmentsRoute) {
+          const project = await workspace.getProject(profile.user.id, projectId);
+          if (!project) {
+            sendJson(response, 404, { error: { code: "project_not_found", message: "The requested project was not found." } });
+            return;
+          }
+          sendJson(response, 200, { project });
+          return;
+        }
+        if (request.method === "GET") {
+          sendJson(response, 200, { assessments: await workspace.listAssessments(profile.user.id, projectId) });
+          return;
+        }
+        if (!requireJsonContentType(request, response)) return;
+        const body = await readJsonBody(request);
+        const assessment = await workspace.createAssessment(profile.user.id, projectId, body);
+        sendJson(response, 201, { assessment });
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response, status, { error: { code: status < 500 ? (error.code ?? "invalid_request") : "workspace_error", message: status < 500 ? error.message : "The workspace request could not be completed." } });
+      }
+      return;
+    }
+
     if (url.pathname === "/api/v1/ready") {
       if (request.method !== "GET") {
         response.setHeader("allow", "GET");
@@ -291,6 +377,10 @@ export function createAppServer({ database = null, authService = null } = {}) {
       if (request.method !== "POST") {
         response.setHeader("allow", "POST");
         sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use POST." } });
+        return;
+      }
+      if (auth && !isSameOrigin(request, auth.publicOrigin)) {
+        sendJson(response, 403, { error: { code: "origin_rejected", message: "The request origin is not allowed." } });
         return;
       }
       if (process.env.NODE_ENV === "production") {

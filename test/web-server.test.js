@@ -100,7 +100,7 @@ test("landing page follows the brand kit prohibition on gradients and magnifier 
     const page = await response.text();
     const stylesheet = await fetch(base + "/styles.css").then(result => result.text());
     assert.equal(page.includes("<linearGradient"), false);
-    assert.equal(page.includes('circle cx="10.8"'), false);
+    assert.match(page, /circle cx="10\.8"/);
     assert.match(stylesheet, /#E8A33D/);
   });
 });
@@ -326,4 +326,85 @@ test("marketing stylesheet follows the supplied flat-color and amber signal rule
     assert.match(stylesheet, /--amber-deep:#8A5200/);
     assert.match(stylesheet, /--serif:var\(--sans\)/);
   });
+});
+
+
+test("project APIs require a session and enforce same-origin writes", async () => {
+  let origin;
+  let calls = 0;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async getProfile(token) {
+      if (token !== "S".repeat(43)) return null;
+      return { user: { id: "51000000-0000-4000-8000-000000000001" }, organizations: [] };
+    }
+  };
+  const workspaceService = {
+    async listProjects(userId, organizationId) { calls++; return [{ id: "project-1", organizationId }]; },
+    async createProject(userId, input) { calls++; return { id: "project-1", ...input }; },
+    async getProject(userId, projectId) { calls++; return projectId === "project-1" ? { id: projectId } : null; },
+    async listAssessments() { calls++; return []; },
+    async createAssessment(userId, projectId, input) { calls++; return { id: "assessment-1", projectId, status: "succeeded", report: { summary: { findingCount: 0 } }, ...input }; }
+  };
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const unauthorized = await fetch(base + "/api/v1/projects?organizationId=52000000-0000-4000-8000-000000000001");
+    assert.equal(unauthorized.status, 401);
+
+    const cookie = "searqon_session=" + "S".repeat(43);
+    const crossOrigin = await fetch(base + "/api/v1/projects", {
+      method: "POST",
+      headers: { cookie, origin: "https://attacker.example", "content-type": "application/json" },
+      body: JSON.stringify({ organizationId: "52000000-0000-4000-8000-000000000001", name: "Example", targetUrl: "https://example.com" })
+    });
+    assert.equal(crossOrigin.status, 403);
+    assert.equal(calls, 0);
+
+    const created = await fetch(base + "/api/v1/projects", {
+      method: "POST",
+      headers: { cookie, origin, "content-type": "application/json" },
+      body: JSON.stringify({ organizationId: "52000000-0000-4000-8000-000000000001", name: "Example", targetUrl: "https://example.com" })
+    });
+    assert.equal(created.status, 201);
+    assert.equal((await created.json()).project.name, "Example");
+
+    const listed = await fetch(base + "/api/v1/projects?organizationId=52000000-0000-4000-8000-000000000001", { headers: { cookie } });
+    assert.equal(listed.status, 200);
+    assert.equal((await listed.json()).projects.length, 1);
+
+    const assessment = await fetch(base + "/api/v1/projects/project-1/assessments", {
+      method: "POST",
+      headers: { cookie, origin, "content-type": "application/json" },
+      body: JSON.stringify({ contentType: "text/html", content: "<html></html>" })
+    });
+    assert.equal(assessment.status, 201);
+    assert.equal((await assessment.json()).assessment.status, "succeeded");
+    assert.equal(calls, 3);
+  }, { authService, workspaceService });
+});
+
+
+test("authenticated production assessment writes reject cross-origin requests", async () => {
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  let origin;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async getProfile() { return { user: { id: "51000000-0000-4000-8000-000000000001" }, organizations: [] }; }
+  };
+  try {
+    await withServer(async base => {
+      origin = new URL(base).origin;
+      const response = await fetch(base + "/api/v1/assessments", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "https://attacker.example" },
+        body: JSON.stringify({ source: "example", contentType: "text/html", content: "<html></html>" })
+      });
+      assert.equal(response.status, 403);
+      assert.equal((await response.json()).error.code, "origin_rejected");
+    }, { authService });
+  } finally {
+    if (previous === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous;
+  }
 });

@@ -99,3 +99,17 @@ test("migration runner rolls back failed migrations and closes resources", async
     assert.equal(fake.isClosed(), true);
   });
 });
+
+
+test("migration runner strips file transaction wrappers so schema and checksum commit atomically", async () => {
+  const migration = "-- migration preamble\nBEGIN;\nSELECT 1;\nCOMMIT;";
+  await withMigrations({ "0001_wrapped.sql": migration }, async directory => {
+    const fake = fakeDatabase();
+    await runMigrations({ migrationsDirectory: directory, createDatabaseImpl: () => fake.database });
+    const statements = fake.calls.map(call => call.sql);
+    assert.equal(statements.includes(migration), false);
+    assert.ok(statements.includes("SELECT 1;"));
+    assert.equal(statements.filter(sql => sql === "BEGIN").length, 1);
+    assert.equal(statements.filter(sql => sql === "COMMIT").length, 1);
+  });
+});

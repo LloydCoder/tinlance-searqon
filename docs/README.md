@@ -18,6 +18,9 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Product scope and intended users](PRODUCT_CHARTER.md)
 - [Security policy and threat boundaries](../SECURITY.md)
 
+## Security
+- [ASVS-aligned security assessment and release gates](SECURITY_ASSESSMENT.md)
+
 ## Reference
 - [CLI reference](reference/cli.md)
 - [Scanner contract](SCANNER.md)
