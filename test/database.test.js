@@ -66,6 +66,7 @@ test("user transaction sets identity transaction-locally and commits", async () 
   assert.equal(result, "done");
   assert.deepEqual(client.calls.map(call => call.sql ?? "RELEASE"), [
     "BEGIN",
+    "SET LOCAL ROLE searqon_app",
     "SELECT set_config('searqon.user_id', $1, true)",
     "SELECT 42",
     "COMMIT",
