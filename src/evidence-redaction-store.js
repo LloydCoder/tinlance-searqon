@@ -6,7 +6,7 @@ import { verifyEvidenceRedactionManifest } from "./evidence-redaction.js";
 
 export const EVIDENCE_REDACTION_JOURNAL_SCHEMA_VERSION = "1.0.0";
 export const MAX_EVIDENCE_REDACTION_JOURNAL_FILE_BYTES = 32 * 1024 * 1024;
-export const MAX_EVIDENCE_REDACTION_JOURNAL_ENTRY_BYTES = 64 * 1024;
+export const MAX_EVIDENCE_REDACTION_JOURNAL_ENTRY_BYTES = 512 * 1024;
 
 const JOURNAL_FIELDS = new Set(["schemaVersion", "sequence", "previousHash", "manifest", "entryHash"]);
 const activePaths = new Set();
