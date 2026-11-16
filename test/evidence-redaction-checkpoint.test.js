@@ -45,36 +45,39 @@ test("creates and verifies a signed checkpoint for the current redaction journal
   const keys = generateKeyPairSync("ed25519");
   const entries = await makeEntries(keys, ["one", "two"]);
   const checkpoint = createEvidenceRedactionJournalCheckpoint(entries, keys.privateKey, {
-    createdAt: "2026-11-16T01:00:00.000Z"
+    createdAt: "2026-11-16T01:00:00.000Z",
+    manifestPublicKey: keys.publicKey
   });
 
   assert.equal(checkpoint.entryCount, 2);
   assert.equal(checkpoint.headHash, entries[1].entryHash);
-  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, keys.publicKey).valid, true);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, keys.publicKey, keys.publicKey).valid, true);
 });
 
 test("a trusted checkpoint validates its prefix after later valid appends", async () => {
   const keys = generateKeyPairSync("ed25519");
   const prefix = await makeEntries(keys, ["one"]);
   const checkpoint = createEvidenceRedactionJournalCheckpoint(prefix, keys.privateKey, {
-    createdAt: "2026-11-16T01:00:00.000Z"
+    createdAt: "2026-11-16T01:00:00.000Z",
+    manifestPublicKey: keys.publicKey
   });
   const extended = await makeEntries(keys, ["one", "two"]);
 
-  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, extended, keys.publicKey).valid, true);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, extended, keys.publicKey, keys.publicKey).valid, true);
 });
 
 test("checkpoint detects truncation, reordering and altered journal entries", async () => {
   const keys = generateKeyPairSync("ed25519");
   const entries = await makeEntries(keys, ["one", "two"]);
   const checkpoint = createEvidenceRedactionJournalCheckpoint(entries, keys.privateKey, {
-    createdAt: "2026-11-16T01:00:00.000Z"
+    createdAt: "2026-11-16T01:00:00.000Z",
+    manifestPublicKey: keys.publicKey
   });
 
-  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries.slice(0, 1), keys.publicKey).valid, false);
-  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, [...entries].reverse(), keys.publicKey).valid, false);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries.slice(0, 1), keys.publicKey, keys.publicKey).valid, false);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, [...entries].reverse(), keys.publicKey, keys.publicKey).valid, false);
   const altered = [{ ...entries[0], entryHash: "0".repeat(64) }, entries[1]];
-  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, altered, keys.publicKey).valid, false);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, altered, keys.publicKey, keys.publicKey).valid, false);
 });
 
 test("checkpoint rejects mismatched signing keys and modified checkpoint fields", async () => {
@@ -82,11 +85,12 @@ test("checkpoint rejects mismatched signing keys and modified checkpoint fields"
   const other = generateKeyPairSync("ed25519");
   const entries = await makeEntries(keys, ["one"]);
   const checkpoint = createEvidenceRedactionJournalCheckpoint(entries, keys.privateKey, {
-    createdAt: "2026-11-16T01:00:00.000Z"
+    createdAt: "2026-11-16T01:00:00.000Z",
+    manifestPublicKey: keys.publicKey
   });
 
-  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, other.publicKey).valid, false);
-  assert.equal(verifyEvidenceRedactionJournalCheckpoint({ ...checkpoint, entryCount: 0 }, entries, keys.publicKey).valid, false);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, other.publicKey, keys.publicKey).valid, false);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint({ ...checkpoint, entryCount: 0 }, entries, keys.publicKey, keys.publicKey).valid, false);
 });
 
 test("checkpoint refuses invalid journal data and non-canonical timestamps", async () => {
@@ -104,10 +108,11 @@ test("supports an empty journal checkpoint and validates later appended entries"
   const keys = generateKeyPairSync("ed25519");
   const empty = await makeEntries(keys, []);
   const checkpoint = createEvidenceRedactionJournalCheckpoint(empty, keys.privateKey, {
-    createdAt: "2026-11-16T01:00:00.000Z"
+    createdAt: "2026-11-16T01:00:00.000Z",
+    manifestPublicKey: keys.publicKey
   });
   const extended = await makeEntries(keys, ["later"]);
   assert.equal(checkpoint.entryCount, 0);
   assert.equal(checkpoint.headHash, null);
-  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, extended, keys.publicKey).valid, true);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, extended, keys.publicKey, keys.publicKey).valid, true);
 });
