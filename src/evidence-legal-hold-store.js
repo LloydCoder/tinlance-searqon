@@ -21,9 +21,14 @@ function sha256(value) {
 
 function validateVerifier(verifier) {
   if (verifier instanceof EvidenceLegalHoldApproverRegistry) return;
-  const key = verifier && typeof verifier === "object" && verifier.type === "public"
-    ? verifier
-    : createPublicKey(verifier);
+  let key;
+  try {
+    key = verifier && typeof verifier === "object" && verifier.type === "public"
+      ? verifier
+      : createPublicKey(verifier);
+  } catch {
+    throw new TypeError("A trusted Ed25519 public key or approver registry is required");
+  }
   if (key.asymmetricKeyType !== "ed25519") throw new TypeError("A trusted Ed25519 public key or approver registry is required");
 }
 
