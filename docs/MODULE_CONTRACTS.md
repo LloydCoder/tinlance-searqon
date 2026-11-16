@@ -78,15 +78,17 @@ Every module emits versioned schema-valid outputs; records source/evidence IDs, 
 10. Adversarial tests cover SSRF, DNS rebinding, redirect escapes, injection, token leakage, tenant isolation and worker escape.
 11. Reports state clearly that simulation is not penetration testing or security certification.
 
-## Shared proposed enums
+## Future domain enums and compatibility
 
-- observationClass: crawl | first_party | consumer_observation | model_api | agent_simulation | derived | estimate
-- findingStatus: observed | supported | contradicted | ambiguous | unverifiable | not_assessed
-- actionStatus: proposed | validated | approved | applied | verified | rejected | rolled_back
-- executionMode: passive | simulated_read_only | explicitly_approved_mutation
-- confidenceBand: high | medium | low | insufficient
+The following are future contract candidates, not current v1 runtime values:
 
-These proposed enums must be reconciled with existing schemas through a compatibility ADR and migration tests before adoption.
+- observationClass: current v1 evidence values are crawl | first_party | consumer_observation | model_api | derived | estimate. agent_simulation is reserved for a separately versioned simulation-run contract. GEO v1 remains consumer_observation | model_api.
+- claimVerdict: supported | contradicted | ambiguous | stale | unverifiable. This describes a claim judgment, not a finding lifecycle.
+- actionStatus: proposed | validated | approved | applied | verified | rejected | rolled_back. This is a governed recommendation/action lifecycle, not a current v1 finding status.
+- executionMode: passive | simulated_read_only. Mutation is a separately approved operation-level capability, not a general execution mode.
+- confidenceBand: high | medium | low | insufficient. This is distinct from the existing assessment confidence values none | heuristic | medium | high; no lossy automatic mapping is permitted.
+
+Compatibility and versioning decisions are recorded in [ADR-0001](adr/0001-domain-contracts.md). These candidates must not be added to v1 schemas until a concrete producer/consumer, migration strategy and tests exist.
 
 ## Non-functional gates
 
