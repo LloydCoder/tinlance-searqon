@@ -54,3 +54,6 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Module contracts and acceptance criteria](MODULE_CONTRACTS.md)
 - [16-phase completion roadmap](ROADMAP_16_PHASE.md)
 - [ADR-0001: domain contract compatibility](adr/0001-domain-contracts.md)
+
+- [Authentication and session security](AUTHENTICATION.md)
+- [Hosted platform database foundation](PLATFORM_DATABASE.md)

@@ -3,7 +3,14 @@ import assert from "node:assert/strict";
 import { createDatabase, withUserTransaction } from "../src/platform/database.js";
 
 const databaseUrl = process.env.DATABASE_URL;
-const enabled = Boolean(databaseUrl);
+let isDisposableDatabase = false;
+if (databaseUrl && process.env.SEARQON_TEST_DATABASE === "1") {
+  try {
+    const databaseName = decodeURIComponent(new URL(databaseUrl).pathname.slice(1));
+    isDisposableDatabase = /(?:^|[_-])(test|ci)(?:$|[_-])/i.test(databaseName);
+  } catch {}
+}
+const enabled = isDisposableDatabase;
 
 test("PostgreSQL pool applies transaction-local tenant identity and RLS on real connections", { skip: !enabled }, async () => {
   const db = createDatabase({ connectionString: databaseUrl, maxConnections: 1 });
@@ -35,14 +42,12 @@ test("PostgreSQL pool applies transaction-local tenant identity and RLS on real 
     );
 
     const resultA = await withUserTransaction(pool, userA, async client => {
-      await client.query("SET LOCAL ROLE searqon_app");
       const result = await client.query("SELECT id FROM searqon.projects ORDER BY id");
       return result.rows.map(row => row.id);
     });
     assert.deepEqual(resultA, [projectA]);
 
     const resultB = await withUserTransaction(pool, userB, async client => {
-      await client.query("SET LOCAL ROLE searqon_app");
       const result = await client.query("SELECT id FROM searqon.projects ORDER BY id");
       return result.rows.map(row => row.id);
     });
@@ -50,8 +55,7 @@ test("PostgreSQL pool applies transaction-local tenant identity and RLS on real 
 
     await assert.rejects(
       withUserTransaction(pool, userA, async client => {
-        await client.query("SET LOCAL ROLE searqon_app");
-        await client.query(
+          await client.query(
           "INSERT INTO searqon.projects (organization_id, name, target_url, created_by) VALUES ($1, $2, $3, $4)",
           [orgB, "Unauthorized", "https://unauthorized.example.test", userA]
         );

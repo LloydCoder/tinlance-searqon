@@ -56,6 +56,54 @@ test("database factory permits plaintext only for loopback development hosts", (
   assert.equal(options.ssl, false);
 });
 
+test("remote database URLs cannot downgrade TLS through sslmode query parameters", () => {
+  let options;
+  class FakePool {
+    constructor(value) { options = value; }
+    on() {}
+    async end() {}
+  }
+  createDatabase({
+    connectionString: "postgresql://app:secret@db.example.test:5432/searqon?sslmode=disable&sslrootcert=%2Ftmp%2Funtrusted.pem&application_name=custom-client",
+    PoolImpl: FakePool
+  });
+  assert.deepEqual(options.ssl, { rejectUnauthorized: true });
+  assert.equal(options.connectionString.includes("sslmode"), false);
+  assert.equal(options.connectionString.includes("sslrootcert"), false);
+  assert.equal(options.connectionString.includes("application_name=custom-client"), true);
+});
+
+test("loopback database URLs cannot force TLS through connection-string options", () => {
+  let options;
+  class FakePool {
+    constructor(value) { options = value; }
+    on() {}
+    async end() {}
+  }
+  createDatabase({
+    connectionString: "postgresql://app:secret@localhost:5432/searqon?sslmode=require",
+    PoolImpl: FakePool
+  });
+  assert.equal(options.ssl, false);
+  assert.equal(options.connectionString.includes("sslmode"), false);
+});
+
+test("remote PostgreSQL TLS accepts an explicitly configured trusted CA", () => {
+  let options;
+  class FakePool {
+    constructor(value) { options = value; }
+    on() {}
+    async end() {}
+  }
+  createDatabase({
+    connectionString: "postgresql://app:secret@db.example.test:5432/searqon",
+    sslCa: "-----BEGIN CERTIFICATE-----\\nexample-root-ca\\n-----END CERTIFICATE-----",
+    PoolImpl: FakePool
+  });
+  assert.equal(options.ssl.rejectUnauthorized, true);
+  assert.match(options.ssl.ca, /BEGIN CERTIFICATE/);
+});
+
 test("user transaction sets identity transaction-locally and commits", async () => {
   const client = fakeClient();
   const pool = { async connect() { return client; } };
@@ -66,12 +114,13 @@ test("user transaction sets identity transaction-locally and commits", async () 
   assert.equal(result, "done");
   assert.deepEqual(client.calls.map(call => call.sql ?? "RELEASE"), [
     "BEGIN",
+    "SET LOCAL ROLE searqon_app",
     "SELECT set_config('searqon.user_id', $1, true)",
     "SELECT 42",
     "COMMIT",
     "RELEASE"
   ]);
-  assert.deepEqual(client.calls[1].values, ["10000000-0000-4000-8000-000000000001"]);
+  assert.deepEqual(client.calls[2].values, ["10000000-0000-4000-8000-000000000001"]);
 });
 
 test("user transaction rejects malformed identities before acquiring a connection", async () => {

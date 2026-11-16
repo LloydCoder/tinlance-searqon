@@ -217,5 +217,3 @@ GRANT SELECT, INSERT, UPDATE ON searqon.projects, searqon.assessments TO searqon
 GRANT SELECT, INSERT, UPDATE ON searqon.sessions TO searqon_app;
 GRANT SELECT, INSERT ON searqon.audit_events TO searqon_app;
 GRANT USAGE, SELECT ON SEQUENCE searqon.audit_events_id_seq TO searqon_app;
-
-COMMIT;

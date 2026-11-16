@@ -15,7 +15,9 @@
     "test": "node --test",
     "scan": "node src/cli.js scan",
     "dev:web": "node apps/web/server.js",
-    "db:migrate:local": "psql \"$DATABASE_URL\" --set ON_ERROR_STOP=1 --file db/migrations/0001_platform_core.sql"
+    "db:migrate:local": "node src/platform/migrate.js",
+    "db:migrate": "node src/platform/migrate.js",
+    "start:web": "node apps/web/server.js"
   },
   "dependencies": {
     "pg": "8.23.1"

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12203A">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Create your Searqon workspace.">
+  <title>Create your workspace — Searqon</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/auth/auth.css">
+  <script src="/auth/auth.js" defer></script>
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-story">
+      <a class="auth-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+      <div class="auth-kicker">START WITH EVIDENCE</div>
+      <h1>Make discoverability an engineering discipline.</h1>
+      <p>Create a workspace to assess how your properties are found, represented and used across search, answer engines, generative systems and authorized agents.</p>
+      <ul class="auth-principles">
+        <li>Every finding traces to evidence, a method and a timestamp.</li>
+        <li>Scores disclose their coverage and limitations.</li>
+        <li>Discovery never grants permission to act.</li>
+      </ul>
+    </section>
+    <section class="auth-card" aria-labelledby="auth-title">
+      <h2 id="auth-title">Create your workspace</h2>
+      <p class="auth-card-intro">We'll email you a one-time sign-in link. No password to manage.</p>
+      <form class="auth-form" id="register-form" novalidate>
+        <div class="auth-field"><label for="display-name">Your name</label><input id="display-name" name="displayName" autocomplete="name" maxlength="120" required></div>
+        <div class="auth-field"><label for="organization-name">Organization</label><input id="organization-name" name="organizationName" autocomplete="organization" maxlength="160" required></div>
+        <div class="auth-field"><label for="email">Work email</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="320" required></div>
+        <button class="button button-dark auth-submit" type="submit">Create workspace <span aria-hidden="true">↗</span></button>
+      </form>
+      <p class="auth-status" id="auth-status" role="status" aria-live="polite"></p>
+      <div class="auth-divider"></div>
+      <p class="auth-switch">Already have a workspace? <a href="/auth/login/">Sign in</a></p>
+      <p class="auth-foot">PRIVATE BY DEFAULT · EVIDENCE FIRST · HUMAN AUTHORITY</p>
+    </section>
+  </main>
+</body>
+</html>

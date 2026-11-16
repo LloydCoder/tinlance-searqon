@@ -2,6 +2,10 @@
 
 This roadmap consolidates the original 16-phase delivery sequence with the four approved painkiller modules. It is dependency-aware. The existence of this roadmap does not mean any phase or module is implemented or accepted.
 
+
+
+> **Cross-cutting implementation tracks:** the repository's implementation-status workstreams (for example, the early web interface and hosted identity/database foundation) do not renumber this 16-phase product roadmap. Hosted identity/database foundations are preparatory work for Phase 13; they do not mark Phases 7–12 complete or satisfy Phase 13 exit criteria. Web UI/reporting is a shared surface across the roadmap.
+
 ## Status definitions
 
 - NOT_STARTED: no accepted implementation.

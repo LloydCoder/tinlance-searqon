@@ -3,7 +3,7 @@ import { Pool } from "pg";
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
-function connectionOptions(connectionString, maxConnections) {
+function connectionOptions(connectionString, maxConnections, sslCa) {
   if (typeof connectionString !== "string" || connectionString.length === 0) {
     throw new Error("DATABASE_URL must be configured.");
   }
@@ -23,8 +23,15 @@ function connectionOptions(connectionString, maxConnections) {
   }
 
   const loopback = LOOPBACK_HOSTS.has(parsed.hostname.toLowerCase());
+  // pg-connection-string SSL query options can override the explicit TLS object.
+  // Strip all URL-level SSL controls so a remote URL cannot downgrade certificate verification.
+  for (const key of [...parsed.searchParams.keys()]) {
+    if (["ssl", "sslmode", "sslcert", "sslkey", "sslrootcert", "sslpassword"].includes(key.toLowerCase())) {
+      parsed.searchParams.delete(key);
+    }
+  }
   return {
-    connectionString,
+    connectionString: parsed.toString(),
     max: maxConnections,
     min: 0,
     idleTimeoutMillis: 30_000,
@@ -36,7 +43,7 @@ function connectionOptions(connectionString, maxConnections) {
     query_timeout: 20_000,
     lock_timeout: 5_000,
     // Never disable certificate verification for a remote database.
-    ssl: loopback ? false : { rejectUnauthorized: true }
+    ssl: loopback ? false : { rejectUnauthorized: true, ...(sslCa ? { ca: sslCa } : {}) }
   };
 }
 
@@ -44,7 +51,8 @@ export function createDatabase({
   connectionString = process.env.DATABASE_URL,
   PoolImpl = Pool,
   onPoolError = () => {},
-  maxConnections = 10
+  maxConnections = 10,
+  sslCa = process.env.DATABASE_SSL_CA
 } = {}) {
   if (!Number.isInteger(maxConnections) || maxConnections < 1 || maxConnections > 50) {
     throw new RangeError("maxConnections must be an integer between 1 and 50.");
@@ -53,7 +61,10 @@ export function createDatabase({
     throw new TypeError("onPoolError must be a function.");
   }
 
-  const pool = new PoolImpl(connectionOptions(connectionString, maxConnections));
+  if (sslCa !== undefined && (typeof sslCa !== "string" || sslCa.trim().length === 0)) {
+    throw new TypeError("DATABASE_SSL_CA must be a non-empty PEM string when provided.");
+  }
+  const pool = new PoolImpl(connectionOptions(connectionString, maxConnections, sslCa));
   pool.on("error", error => {
     // Do not pass connection strings, SQL, or error messages to the logger.
     onPoolError({ code: typeof error?.code === "string" ? error.code : "database_pool_error" });
@@ -91,6 +102,7 @@ export async function withUserTransaction(pool, userId, work) {
   try {
     await client.query("BEGIN");
     transactionStarted = true;
+    await client.query("SET LOCAL ROLE searqon_app");
     await client.query("SELECT set_config('searqon.user_id', $1, true)", [userId]);
     const result = await work(client);
     await client.query("COMMIT");

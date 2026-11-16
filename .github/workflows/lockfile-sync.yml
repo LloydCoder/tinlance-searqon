@@ -30,8 +30,7 @@ jobs:
           TARGET_BRANCH: ${{ github.event.inputs.target_branch || github.ref_name }}
         run: |
           set -euo pipefail
-          [[ "${TARGET_BRANCH}" =~ ^[A-Za-z0-9._/-]+$ ]]
-          [[ "${TARGET_BRANCH}" != "main" ]]
+          [[ "${TARGET_BRANCH}" =~ ^feat/phase-09-[A-Za-z0-9._/-]+$ ]]
           echo "TARGET_BRANCH=${TARGET_BRANCH}" >> "${GITHUB_ENV}"
 
       - name: Check out target branch

@@ -1,11 +1,15 @@
 import { createServer } from "node:http";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { analyzeDocument } from "../../src/analyzer.js";
+import { createDatabase } from "../../src/platform/database.js";
+import { createAuthService } from "../../src/platform/auth.js";
+import { createEmailSender } from "../../src/platform/email.js";
 
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
+const MAX_AUTH_BODY_BYTES = 16 * 1024;
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = new Set(["text/html", "text/markdown", "application/json"]);
 const MIME_TYPES = Object.freeze({
@@ -32,15 +36,16 @@ function applySecurityHeaders(response) {
   response.setHeader("referrer-policy", "strict-origin-when-cross-origin");
   response.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
   response.setHeader("cross-origin-resource-policy", "same-origin");
+  if (process.env.NODE_ENV === "production") response.setHeader("strict-transport-security", "max-age=31536000; includeSubDomains");
   response.setHeader("content-security-policy", "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; font-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; upgrade-insecure-requests");
 }
 
-async function readJsonBody(request) {
+async function readJsonBody(request, maxBytes = MAX_BODY_BYTES) {
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > MAX_BODY_BYTES) {
+    if (size > maxBytes) {
       const error = new Error("request body exceeds the configured limit");
       error.statusCode = 413;
       throw error;
@@ -54,6 +59,39 @@ async function readJsonBody(request) {
     error.statusCode = 400;
     throw error;
   }
+}
+
+
+function sessionCookieName() {
+  return process.env.NODE_ENV === "production" ? "__Host-searqon_session" : "searqon_session";
+}
+function readSessionCookie(request) {
+  const header = request.headers.cookie;
+  if (typeof header !== "string") return null;
+  const name = sessionCookieName();
+  const matches = header.split(";").map(part => part.trim()).filter(part => part.startsWith(name + "="));
+  if (matches.length !== 1) return null;
+  const token = matches[0].slice(name.length + 1);
+  return /^[A-Za-z0-9_-]{43}$/.test(token) ? token : null;
+}
+function writeSessionCookie(response, token, expiresAt) {
+  const secure = process.env.NODE_ENV === "production";
+  const maxAge = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  response.setHeader("set-cookie", sessionCookieName() + "=" + token +
+    "; Path=/; HttpOnly; SameSite=Lax; Max-Age=" + maxAge + (secure ? "; Secure" : ""));
+}
+function clearSessionCookie(response) {
+  const secure = process.env.NODE_ENV === "production";
+  response.setHeader("set-cookie", sessionCookieName() +
+    "=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0" + (secure ? "; Secure" : ""));
+}
+function isSameOrigin(request, expectedOrigin) {
+  return typeof request.headers.origin === "string" && request.headers.origin === expectedOrigin;
+}
+function requireJsonContentType(request, response) {
+  if (/^application\/json(?:\s*;|$)/i.test(request.headers["content-type"] ?? "")) return true;
+  sendJson(response, 415, { error: { code: "unsupported_media_type", message: "Send an application/json request body." } });
+  return false;
 }
 
 function validateAssessmentInput(input) {
@@ -95,22 +133,36 @@ async function serveStatic(pathname, response, headOnly = false) {
     sendJson(response, 400, { error: { code: "bad_path", message: "Invalid URL path." } });
     return;
   }
+
   const relative = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
-  const filePath = resolve(ROOT, relative);
-  if (filePath !== ROOT && !filePath.startsWith(ROOT + sep)) {
+  let candidate = resolve(ROOT, relative);
+  if (candidate !== ROOT && !candidate.startsWith(ROOT + sep)) {
     sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
     return;
   }
+
   try {
-    const info = await stat(filePath);
+    let info = await stat(candidate);
+    if (info.isDirectory()) {
+      candidate = resolve(candidate, "index.html");
+      info = await stat(candidate);
+    }
     if (!info.isFile()) throw new Error("not a file");
-    const extension = extname(filePath).toLowerCase();
+
+    const rootRealPath = await realpath(ROOT);
+    const fileRealPath = await realpath(candidate);
+    if (fileRealPath !== rootRealPath && !fileRealPath.startsWith(rootRealPath + sep)) {
+      sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
+      return;
+    }
+
+    const extension = extname(fileRealPath).toLowerCase();
     const contentType = MIME_TYPES[extension];
     if (!contentType) {
       sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
       return;
     }
-    const body = await readFile(filePath);
+    const body = await readFile(fileRealPath);
     response.writeHead(200, {
       "content-type": contentType,
       "content-length": body.length,
@@ -122,14 +174,106 @@ async function serveStatic(pathname, response, headOnly = false) {
   }
 }
 
-export function createAppServer() {
-  return createServer(async (request, response) => {
+export function createAppServer({ database = null, authService = null } = {}) {
+  const auth = authService ?? (database ? createAuthService({ database, emailSender: createEmailSender() }) : null);
+  const server = createServer(async (request, response) => {
     applySecurityHeaders(response);
     let url;
     try {
       url = new URL(request.url ?? "/", "http://searqon.local");
     } catch {
       sendJson(response, 400, { error: { code: "bad_request", message: "Invalid request URL." } });
+      return;
+    }
+
+
+    if (url.pathname.startsWith("/api/v1/auth/")) {
+      const authPath = url.pathname;
+      const methods = {
+        "/api/v1/auth/register": "POST",
+        "/api/v1/auth/magic-link": "POST",
+        "/api/v1/auth/verify": "POST",
+        "/api/v1/auth/me": "GET",
+        "/api/v1/auth/logout": "POST"
+      };
+      const method = methods[authPath];
+      if (!method) {
+        sendJson(response, 404, { error: { code: "not_found", message: "API route not found." } });
+        return;
+      }
+      if (request.method !== method) {
+        response.setHeader("allow", method);
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use " + method + "." } });
+        return;
+      }
+      if (!auth) {
+        sendJson(response, 503, { error: { code: "auth_unavailable", message: "Authentication is not configured for this environment." } });
+        return;
+      }
+      if (method === "POST" && !isSameOrigin(request, auth.publicOrigin)) {
+        sendJson(response, 403, { error: { code: "origin_rejected", message: "The request origin is not allowed." } });
+        return;
+      }
+      try {
+        if (authPath === "/api/v1/auth/me") {
+          const profile = await auth.getProfile(readSessionCookie(request));
+          if (!profile) {
+            sendJson(response, 401, { error: { code: "unauthenticated", message: "Sign in to continue." } });
+            return;
+          }
+          sendJson(response, 200, profile);
+          return;
+        }
+        if (authPath === "/api/v1/auth/logout") {
+          await auth.logout(readSessionCookie(request));
+          clearSessionCookie(response);
+          sendJson(response, 200, { status: "signed_out" });
+          return;
+        }
+        if (!requireJsonContentType(request, response)) return;
+        const body = await readJsonBody(request, MAX_AUTH_BODY_BYTES);
+        if (authPath === "/api/v1/auth/register") {
+          await auth.register(body, request.socket.remoteAddress);
+          sendJson(response, 202, { message: "If the address can be registered, a sign-in link will be sent." });
+          return;
+        }
+        if (authPath === "/api/v1/auth/magic-link") {
+          await auth.requestMagicLink(body?.email, request.socket.remoteAddress);
+          sendJson(response, 202, { message: "If the account exists, a sign-in link will be sent." });
+          return;
+        }
+        if (authPath === "/api/v1/auth/verify") {
+          const session = await auth.verify(body?.token);
+          writeSessionCookie(response, session.sessionToken, session.expiresAt);
+          sendJson(response, 200, { status: "authenticated", expiresAt: session.expiresAt });
+          return;
+        }
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        if (status === 429) response.setHeader("retry-after", "900");
+        const message = status < 500 ? error.message : "The authentication request could not be completed.";
+        const code = status < 500 ? (error.code ?? (status === 413 ? "payload_too_large" : "invalid_request")) : "auth_service_error";
+        sendJson(response, status, { error: { code, message } });
+        return;
+      }
+    }
+
+    if (url.pathname === "/api/v1/ready") {
+      if (request.method !== "GET") {
+        response.setHeader("allow", "GET");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET." } });
+        return;
+      }
+      if (!database) {
+        sendJson(response, 503, { status: "not_ready", reason: "database_not_configured" });
+        return;
+      }
+      try {
+        const ready = await database.healthCheck();
+        sendJson(response, ready ? 200 : 503, { status: ready ? "ready" : "not_ready" });
+      } catch {
+        sendJson(response, 503, { status: "not_ready", reason: "database_unavailable" });
+      }
       return;
     }
 
@@ -148,6 +292,22 @@ export function createAppServer() {
         response.setHeader("allow", "POST");
         sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use POST." } });
         return;
+      }
+      if (process.env.NODE_ENV === "production") {
+        if (!auth) {
+          sendJson(response, 503, { error: { code: "assessment_unavailable", message: "Authenticated assessment service is not configured." } });
+          return;
+        }
+        try {
+          const profile = await auth.getProfile(readSessionCookie(request));
+          if (!profile) {
+            sendJson(response, 401, { error: { code: "unauthenticated", message: "Sign in to run an assessment." } });
+            return;
+          }
+        } catch {
+          sendJson(response, 503, { error: { code: "assessment_unavailable", message: "Assessment authentication is temporarily unavailable." } });
+          return;
+        }
       }
       if (!/^application\/json(?:\s*;|$)/i.test(request.headers["content-type"] ?? "")) {
         sendJson(response, 415, { error: { code: "unsupported_media_type", message: "Send an application/json request body." } });
@@ -177,6 +337,12 @@ export function createAppServer() {
     }
     await serveStatic(url.pathname, response, request.method === "HEAD");
   });
+  server.headersTimeout = 10_000;
+  server.requestTimeout = 30_000;
+  server.keepAliveTimeout = 5_000;
+  server.maxRequestsPerSocket = 1_000;
+  server.maxHeadersCount = 100;
+  return server;
 }
 
 const invokedPath = process.argv[1] ? resolve(process.argv[1]) : "";
@@ -187,9 +353,34 @@ if (invokedPath && pathToFileURL(invokedPath).href === import.meta.url) {
     process.stderr.write("PORT must be an integer between 1 and 65535.\n");
     process.exitCode = 1;
   } else {
-    const server = createAppServer();
-    server.listen(port, host, () => {
-      process.stdout.write("Searqon web listening on http://" + host + ":" + port + "\n");
-    });
+    const database = process.env.DATABASE_URL ? createDatabase() : null;
+    let authService = null;
+    try {
+      authService = database ? createAuthService({ database, emailSender: createEmailSender() }) : null;
+    } catch (error) {
+      database?.close().catch(() => {});
+      process.stderr.write("Searqon authentication configuration error: " + error.message + "\n");
+      process.exitCode = 1;
+    }
+    if (process.exitCode !== 1) {
+      const server = createAppServer({ database, authService });
+      server.listen(port, host, () => {
+        process.stdout.write("Searqon web listening on http://" + host + ":" + port + "\n");
+      });
+      let shuttingDown = false;
+      const shutdown = () => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+        server.close(() => {
+          if (!database) {
+            process.exit(0);
+            return;
+          }
+          database.close().then(() => process.exit(0)).catch(() => process.exit(1));
+        });
+      };
+      process.once("SIGTERM", shutdown);
+      process.once("SIGINT", shutdown);
+    }
   }
 }

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12203A">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Verify your Searqon sign-in link.">
+  <meta name="referrer" content="no-referrer">
+  <title>Verify sign-in — Searqon</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/auth/auth.css">
+  <script src="/auth/auth.js" defer></script>
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-story">
+      <a class="auth-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+      <div class="auth-kicker">SECURE SIGN-IN</div>
+      <h1>Your workspace is one deliberate step away.</h1>
+      <p>For safety, opening this email does not consume the link. Continue only when you're ready to sign in on this device.</p>
+    </section>
+    <section class="auth-card" aria-labelledby="auth-title">
+      <div class="auth-verify-icon" aria-hidden="true">↗</div>
+      <h2 id="auth-title">Confirm your sign-in</h2>
+      <p class="auth-card-intro">This one-time link expires after 15 minutes and can only be used once.</p>
+      <button class="button button-dark auth-submit" id="verify-button" type="button">Continue to Searqon <span aria-hidden="true">↗</span></button>
+      <p class="auth-status" id="auth-status" role="status" aria-live="polite"></p>
+      <div class="auth-divider"></div>
+      <p class="auth-switch"><a href="/auth/login/">Request another sign-in link</a></p>
+      <p class="auth-foot">THE LINK IS NEVER STORED IN LOCAL STORAGE</p>
+    </section>
+  </main>
+</body>
+</html>
