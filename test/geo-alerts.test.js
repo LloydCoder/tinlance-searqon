@@ -93,7 +93,7 @@ const baselineAt = "2026-11-16T12:00:00.000Z";
 const currentAt = "2026-11-16T13:00:00.000Z";
 const evaluatedAt = "2026-11-16T13:01:00.000Z";
 
-function row({ mentionCount = 80, brandCitationCount = 70, sampleSize = 100, providerName = "OpenAI", model = "gpt-4.1", region = "us", locale = "en-US", observationClass = "model_api", brand = "Searqon", targetDomain = "searqon.com" } = {}) {
+function row({ mentionCount = 80, brandCitationCount = 70, sampleSize = 100, providerName = "OpenAI", model = "gpt-4.1", region = "us", locale = "en-US", observationClass = "model_api", brand = "Searqon", targetDomain = "searqon.com", evidenceSeed = "baseline", evidenceIds = null } = {}) {
   return {
     observationClass,
     provider: { name: providerName, model, region, locale },
@@ -105,6 +105,9 @@ function row({ mentionCount = 80, brandCitationCount = 70, sampleSize = 100, pro
     mentionOccurrences: mentionCount,
     brandCitationCount,
     citationCount: brandCitationCount,
+    evidenceIds: evidenceIds ?? Array.from({ length: Math.min(sampleSize, 500) }, (_, index) => "evidence_" + (index + (evidenceSeed === "current" ? 1001 : 1)).toString(16).padStart(20, "0")),
+    evidenceCount: sampleSize,
+    evidenceTruncated: sampleSize > 500,
     mentionRate: Number((mentionCount / sampleSize).toFixed(4)),
     mentionRate95: wilsonInterval(mentionCount, sampleSize),
     brandCitationRate: Number((brandCitationCount / sampleSize).toFixed(4)),
@@ -115,7 +118,7 @@ function row({ mentionCount = 80, brandCitationCount = 70, sampleSize = 100, pro
 function input(overrides = {}) {
   return {
     baseline: [row()],
-    current: [row({ mentionCount: 40, brandCitationCount: 20 })],
+    current: [row({ mentionCount: 40, brandCitationCount: 20, evidenceSeed: "current" })],
     baselineId: "baseline-2026-11-16T12",
     currentId: "current-2026-11-16T13",
     baselineAt,
@@ -132,6 +135,9 @@ test("alerts detect significant mention and citation declines only for comparabl
   assert.ok(result.alerts.every(alert => alert.direction === "decline"));
   assert.deepEqual(result.alerts.map(alert => alert.metric).sort(), ["brand_citation", "mention"]);
   assert.equal(result.summary.cohortsCompared, 1);
+  assert.equal(result.alerts[0].evidence.baselineEvidenceIds.length, 100);
+  assert.equal(result.alerts[0].evidence.currentEvidenceIds.length, 100);
+  assert.equal(result.alerts[0].evidence.truncated, false);
   assert.ok(result.alerts.every(alert => alert.severity === "high"));
   assert.ok(result.alerts.every(alert => alert.baseline.sampleSize === 100 && alert.current.sampleSize === 100));
   assert.equal(result.observationLagSeconds, 60);
@@ -141,7 +147,7 @@ test("alerts detect significant mention and citation declines only for comparabl
 test("small samples and overlapping Wilson intervals do not produce alerts", () => {
   const small = buildGeoAlerts(input({
     baseline: [row({ sampleSize: 4, mentionCount: 4, brandCitationCount: 3 })],
-    current: [row({ sampleSize: 4, mentionCount: 1, brandCitationCount: 1 })],
+    current: [row({ sampleSize: 4, mentionCount: 1, brandCitationCount: 1, evidenceSeed: "current" })],
     minSampleSize: 5
   }));
   assert.equal(small.alerts.length, 0);
@@ -149,7 +155,7 @@ test("small samples and overlapping Wilson intervals do not produce alerts", () 
 
   const overlap = buildGeoAlerts(input({
     baseline: [row({ mentionCount: 70, brandCitationCount: 60 })],
-    current: [row({ mentionCount: 65, brandCitationCount: 58 })]
+    current: [row({ mentionCount: 65, brandCitationCount: 58, evidenceSeed: "current" })]
   }));
   assert.equal(overlap.alerts.length, 0);
   assert.ok(overlap.evaluations.every(item => item.status === "no_significant_change"));
@@ -336,6 +342,7 @@ test("signed webhook envelope creation time must match the signed timestamp head
 });
 
 test("webhook replay guard rejects duplicate IDs and fails closed at capacity", () => {
+  assert.throws(() => createWebhookReplayGuard({ ttlSeconds: 300, timestampToleranceSeconds: 300 }), /exceed/i);
   const guard = createWebhookReplayGuard({ maxEntries: 1, ttlSeconds: 900, timestampToleranceSeconds: 300 });
   const firstId = "123e4567-e89b-42d3-a456-426614174000";
   const secondId = "123e4567-e89b-42d3-a456-426614174001";
@@ -392,4 +399,14 @@ test("citation alert reports disclose observation lag and stale data status", ()
   });
   assert.equal(report.observationLagSeconds, 3600);
   assert.equal(report.observationFreshness, "stale");
+});
+
+test("aggregate snapshot comparisons reject reused evidence identifiers", () => {
+  assert.throws(() => buildGeoAlerts(input({
+    current: [row({ mentionCount: 40, brandCitationCount: 20, evidenceSeed: "baseline" })]
+  })), /duplicate evidence identifiers/i);
+});
+
+test("aggregate alert generation fails closed when evidence references are missing", () => {
+  assert.throws(() => buildGeoAlerts(input({ baseline: [row({ evidenceIds: [] })] })), /evidence/);
 });
