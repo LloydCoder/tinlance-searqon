@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.com/schemas/geo-delivery-receipt.schema.json",
+  "title": "Searqon GEO alert delivery receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "type",
+    "alertId",
+    "dedupeKey",
+    "destination",
+    "attempt",
+    "attemptedAt",
+    "outcome",
+    "status",
+    "httpStatus",
+    "providerReceiptId",
+    "nextAttemptAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "type": {
+      "const": "geo_delivery_receipt"
+    },
+    "alertId": {
+      "type": "string"
+    },
+    "dedupeKey": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "destination": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 8
+    },
+    "attemptedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "outcome": {
+      "enum": [
+        "delivered",
+        "retryable_failure",
+        "permanent_failure"
+      ]
+    },
+    "status": {
+      "enum": [
+        "delivered",
+        "retryable_failure",
+        "permanent_failure"
+      ]
+    },
+    "httpStatus": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 100,
+      "maximum": 599
+    },
+    "providerReceiptId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 256
+    },
+    "nextAttemptAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+}
