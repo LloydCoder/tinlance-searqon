@@ -243,11 +243,15 @@ test("Slack, Teams Workflows and PagerDuty payload builders produce bounded prov
   const slack = toSlackWebhookPayload(alert);
   assert.equal(typeof slack.text, "string");
   assert.ok(Array.isArray(slack.blocks));
+  assert.equal(slack.mrkdwn, false);
+  assert.ok(slack.blocks.every(block => block.text?.type === "plain_text" || block.elements?.every(element => element.type === "plain_text")));
   assert.equal(Object.hasOwn(slack, "webhookUrl"), false);
 
   const teams = toTeamsWorkflowPayload(alert);
   assert.equal(teams.type, "message");
   assert.equal(teams.attachments[0].content.type, "AdaptiveCard");
+  assert.equal(teams.attachments[0].content.version, "1.2");
+  assert.equal(teams.attachments[0].contentUrl, null);
 
   const pagerDuty = toPagerDutyEvent(alert, { routingKey: "a".repeat(32), source: "searqon.geo" });
   assert.equal(pagerDuty.event_action, "trigger");
