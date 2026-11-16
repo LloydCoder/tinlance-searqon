@@ -3,7 +3,7 @@ import { Pool } from "pg";
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
-function connectionOptions(connectionString) {
+function connectionOptions(connectionString, maxConnections) {
   if (typeof connectionString !== "string" || connectionString.length === 0) {
     throw new Error("DATABASE_URL must be configured.");
   }
@@ -25,7 +25,7 @@ function connectionOptions(connectionString) {
   const loopback = LOOPBACK_HOSTS.has(parsed.hostname.toLowerCase());
   return {
     connectionString,
-    max: 10,
+    max: maxConnections,
     min: 0,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000,
@@ -43,13 +43,17 @@ function connectionOptions(connectionString) {
 export function createDatabase({
   connectionString = process.env.DATABASE_URL,
   PoolImpl = Pool,
-  onPoolError = () => {}
+  onPoolError = () => {},
+  maxConnections = 10
 } = {}) {
+  if (!Number.isInteger(maxConnections) || maxConnections < 1 || maxConnections > 50) {
+    throw new RangeError("maxConnections must be an integer between 1 and 50.");
+  }
   if (typeof onPoolError !== "function") {
     throw new TypeError("onPoolError must be a function.");
   }
 
-  const pool = new PoolImpl(connectionOptions(connectionString));
+  const pool = new PoolImpl(connectionOptions(connectionString, maxConnections));
   pool.on("error", error => {
     // Do not pass connection strings, SQL, or error messages to the logger.
     onPoolError({ code: typeof error?.code === "string" ? error.code : "database_pool_error" });
