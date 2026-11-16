@@ -85,15 +85,6 @@ test("event identity is deterministic for the same evidence and methodology", ()
   assert.equal(first.events[0].eventId, second.events[0].eventId);
 });
 
-buildGeoAlerts,
-  createSignedAlertEvent,
-  verifySignedAlertEvent,
-  createDeliveryReceipt,
-  toSlackWebhookPayload,
-  toTeamsWorkflowPayload,
-  toPagerDutyEvent
-} from "../src/geo-alerts.js";
-
 const baselineAt = "2026-11-16T12:00:00.000Z";
 const currentAt = "2026-11-16T13:00:00.000Z";
 const evaluatedAt = "2026-11-16T13:01:00.000Z";
