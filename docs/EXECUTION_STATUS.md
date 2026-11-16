@@ -204,3 +204,14 @@ This register separates implemented repository capabilities from customer, secur
 - Added a fail-closed state reducer and retention integration. Active held evidence remains in the retained set and is excluded from purge eligibility; released holds permit normal expiry evaluation.
 - Added schema-registry alignment, state-transition/signature tests and documentation of key-identity, key-rotation and caller-managed journal limitations.
 - This does not create a durable legal case system, authenticate actor identity, execute deletion, implement key rotation or replace data-controller/legal review.
+
+
+## 2026-11-16 — Phase 9 citation-change detection increment
+
+- Added deterministic comparison of two caller-supplied GEO cohorts through the existing evidence-verifying aggregation boundary.
+- Cohorts must match provider, model, region, locale, observation class, brand and target domain; the current capture window must strictly follow the baseline.
+- Citation presence changes emit deterministic evidence-linked appearance, disappearance or prevalence-change events with sample counts and Wilson 95% intervals.
+- Default minimum sample size is 20 per cohort and default minimum absolute rate change is 0.20. Low-sample, low-effect and overlapping-interval candidates are suppressed.
+- Added a versioned report JSON Schema, contract-registry entry, CLI command `geo alerts`, and regression coverage.
+- This is offline cohort comparison only. Provider acquisition, URL fetching, scheduling, durable event history, cross-run deduplication, alert delivery, webhook security and false-positive evaluation remain unimplemented.
+- Phase 9 is IN_PROGRESS, not VERIFIED or ACCEPTED, pending the full CI/CodeQL/secret-scan gates, forensic review, labelled evaluation and delivery controls.
