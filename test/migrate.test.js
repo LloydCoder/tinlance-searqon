@@ -102,7 +102,7 @@ test("migration runner rolls back failed migrations and closes resources", async
 
 
 test("migration runner strips file transaction wrappers so schema and checksum commit atomically", async () => {
-  const migration = "BEGIN;\nSELECT 1;\nCOMMIT;";
+  const migration = "-- migration preamble\nBEGIN;\nSELECT 1;\nCOMMIT;";
   await withMigrations({ "0001_wrapped.sql": migration }, async directory => {
     const fake = fakeDatabase();
     await runMigrations({ migrationsDirectory: directory, createDatabaseImpl: () => fake.database });
