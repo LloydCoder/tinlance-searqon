@@ -38,6 +38,32 @@
       "notes": "Owner-attested brand facts with source provenance and explicit corroboration state; the content digest is a checksum, not a signature or authenticity guarantee."
     },
     {
+      "name": "claim-defense-report",
+      "file": "claim-defense-report.schema.json",
+      "schemaId": "https://searqon.com/schemas/claim-defense-report.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "claim-defense",
+        "reporting"
+      ],
+      "notes": "Deterministic claim-level comparison against an owner-attested Brand Truth Registry; classifications are evidence-relative, not a universal factuality verdict."
+    },
+    {
+      "name": "correction-manifest",
+      "file": "correction-manifest.schema.json",
+      "schemaId": "https://searqon.com/schemas/correction-manifest.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "human-review",
+        "artifact-compiler"
+      ],
+      "notes": "Proposed corrections and supporting sources; approval is mandatory and auto-publishing is structurally prohibited."
+    },
+    {
       "name": "evidence-ledger-checkpoint",
       "file": "evidence-ledger-checkpoint.schema.json",
       "schemaId": "https://tinlance.com/schemas/evidence-ledger-checkpoint-1.0.0.json",
