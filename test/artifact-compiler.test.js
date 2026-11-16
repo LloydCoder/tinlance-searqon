@@ -119,3 +119,13 @@ test("bounds aggregate diff generation across large artifact sets", () => {
   assert.equal(report.changes.filter(change => change.unifiedDiff.includes("diff budget exceeded")).length, 2);
   assert.equal(report.summary.patchesApplied, 0);
 });
+
+test("derived llms.txt provenance binds source content and metadata", () => {
+  const compile = content => compileAgentArtifacts({
+    sources: [{ sourceId: "guide", path: "docs/API.md", kind: "markdown", content }],
+    options: { includeLlmsTxt: true, productName: "Searqon", summary: "Discoverability intelligence." }
+  }).artifacts.find(item => item.path === "llms.txt");
+  const first = compile("# API\n");
+  const second = compile("# Updated API\n");
+  assert.notEqual(first.provenance.sourceSha256, second.provenance.sourceSha256);
+});
