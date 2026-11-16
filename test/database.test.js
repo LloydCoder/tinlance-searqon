@@ -88,6 +88,22 @@ test("loopback database URLs cannot force TLS through connection-string options"
   assert.equal(options.connectionString.includes("sslmode"), false);
 });
 
+test("remote PostgreSQL TLS accepts an explicitly configured trusted CA", () => {
+  let options;
+  class FakePool {
+    constructor(value) { options = value; }
+    on() {}
+    async end() {}
+  }
+  createDatabase({
+    connectionString: "postgresql://app:secret@db.example.test:5432/searqon",
+    sslCa: "-----BEGIN CERTIFICATE-----\\nexample-root-ca\\n-----END CERTIFICATE-----",
+    PoolImpl: FakePool
+  });
+  assert.equal(options.ssl.rejectUnauthorized, true);
+  assert.match(options.ssl.ca, /BEGIN CERTIFICATE/);
+});
+
 test("user transaction sets identity transaction-locally and commits", async () => {
   const client = fakeClient();
   const pool = { async connect() { return client; } };
