@@ -134,3 +134,14 @@ test("database factory reports only a safe pool error code", () => {
   listener({ code: "ECONNRESET", message: "password=must-not-be-forwarded" });
   assert.deepEqual(reported, { code: "ECONNRESET" });
 });
+
+test("database factory rejects unsafe pool sizes", () => {
+  assert.throws(() => createDatabase({
+    connectionString: "postgresql://app:secret@localhost:5432/searqon",
+    maxConnections: 0
+  }), /maxConnections/);
+  assert.throws(() => createDatabase({
+    connectionString: "postgresql://app:secret@localhost:5432/searqon",
+    maxConnections: 51
+  }), /maxConnections/);
+});
