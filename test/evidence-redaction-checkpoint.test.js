@@ -97,7 +97,8 @@ test("checkpoint refuses invalid journal data and non-canonical timestamps", asy
   const keys = generateKeyPairSync("ed25519");
   const entries = await makeEntries(keys, ["one"]);
   assert.throws(() => createEvidenceRedactionJournalCheckpoint([{ ...entries[0], entryHash: "0".repeat(64) }], keys.privateKey, {
-    createdAt: "2026-11-16T01:00:00.000Z"
+    createdAt: "2026-11-16T01:00:00.000Z",
+    manifestPublicKey: keys.publicKey
   }), /valid redaction journal/);
   assert.throws(() => createEvidenceRedactionJournalCheckpoint(entries, keys.privateKey, {
     createdAt: "2026-11-16"
@@ -115,4 +116,25 @@ test("supports an empty journal checkpoint and validates later appended entries"
   assert.equal(checkpoint.entryCount, 0);
   assert.equal(checkpoint.headHash, null);
   assert.equal(verifyEvidenceRedactionJournalCheckpoint(checkpoint, extended, keys.publicKey, keys.publicKey).valid, true);
+});
+
+test("supports independent manifest-approval and journal-checkpoint keys", async () => {
+  const manifestKeys = generateKeyPairSync("ed25519");
+  const checkpointKeys = generateKeyPairSync("ed25519");
+  const entries = await makeEntries(manifestKeys, ["independent"]);
+  const checkpoint = createEvidenceRedactionJournalCheckpoint(entries, checkpointKeys.privateKey, {
+    createdAt: "2026-11-16T01:00:00.000Z",
+    manifestPublicKey: manifestKeys.publicKey
+  });
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(
+    checkpoint,
+    entries,
+    checkpointKeys.publicKey,
+    manifestKeys.publicKey
+  ).valid, true);
+  assert.equal(verifyEvidenceRedactionJournalCheckpoint(
+    checkpoint,
+    entries,
+    checkpointKeys.publicKey
+  ).valid, false);
 });
