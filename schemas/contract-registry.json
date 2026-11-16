@@ -25,6 +25,19 @@
       "notes": "Contains nested evidence metadata; its observationClass must remain aligned with evidence-record v1."
     },
     {
+      "name": "brand-truth-registry",
+      "file": "brand-truth-registry.schema.json",
+      "schemaId": "https://searqon.com/schemas/brand-truth-registry.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-registry",
+        "claim-defense"
+      ],
+      "notes": "Owner-attested brand facts with source provenance and explicit corroboration state; registry content is not independently verified by the schema."
+    },
+    {
       "name": "evidence-ledger-checkpoint",
       "file": "evidence-ledger-checkpoint.schema.json",
       "schemaId": "https://tinlance.com/schemas/evidence-ledger-checkpoint-1.0.0.json",
@@ -147,6 +160,31 @@
         "geo-aggregation"
       ],
       "notes": "GEO observationClass is a strict subset of evidence-record v1."
+    },
+    {
+      "name": "geo-prompt-cohort",
+      "file": "geo-prompt-cohort.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-prompt-cohort.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-sampling-plan",
+        "geo-analysis"
+      ],
+      "notes": "Deterministic, locale-scoped prompt cohort tied to a Brand Truth Registry identity."
+    },
+    {
+      "name": "geo-sampling-plan",
+      "file": "geo-sampling-plan.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-sampling-plan.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-collector"
+      ],
+      "notes": "Preflight sampling plan with explicit policy review, provider separation, manual consumer observation, official API-only model observations, per-provider sample caps and a hard estimated-cost ceiling. It does not execute collection."
     },
     {
       "name": "mcp-snapshot",
