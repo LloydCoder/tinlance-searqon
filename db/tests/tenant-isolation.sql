@@ -23,10 +23,10 @@ VALUES ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-0000000
 DO $body$
 DECLARE role_state record;
 BEGIN
-  SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolbypassrls
+  SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolbypassrls, rolinherit
     INTO role_state FROM pg_roles WHERE rolname = 'searqon_app';
   IF role_state.rolcanlogin OR role_state.rolsuper OR role_state.rolcreatedb
-     OR role_state.rolcreaterole OR role_state.rolbypassrls THEN
+     OR role_state.rolcreaterole OR role_state.rolbypassrls OR role_state.rolinherit THEN
     RAISE EXCEPTION 'application database role has an unsafe role attribute';
   END IF;
 END
