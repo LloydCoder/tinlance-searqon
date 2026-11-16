@@ -5,7 +5,7 @@ import { analyzeDocument } from "./analyzer.js";
 import { analyzeGeoObservation, aggregateGeoObservations } from "./geo.js";
 import { createBrandTruthRegistry, createPromptCohort, buildGeoSamplingPlan } from "./geo-registry.js";
 import { evaluateBrandClaims } from "./claim-defense.js";
-import { buildGeoAlerts } from "./geo-alerts.js";
+import { buildGeoAlerts, detectCitationChanges } from "./geo-alerts.js";
 import { scanPublicUrl } from "./remote-scan.js";
 import { renderHtmlReport } from "./report-html.js";
 
@@ -19,6 +19,7 @@ const usage = [
   "  searqon geo cohort <cohort-input.json> [--out <json-file>]",
   "  searqon geo plan <sampling-input.json> [--out <json-file>]",
   "  searqon geo alerts <baseline-current-input.json> [--out <json-file>]",
+  "  searqon geo citation-changes <raw-observation-cohorts.json> [--out <json-file>]",
   "  searqon claims audit <claim-input.json> [--out <json-file>]",
   "  searqon report <assessment.json> [--out <html-file>]"
 ].join("\n");
@@ -85,10 +86,19 @@ async function runClaims(args) {
 
 async function runGeo(args) {
   const command=args[1], fileArg=args[2];
-  if (!["analyze","aggregate","registry","cohort","plan","alerts"].includes(command) || !fileArg) throw new Error(usage);
+  if (!["analyze","aggregate","registry","cohort","plan","alerts","citation-changes"].includes(command) || !fileArg) throw new Error(usage);
   const file=resolve(fileArg);
   if (extname(file).toLowerCase()!==".json") throw new Error("GEO commands accept local .json files only");
   const input=await readJson(file);
+  if (command === "citation-changes") {
+    if (!Array.isArray(input.baseline) || !Array.isArray(input.current)) throw new TypeError("Citation change input requires baseline and current observation arrays");
+    await emitResult(detectCitationChanges({
+      ...input,
+      baseline: input.baseline.map(analyzeGeoObservation),
+      current: input.current.map(analyzeGeoObservation)
+    }), args);
+    return;
+  }
   const handlers = {
     analyze: analyzeGeoObservation,
     aggregate: aggregateGeoObservations,
