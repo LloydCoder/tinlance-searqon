@@ -27,7 +27,7 @@ try {
 
 ## Detached journal checkpoints
 
-Create a signed checkpoint of a verified journal prefix with `createEvidenceRedactionJournalCheckpoint(entries, privateKey, { createdAt })`. Verify it against a journal and trusted public key with `verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, publicKey)`. The checkpoint binds the entry count and prefix head hash. A later journal with valid appended entries can still verify against the earlier checkpoint; a shortened or altered prefix fails.
+Create a signed checkpoint of a verified journal prefix with `createEvidenceRedactionJournalCheckpoint(entries, checkpointPrivateKey, { createdAt, manifestPublicKey })`. Verify it against a journal, checkpoint public key and manifest-verification public key with `verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, checkpointPublicKey, manifestPublicKey)`. The checkpoint binds the entry count and prefix head hash. Use a dedicated checkpoint-signing key distinct from the manifest-approval key. A later journal with valid appended entries can still verify against the earlier checkpoint; a shortened or altered prefix fails.
 
 The checkpoint is a portable signed object. The caller must store it, together with the trusted public key, in a separate trust domain (for example, independently controlled backup or external signing/custody system). Searqon does not automatically upload, replicate or protect checkpoint files. Its creation time is a caller-supplied claim, not a trusted timestamp.
 
