@@ -90,3 +90,25 @@ test("registry listing is immutable and never exposes public key material", () =
   assert.equal(Object.isFrozen(listing[0]), true);
   assert.deepEqual(Object.keys(listing[0]).sort(), ["active", "actorId", "keyId"]);
 });
+
+test("retention evaluation accepts only a registered approver identity for active holds", () => {
+  const keys = generateKeyPairSync("ed25519");
+  const registry = new EvidenceLegalHoldApproverRegistry();
+  registry.register({ actorId: "approver-01", publicKey: keys.publicKey });
+  const record = createEvidenceRecord({
+    source: "https://example.test/retention",
+    content: "retention fixture",
+    contentType: "text/plain",
+    collectedAt: "2026-01-01T00:00:00.000Z"
+  });
+  const hold = createEvent(keys, { evidenceIds: [record.id] });
+
+  const result = evaluateEvidenceRetention([record], {
+    retentionDays: 30,
+    now: "2026-11-16T00:00:00.000Z",
+    legalHoldEvents: [hold],
+    legalHoldApproverRegistry: registry
+  });
+  assert.deepEqual(result.eligibleForPurge, []);
+  assert.equal(result.held[0].evidenceId, record.id);
+});
