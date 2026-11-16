@@ -182,3 +182,11 @@ test("competitor attribution recognizes subdomains", () => {
   });
   assert.equal(report.results[0].citationAssessment, "attribution_swap");
 });
+
+
+test("citation provenance requires public HTTPS URLs", () => {
+  assert.throws(() => evaluateBrandClaims({
+    registry: makeRegistry(), observedAt,
+    claims: [{ text: "Searqon is an AI-search intelligence platform.", attribute: "product.category", value: "AI-search intelligence platform", citationUrls: ["http://searqon.com/about"] }]
+  }), /HTTPS/i);
+});
