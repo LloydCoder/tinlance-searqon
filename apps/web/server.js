@@ -252,10 +252,29 @@ export function createAppServer({ database = null, authService = null } = {}) {
         const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
         if (status === 429) response.setHeader("retry-after", "900");
         const message = status < 500 ? error.message : "The authentication request could not be completed.";
-        const code = status < 500 ? (error.code ?? "invalid_request") : "auth_service_error";
+        const code = status < 500 ? (error.code ?? (status === 413 ? "payload_too_large" : "invalid_request")) : "auth_service_error";
         sendJson(response, status, { error: { code, message } });
         return;
       }
+    }
+
+    if (url.pathname === "/api/v1/ready") {
+      if (request.method !== "GET") {
+        response.setHeader("allow", "GET");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET." } });
+        return;
+      }
+      if (!database) {
+        sendJson(response, 503, { status: "not_ready", reason: "database_not_configured" });
+        return;
+      }
+      try {
+        const ready = await database.healthCheck();
+        sendJson(response, ready ? 200 : 503, { status: ready ? "ready" : "not_ready" });
+      } catch {
+        sendJson(response, 503, { status: "not_ready", reason: "database_unavailable" });
+      }
+      return;
     }
 
     if (url.pathname === "/api/v1/health") {
