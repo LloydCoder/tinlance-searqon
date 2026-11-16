@@ -32,7 +32,7 @@ jobs:
           set -euo pipefail
           [[ "${TARGET_BRANCH}" =~ ^[A-Za-z0-9._/-]+$ ]]
           [[ "${TARGET_BRANCH}" != "main" ]]
-          echo "target_branch=${TARGET_BRANCH}" >> "${GITHUB_ENV}"
+          echo "TARGET_BRANCH=${TARGET_BRANCH}" >> "${GITHUB_ENV}"
 
       - name: Check out target branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
