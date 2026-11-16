@@ -10,6 +10,7 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Scan one authorized public URL](how-to/authorized-remote-scan.md)
 - [Analyze supplied GEO observations](how-to/analyze-geo-observations.md)
 - [Create a governed GEO sampling plan](how-to/create-geo-sampling-plan.md)
+- [Compare GEO snapshots and generate alerts](how-to/compare-geo-snapshots-and-alerts.md)
 - [Audit brand claims and citations](how-to/audit-brand-claims.md)
 
 ## Explanation
@@ -32,6 +33,9 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Evidence legal-hold journal entry schema](../schemas/evidence-legal-hold-journal-entry.schema.json)
 - [Evidence legal-hold journal checkpoint schema](../schemas/evidence-legal-hold-journal-checkpoint.schema.json)
 - [GEO observation schema](../schemas/geo-observation.schema.json)
+- [GEO alert report schema](../schemas/geo-alert-report.schema.json)
+- [GEO alert webhook event schema](../schemas/geo-alert-event.schema.json)
+- [GEO delivery receipt schema](../schemas/geo-delivery-receipt.schema.json)
 - [MCP snapshot schema](../schemas/mcp-snapshot.schema.json)
 - [Versioned contract registry](../schemas/contract-registry.json)
 - [Public API and persistence boundaries](reference/public-api-and-persistence.md)
