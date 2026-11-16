@@ -14,7 +14,7 @@ Write the report without overwriting an existing file:
 node src/cli.js geo alerts ./examples/geo-alert-input.json --out ./geo-alert-report.json
 ```
 
-The input contains `baseline` and `current` arrays produced by `aggregateGeoObservations`, stable snapshot IDs, UTC capture times, and an explicit evaluation time. Optional policy fields are `minSampleSize` (default 30), `minAbsoluteChange` (default 0.1), `cooldownSeconds` (default 0), and `previousAlerts` for caller-managed cooldown state.
+The input contains `baseline` and `current` arrays produced by `aggregateGeoObservations`, stable snapshot IDs, UTC capture times, and an explicit evaluation time. Aggregation preserves up to 500 evidence IDs per cohort plus the total evidence count and an explicit truncation flag; alerts carry both baseline and current evidence references. Reused evidence IDs across the two windows are rejected. Optional policy fields are `minSampleSize` (default 30), `minAbsoluteChange` (default 0.1), `cooldownSeconds` (default 0), and `previousAlerts` for caller-managed cooldown state.
 
 ## Comparison rules
 
