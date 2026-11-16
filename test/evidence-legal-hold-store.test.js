@@ -182,3 +182,23 @@ test("legal hold journal rejects group- or world-writable parent directories", a
   await chmod(join(path, ".."), 0o777);
   await assert.rejects(() => openEvidenceLegalHoldStore(path, registry), /parent directory.*permissions|directory.*writable/i);
 });
+
+test("reopens historical events after signer key revocation without accepting later signatures", async () => {
+  const path = await temporaryJournalPath();
+  const { keys, registry, place, release } = fixture();
+  const keyId = registry.list()[0].keyId;
+  const store = await openEvidenceLegalHoldStore(path, registry);
+  await store.append(place);
+  await store.close();
+
+  registry.revoke(keyId, { revokedAt: "2026-11-16T00:01:00.000Z" });
+  const reopened = await openEvidenceLegalHoldStore(path, registry);
+  assert.equal(reopened.verify().valid, true);
+  await assert.rejects(() => reopened.append(release), /valid signed legal-hold event/);
+  await reopened.close();
+});
+
+test("rejects invalid verification keys before opening an empty journal", async () => {
+  const path = await temporaryJournalPath();
+  await assert.rejects(() => openEvidenceLegalHoldStore(path, {}), /Invalid key object type|public key|Ed25519/i);
+});
