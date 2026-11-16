@@ -89,7 +89,7 @@ function citationAssessment(claim, fact, competitorDomains) {
   if (citations.some(url => competitorDomains.some(domain => new URL(url).hostname === domain || new URL(url).hostname.endsWith("." + domain)))) return { assessment: "attribution_swap", citations };
   return { assessment: "citation_unverified", citations };
 }
-function confidenceFor(fact) {
+function provenanceTierFor(fact) {
   if (!fact) return "none";
   if (fact.status === "corroborated" && fact.sourceUrls.length >= 2) return "high";
   if (fact.status === "corroborated" || fact.sourceUrls.length > 0) return "medium";
@@ -192,7 +192,7 @@ export function evaluateBrandClaims(input) {
       assessment,
       freshness,
       ageDays,
-      confidence: confidenceFor(fact),
+      provenanceTier: provenanceTierFor(fact),
       citationAssessment: citation.assessment,
       citations: Object.freeze(citation.citations),
       sourceUrls: Object.freeze(fact?.sourceUrls ?? []),
