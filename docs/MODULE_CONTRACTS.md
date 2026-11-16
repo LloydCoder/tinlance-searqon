@@ -116,3 +116,21 @@ Compatibility and versioning decisions are recorded in [ADR-0001](adr/0001-domai
 ## Non-functional gates
 
 Security: no unresolved critical/high findings; threat model and abuse cases reviewed. Reliability: bounded execution and explicit degraded states. Privacy: documented minimization, retention, deletion and redaction. Cost: per-run/per-tenant instrumentation and hard budget enforcement. Accessibility: keyboard-operable reports and alert configuration. Operations: secret-free structured logs, metrics, traces, audit events and runbooks.
+
+## C. Competitor Citation-Change Detection
+
+**Implemented increment:** `detectCitationChanges` compares two caller-supplied GEO observation cohorts. It validates every observation through the existing GEO aggregation integrity boundary, requires exactly one comparable provider/channel/brand/target/locale/region cohort on each side, and requires the current capture window to follow the baseline. It emits deterministic, evidence-linked citation appearance, disappearance and prevalence-change events.
+
+**Output:** versioned report with per-URL baseline/current presence rates, sample counts, Wilson 95% intervals, evidence IDs, deterministic event IDs, suppressed candidates and explicit methodology limitations.
+
+**Safety and measurement limits:**
+1. Consumer observations and direct model API observations are never pooled.
+2. Provider, model, region, locale, brand and target domain must match exactly.
+3. Duplicate or invalid evidence records are rejected by the existing GEO aggregation verifier.
+4. Default alert policy requires at least 20 observations in each cohort and a 0.20 absolute rate change.
+5. Candidate changes are suppressed when sample minimums/effect thresholds fail or Wilson intervals overlap.
+6. Citation presence is measured per observation; URL ranking, causal attribution, and provider-wide share-of-voice are not inferred.
+7. This library function performs no provider acquisition, URL fetching, scheduling, persistence, deduplication across runs, or notification delivery.
+8. Repeated-testing effects and prompt dependence are not corrected by the descriptive Wilson intervals.
+9. Webhook delivery must be separately implemented with signed payloads, replay protection, idempotency, bounded retries, delivery receipts and per-tenant authorization before any external notification is enabled.
+10. Customer alert policies and cohort definitions must be versioned and retained with future persisted events.
