@@ -192,3 +192,17 @@ test("sampling plans reject prompt cohort identity tampering", () => {
     providers: [{ name: "Manual", observationClass: "consumer_observation", collectionMode: "manual_capture", policyReview: reviewed, estimatedCostPerSampleUsd: 0, maxSamples: 2 }]
   }), /identity|domain/i);
 });
+
+
+test("prompt cohort deduplication is independent of duplicate input order", () => {
+  const input = {
+    registry: registry(), locale: "en-CA", market: "CA", createdAt: "2026-11-16T12:00:00.000Z",
+    prompts: [
+      { prompt: "What are the best AI search tools?", intent: "commercial", journeyStage: "consideration" },
+      { prompt: "  WHAT are the best AI search tools? ", intent: "commercial", journeyStage: "consideration" }
+    ]
+  };
+  const forward = createPromptCohort(input);
+  const reverse = createPromptCohort({ ...input, prompts: [...input.prompts].reverse() });
+  assert.deepEqual(forward, reverse);
+});
