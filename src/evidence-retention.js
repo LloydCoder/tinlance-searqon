@@ -1,6 +1,7 @@
 import { verifyEvidenceRecord } from "./evidence.js";
+import { deriveActiveEvidenceHolds } from "./evidence-legal-holds.js";
 
-export const EVIDENCE_RETENTION_POLICY_VERSION = "1.0.0";
+export const EVIDENCE_RETENTION_POLICY_VERSION = "1.1.0";
 const MAX_RETENTION_DAYS = 36_500;
 const DAY_MS = 86_400_000;
 
@@ -25,7 +26,7 @@ function deepFreeze(value) {
  * Evaluate retention eligibility without deleting, modifying, or exporting
  * source records. Purge execution and storage sanitization are separate duties.
  */
-export function evaluateEvidenceRetention(records, { retentionDays, now } = {}) {
+export function evaluateEvidenceRetention(records, { retentionDays, now, legalHoldEvents = [], legalHoldPublicKey } = {}) {
   if (!Array.isArray(records)) throw new TypeError("records must be an array");
   if (!Number.isSafeInteger(retentionDays) || retentionDays < 1 || retentionDays > MAX_RETENTION_DAYS) {
     throw new TypeError("retentionDays must be a positive safe integer no greater than 36500");
@@ -35,9 +36,12 @@ export function evaluateEvidenceRetention(records, { retentionDays, now } = {}) 
   }
 
   const nowMs = Date.parse(now);
+  const holdState = deriveActiveEvidenceHolds(legalHoldEvents, legalHoldPublicKey);
+  const heldIds = new Set(holdState.activeEvidenceIds);
   const seenIds = new Set();
   const eligibleForPurge = [];
   const retained = [];
+  const held = [];
 
   for (const record of records) {
     const verification = verifyEvidenceRecord(record);
@@ -58,7 +62,10 @@ export function evaluateEvidenceRetention(records, { retentionDays, now } = {}) 
       collectedAt: record.collectedAt,
       expiresAt: expiryDate.toISOString()
     });
-    if (expiryMs <= nowMs) eligibleForPurge.push(item);
+    if (heldIds.has(record.id)) {
+      retained.push(item);
+      held.push(item);
+    } else if (expiryMs <= nowMs) eligibleForPurge.push(item);
     else retained.push(item);
   }
 
@@ -72,10 +79,12 @@ export function evaluateEvidenceRetention(records, { retentionDays, now } = {}) 
     retentionDays,
     eligibleForPurge,
     retained,
+    held,
     counts: {
       evaluated: records.length,
       eligibleForPurge: eligibleForPurge.length,
-      retained: retained.length
+      retained: retained.length,
+      held: held.length
     }
   });
 }
