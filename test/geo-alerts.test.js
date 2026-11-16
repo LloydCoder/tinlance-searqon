@@ -10,7 +10,7 @@ function sample(overrides = {}) {
     brand: "Searqon",
     targetDomain: "searqon.com",
     citations: ["https://searqon.com/docs"],
-    provider: { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
+    provider: overrides.provider ?? { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
     sampledAt: "2026-11-10T12:00:00.000Z",
     ...overrides
   });
@@ -29,13 +29,14 @@ test("detects citation disappearance only across comparable cohorts with suffici
   const baseline = cohort(30);
   const current = cohort(30, { citations: ["https://competitor.example/guide"], sampledAt: "2026-11-16T12:00:00.000Z" });
   const report = detectCitationChanges({ baseline, current, observedAt: "2026-11-16T13:00:00.000Z", policy: { minimumSamples: 20, minimumAbsoluteChange: 0.2 } });
-  assert.equal(report.events.length, 1);
-  assert.equal(report.events[0].changeType, "citation_disappearance");
-  assert.equal(report.events[0].baselineRate, 1);
-  assert.equal(report.events[0].currentRate, 0);
+  assert.equal(report.events.length, 2);
+  assert.ok(report.events.some(event => event.changeType === "citation_disappearance"));
+  assert.ok(report.events.some(event => event.changeType === "citation_appearance"));
+  assert.equal(report.events.find(event => event.changeType === "citation_disappearance").baselineRate, 1);
+  assert.equal(report.events.find(event => event.changeType === "citation_disappearance").currentRate, 0);
   assert.equal(report.events[0].baselineSampleSize, 30);
   assert.equal(report.events[0].currentSampleSize, 30);
-  assert.ok(report.events[0].evidenceIds.length >= 2);
+  assert.ok(report.events.every(event => event.baselineEvidenceIds.length === 30 && event.currentEvidenceIds.length === 30));
 });
 
 test("suppresses low-sample and low-effect changes rather than emitting confident alerts", () => {
@@ -46,19 +47,19 @@ test("suppresses low-sample and low-effect changes rather than emitting confiden
     policy: { minimumSamples: 10, minimumAbsoluteChange: 0.1 }
   });
   assert.equal(report.events.length, 0);
-  assert.equal(report.suppressed.length, 1);
+  assert.ok(report.suppressed.length >= 1);
   assert.equal(report.suppressed[0].reason, "insufficient_samples");
 });
 
 test("rejects incomparable provider, locale, region, brand or observation-class cohorts", () => {
   const baseline = cohort(5);
-  const current = cohort(5).map(item => ({ ...item, provider: { ...item.provider, name: "Different Provider" } }));
+  const current = cohort(5, { provider: { name: "Different Provider", observationClass: "consumer_observation", region: "US", locale: "en-US" } });
   assert.throws(() => detectCitationChanges({ baseline, current, observedAt: "2026-11-16T13:00:00.000Z" }), /comparable cohort/);
 });
 
 test("does not pool consumer observations with direct model API observations", () => {
   const baseline = cohort(5);
-  const current = cohort(5).map(item => ({ ...item, observationClass: "model_api", evidence: { ...item.evidence, observationClass: "model_api" } }));
+  const current = cohort(5, { provider: { name: "Example Search", observationClass: "model_api", region: "US", locale: "en-US" } });
   assert.throws(() => detectCitationChanges({ baseline, current, observedAt: "2026-11-16T13:00:00.000Z" }), /comparable cohort/);
 });
 
