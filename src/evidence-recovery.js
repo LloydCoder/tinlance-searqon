@@ -2,6 +2,9 @@ import { verifyEvidenceLedger } from "./evidence-ledger.js";
 import { verifyEvidenceLedgerCheckpoint } from "./evidence-checkpoint.js";
 import { verifyEvidenceRedactionJournal } from "./evidence-redaction-store.js";
 import { verifyEvidenceRedactionJournalCheckpoint } from "./evidence-redaction-checkpoint.js";
+import { deriveActiveEvidenceHolds } from "./evidence-legal-holds.js";
+import { verifyEvidenceLegalHoldJournal } from "./evidence-legal-hold-store.js";
+import { verifyEvidenceLegalHoldJournalCheckpoint } from "./evidence-legal-hold-checkpoint.js";
 
 /**
  * Validate a local recovery bundle before any restored data is made available.
@@ -25,7 +28,11 @@ export function verifyEvidenceRecoveryBundle(bundle) {
     redactionEntries,
     redactionCheckpoint,
     redactionCheckpointPublicKey,
-    manifestPublicKey
+    manifestPublicKey,
+    legalHoldEntries,
+    legalHoldCheckpoint,
+    legalHoldCheckpointPublicKey,
+    legalHoldVerifier
   } = bundle;
 
   const ledgerVerification = verifyEvidenceLedger(ledgerEntries);
@@ -53,6 +60,37 @@ export function verifyEvidenceRecoveryBundle(bundle) {
     if (!checkpoint.valid) errors.push("invalid_redaction_journal_checkpoint");
   }
 
+  const hasLegalHoldBundle = legalHoldEntries !== undefined ||
+    legalHoldCheckpoint !== undefined ||
+    legalHoldCheckpointPublicKey !== undefined ||
+    legalHoldVerifier !== undefined;
+  let legalHoldVerification = Object.freeze({ valid: true, errors: Object.freeze([]) });
+  let activeLegalHoldEvidenceIds = [];
+  if (hasLegalHoldBundle) {
+    legalHoldVerification = verifyEvidenceLegalHoldJournal(legalHoldEntries, legalHoldVerifier);
+    if (!legalHoldVerification.valid) errors.push("invalid_legal_hold_journal");
+    if (!legalHoldCheckpoint) errors.push("missing_legal_hold_journal_checkpoint");
+    else {
+      const checkpoint = verifyEvidenceLegalHoldJournalCheckpoint(
+        legalHoldCheckpoint,
+        legalHoldEntries,
+        legalHoldCheckpointPublicKey,
+        legalHoldVerifier
+      );
+      if (!checkpoint.valid) errors.push("invalid_legal_hold_journal_checkpoint");
+    }
+    if (legalHoldVerification.valid) {
+      try {
+        activeLegalHoldEvidenceIds = deriveActiveEvidenceHolds(
+          legalHoldEntries.map(entry => entry.event),
+          legalHoldVerifier
+        ).activeEvidenceIds;
+      } catch {
+        errors.push("invalid_legal_hold_state");
+      }
+    }
+  }
+
   const evidenceIds = new Set();
   if (Array.isArray(ledgerEntries)) {
     for (const entry of ledgerEntries) {
@@ -61,6 +99,10 @@ export function verifyEvidenceRecoveryBundle(bundle) {
       if (evidenceIds.has(id)) errors.push("duplicate_evidence_identifier");
       evidenceIds.add(id);
     }
+  }
+
+  for (const id of activeLegalHoldEvidenceIds) {
+    if (!evidenceIds.has(id)) errors.push("legal_hold_references_unknown_evidence");
   }
 
   const suppressed = new Set();
@@ -77,6 +119,7 @@ export function verifyEvidenceRecoveryBundle(bundle) {
 
   const uniqueErrors = [...new Set(errors)].sort();
   const suppressedEvidenceIds = uniqueErrors.length === 0 ? [...suppressed].sort() : [];
+  const verifiedActiveLegalHoldEvidenceIds = uniqueErrors.length === 0 ? [...activeLegalHoldEvidenceIds].sort() : [];
   return Object.freeze({
     valid: uniqueErrors.length === 0,
     errors: Object.freeze(uniqueErrors),
@@ -88,6 +131,12 @@ export function verifyEvidenceRecoveryBundle(bundle) {
       valid: redactionVerification.valid,
       entryCount: Array.isArray(redactionEntries) ? redactionEntries.length : 0
     }),
-    suppressedEvidenceIds: Object.freeze(suppressedEvidenceIds)
+    suppressedEvidenceIds: Object.freeze(suppressedEvidenceIds),
+    legalHolds: Object.freeze({
+      included: hasLegalHoldBundle,
+      valid: legalHoldVerification.valid,
+      entryCount: Array.isArray(legalHoldEntries) ? legalHoldEntries.length : 0
+    }),
+    activeLegalHoldEvidenceIds: Object.freeze(verifiedActiveLegalHoldEvidenceIds)
   });
 }
