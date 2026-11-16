@@ -376,6 +376,7 @@ export function toSlackWebhookPayload(alert) {
   const text = "Searqon GEO alert: " + title + " " + direction + " by " + percent + "% for " + brand + " (" + provider + ").";
   return Object.freeze({
     text,
+    mrkdwn: false,
     blocks: [
       { type: "header", text: { type: "plain_text", text: "Searqon GEO alert" } },
       { type: "section", text: { type: "plain_text", text: title + " " + direction + " by " + percent + "%." } },
@@ -389,7 +390,8 @@ export function toTeamsWorkflowPayload(alert) {
   const direction = alert.direction === "decline" ? "declined" : "increased";
   const card = {
     type: "AdaptiveCard",
-    version: "1.5",
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    version: "1.2",
     body: [
       { type: "TextBlock", text: "Searqon GEO alert", weight: "Bolder", size: "Medium" },
       { type: "TextBlock", text: safeText(alert.label, 100) + " " + direction + " by " + (Math.abs(alert.delta) * 100).toFixed(1) + "%.", wrap: true },
@@ -402,7 +404,7 @@ export function toTeamsWorkflowPayload(alert) {
   };
   return Object.freeze({
     type: "message",
-    attachments: [{ contentType: "application/vnd.microsoft.card.adaptive", content: card }]
+    attachments: [{ contentType: "application/vnd.microsoft.card.adaptive", contentUrl: null, content: card }]
   });
 }
 
