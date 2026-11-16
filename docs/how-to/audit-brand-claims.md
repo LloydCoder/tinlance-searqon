@@ -32,7 +32,7 @@ Citation assessment is separate:
 - attribution_swap when a cited domain is in the supplied competitor-domain set and is not a registry source;
 - missing_citation.
 
-Confidence reflects registry provenance only: corroborated facts with multiple sources are high, corroborated or sourced owner assertions are medium, unsourced owner assertions are low, and unmatched claims are none. This is not a calibrated probability of truth.
+The provenanceTier field reflects registry provenance only: corroborated facts with multiple sources are high, corroborated or sourced owner assertions are medium, unsourced owner assertions are low, and unmatched claims are none. This is not a calibrated probability of truth.
 
 ## Correction manifest
 
