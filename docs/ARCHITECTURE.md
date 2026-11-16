@@ -58,7 +58,7 @@ A digest supports integrity checks; it does not by itself make storage immutable
 
 ## Proposed implementation direction
 
-TypeScript is the default for domain logic and integrations. A likely later stack is Node.js, PostgreSQL, a typed query layer, a PostgreSQL-backed job queue, and an isolated browser worker only where browser rendering is necessary. Framework selection is deferred until the first executable slice and its deployment needs are demonstrated.
+TypeScript is the default for domain logic and integrations. A likely later stack is Node.js, PostgreSQL, a typed query layer, a PostgreSQL-backed job queue, and an isolated browser worker only where browser rendering is necessary. The repository boundary is fixed by [ADR-0002](adr/0002-single-repository-product.md): all product components stay in this repository. Framework selection remains evidence-driven; do not introduce a framework solely for fashion.
 
 Rust is not a default rewrite target. Consider it only after profiling identifies a CPU- or memory-bound component whose performance materially affects unit economics or reliability.
 
