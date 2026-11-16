@@ -178,3 +178,42 @@ test("Slack, Teams Workflows and PagerDuty payload builders produce bounded prov
   assert.equal(pagerDuty.payload.severity, "critical");
   assert.throws(() => toPagerDutyEvent(alert, { routingKey: "short", source: "searqon.geo" }), /routingKey/i);
 });
+
+test("consumer and model API observations remain separate cohorts", () => {
+  const result = buildGeoAlerts(input({
+    baseline: [row()],
+    current: [row({ observationClass: "consumer_observation", mentionCount: 10, brandCitationCount: 5 })]
+  }));
+  assert.equal(result.alerts.length, 0);
+  assert.ok(result.evaluations.some(item => item.status === "new_cohort"));
+  assert.ok(result.evaluations.some(item => item.status === "cohort_missing"));
+});
+
+test("invalid aggregate counts, normalized metadata and stale time windows fail closed", () => {
+  assert.throws(() => buildGeoAlerts(input({ baseline: [row({ sampleSize: 10, mentionCount: 11 })] })), /mentionCount/);
+  assert.throws(() => buildGeoAlerts(input({ current: [row({ providerName: " OpenAI" })] })), /normalized/);
+  assert.throws(() => buildGeoAlerts(input({ evaluatedAt: "2026-11-16T12:59:00.000Z" })), /earlier/);
+});
+
+test("webhook verification binds the event id and rejects malformed envelopes", () => {
+  const alert = buildGeoAlerts(input()).alerts[0];
+  const signed = createSignedAlertEvent(alert, "test-signing-secret-with-at-least-32-bytes", 1_800_000_000);
+  assert.throws(() => verifySignedAlertEvent({
+    rawBody: signed.body,
+    secret: "test-signing-secret-with-at-least-32-bytes",
+    timestamp: signed.headers["x-searqon-timestamp"],
+    signature: signed.headers["x-searqon-signature"],
+    eventId: "00000000-0000-4000-8000-000000000000",
+    nowSeconds: 1_800_000_000
+  }), /envelope/);
+});
+
+test("delivery receipts bound retries and reject impossible success states", () => {
+  const alert = buildGeoAlerts(input()).alerts[0];
+  assert.throws(() => createDeliveryReceipt({
+    alert, destination: "slack-1", attempt: 9, attemptedAt: evaluatedAt, outcome: "retryable_failure"
+  }), /attempt/);
+  assert.throws(() => createDeliveryReceipt({
+    alert, destination: "slack-1", attempt: 1, attemptedAt: evaluatedAt, outcome: "delivered", httpStatus: 503
+  }), /successful/);
+});
