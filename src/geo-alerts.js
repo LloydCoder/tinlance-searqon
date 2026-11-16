@@ -255,6 +255,8 @@ export function buildGeoAlerts(input) {
       continue;
     }
     comparedCohorts.add(key);
+    const currentEvidenceSet = new Set(after.evidenceIds);
+    if (before.evidenceIds.some(id => currentEvidenceSet.has(id))) throw new TypeError("baseline and current snapshots contain duplicate evidence identifiers");
     const cohort = {
       observationClass: before.observationClass,
       provider: before.provider,
