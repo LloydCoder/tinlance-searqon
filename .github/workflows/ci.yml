@@ -121,6 +121,7 @@ jobs:
           node src/cli.js scan ./examples/mcp-snapshot.json --format mcp >/dev/null
           node src/cli.js geo analyze ./examples/geo-observation.json >/dev/null
           node src/cli.js geo aggregate ./examples/geo-observations.json >/dev/null
+          node src/cli.js geo alerts ./examples/geo-alert-input.json >/dev/null
       - name: Audit dependency tree
         run: npm audit --audit-level=high
       - name: Validate package contents
