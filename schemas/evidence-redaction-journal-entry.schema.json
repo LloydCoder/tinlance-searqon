@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.tinlance.com/schemas/evidence-redaction-journal-entry/1.0.0",
+  "title": "Searqon Evidence Redaction Journal Entry",
+  "description": "Hash-linked local journal envelope for a signed evidence redaction manifest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sequence",
+    "previousHash",
+    "manifest",
+    "entryHash"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "previousHash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "manifest": {
+      "$ref": "https://searqon.tinlance.com/schemas/evidence-redaction-manifest/1.0.0"
+    },
+    "entryHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
