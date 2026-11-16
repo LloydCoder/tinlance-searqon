@@ -242,3 +242,60 @@ test("serves directory-based authentication and workspace routes", async () => {
     assert.match(script.headers.get("content-type"), /javascript/);
   });
 });
+
+test("readiness endpoint fails closed when PostgreSQL is not configured", async () => {
+  await withServer(async base => {
+    const response = await fetch(base + "/api/v1/ready");
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { status: "not_ready", reason: "database_not_configured" });
+  });
+});
+
+test("production assessment endpoint fails closed without authenticated service", async () => {
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  try {
+    await withServer(async base => {
+      const response = await fetch(base + "/api/v1/assessments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ source: "sample", contentType: "text/markdown", content: "# Sample" })
+      });
+      assert.equal(response.status, 503);
+      assert.equal((await response.json()).error.code, "assessment_unavailable");
+    });
+  } finally {
+    if (previous === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous;
+  }
+});
+
+test("production session cookies use the __Host prefix and Secure attribute", async () => {
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  let origin;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async register() {},
+    async requestMagicLink() {},
+    async verify() { return { sessionToken: "D".repeat(43), expiresAt: new Date(Date.now() + 3600000) }; },
+    async getProfile() { return null; },
+    async logout() { return { revoked: true }; }
+  };
+  try {
+    await withServer(async base => {
+      origin = new URL(base).origin;
+      const response = await fetch(base + "/api/v1/auth/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin },
+        body: JSON.stringify({ token: "E".repeat(43) })
+      });
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("set-cookie"), /^__Host-searqon_session=D{43}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=\d+; Secure$/);
+      assert.equal(response.headers.get("strict-transport-security"), "max-age=31536000; includeSubDomains");
+    }, { authService });
+  } finally {
+    if (previous === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous;
+  }
+});
