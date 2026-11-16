@@ -336,6 +336,7 @@ test("signed webhook envelope creation time must match the signed timestamp head
 });
 
 test("webhook replay guard rejects duplicate IDs and fails closed at capacity", () => {
+  assert.throws(() => createWebhookReplayGuard({ ttlSeconds: 300, timestampToleranceSeconds: 300 }), /exceed/i);
   const guard = createWebhookReplayGuard({ maxEntries: 1, ttlSeconds: 900, timestampToleranceSeconds: 300 });
   const firstId = "123e4567-e89b-42d3-a456-426614174000";
   const secondId = "123e4567-e89b-42d3-a456-426614174001";
