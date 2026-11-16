@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.com/schemas/geo-alert-event.schema.json",
+  "title": "Searqon signed GEO alert webhook event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "apiVersion",
+    "createdAt",
+    "data"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "const": "searqon.geo.alert"
+    },
+    "apiVersion": {
+      "const": "1.0.0"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "required": [
+        "alertId",
+        "dedupeKey",
+        "metric",
+        "direction",
+        "severity"
+      ],
+      "properties": {
+        "alertId": {
+          "type": "string"
+        },
+        "dedupeKey": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "metric": {
+          "enum": [
+            "mention",
+            "brand_citation"
+          ]
+        },
+        "direction": {
+          "enum": [
+            "decline",
+            "increase"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      }
+    }
+  }
+}

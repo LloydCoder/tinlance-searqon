@@ -39,7 +39,7 @@ flowchart TD
 
 ## Product direction
 
-Searqon's four-discipline foundation (SEO, AEO, GEO and AgEO) is being extended with an owner-attested Brand Truth Registry, deterministic locale/market prompt cohorts and policy-reviewed, cost-bounded GEO sampling plans. Deterministic, registry-relative brand-claim and citation defense now emits human-review correction manifests; citation-change alerts, machine-readable artifact generation and isolated agent-journey simulation remain planned modules. See the [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md) and [16-phase roadmap](docs/ROADMAP_16_PHASE.md).
+Searqon's four-discipline foundation (SEO, AEO, GEO and AgEO) is being extended with an owner-attested Brand Truth Registry, deterministic locale/market prompt cohorts and policy-reviewed, cost-bounded GEO sampling plans. Deterministic, registry-relative brand-claim and citation defense now emits human-review correction manifests; citation-change alerts, machine-readable artifact generation and isolated agent-journey simulation remain planned modules. See the [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md) and [16-phase roadmap](docs/ROADMAP_16_PHASE.md). GEO snapshot comparisons are available through `searqon geo alerts`; see the [alert guide](docs/how-to/compare-geo-snapshots-and-alerts.md).
 
 ## Why Searqon
 
@@ -49,7 +49,7 @@ Searqon keeps different kinds of discoverability evidence separate instead of hi
 |---|---|---|
 | SEO | Technical discovery, indexability and page signals | Partial local and single-page diagnostics |
 | AEO | Answer structure, clarity and source-oriented content signals | Partial diagnostics |
-| GEO | Mentions and citations in generative-system observations | Supplied-observation analysis, brand registry, prompt cohorts and governed sampling preflight; no live collection |
+| GEO | Mentions and citations in generative-system observations | Supplied-observation analysis, brand registry, prompt cohorts, governed sampling preflight and deterministic baseline/current alert comparisons and evidence-linked citation-domain disappearance detection; no live collection or notification delivery |
 | AgEO | Documentation and interface readiness for software agents | Partial API, OpenAPI and passive MCP snapshot diagnostics |
 
 Searqon is not a search-rank tracker, a general-purpose crawler, an MCP execution runtime or a hosted monitoring service. It does not guarantee rankings, citations, recommendations or agent adoption. AgEO is Searqon's proposed product discipline, not a universal industry standard.

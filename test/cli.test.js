@@ -188,3 +188,79 @@ test("published claim defense fixture produces contradiction and attribution fin
     assert.equal(report.correctionManifest.autoPublish, false);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("CLI builds a cohort-safe GEO alert report from local aggregate snapshots", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-geo-alerts-"));
+  try {
+    const input = join(dir, "alerts.json");
+    await writeFile(input, JSON.stringify({
+      baseline: [{
+        observationClass: "model_api",
+        provider: { name: "OpenAI", model: "gpt-4.1", region: "us", locale: "en-US" },
+        brand: "Searqon", targetDomain: "searqon.com", samplePeriod: null,
+        sampleSize: 100, mentionCount: 80, brandCitationCount: 70
+      }],
+      current: [{
+        observationClass: "model_api",
+        provider: { name: "OpenAI", model: "gpt-4.1", region: "us", locale: "en-US" },
+        brand: "Searqon", targetDomain: "searqon.com", samplePeriod: null,
+        sampleSize: 100, mentionCount: 40, brandCitationCount: 20
+      }],
+      baselineId: "baseline-1", currentId: "current-1",
+      baselineAt: "2026-11-16T12:00:00.000Z",
+      currentAt: "2026-11-16T13:00:00.000Z",
+      evaluatedAt: "2026-11-16T13:01:00.000Z"
+    }));
+    const result = spawnSync(process.execPath, [cli.pathname, "geo", "alerts", input], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.type, "geo_alert_report");
+    assert.equal(report.alerts.length, 2);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("CLI detects evidence-linked citation disappearance from raw local GEO cohorts", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-citation-changes-"));
+  try {
+    const input = join(dir, "citation-changes.json");
+    await writeFile(input, JSON.stringify({
+      baseline: Array.from({ length: 30 }, (_, index) => ({
+        prompt: "Which tools help teams discover documentation? " + index,
+        answer: "Searqon is a platform for discoverability.",
+        brand: "Searqon",
+        targetDomain: "searqon.com",
+        citations: ["https://searqon.com/docs"],
+        provider: { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
+        sampledAt: "2026-11-10T12:00:00.000Z"
+      })),
+      current: Array.from({ length: 30 }, (_, index) => ({
+        prompt: "Which tools help teams discover documentation? " + index,
+        answer: "Searqon is a platform for discoverability.",
+        brand: "Searqon",
+        targetDomain: "searqon.com",
+        citations: ["https://competitor.example/guide"],
+        provider: { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
+        sampledAt: "2026-11-16T12:00:00.000Z"
+      })),
+      observedAt: "2026-11-16T13:00:00.000Z",
+      policy: { minimumSamples: 20, minimumAbsoluteChange: 0.2 }
+    }));
+    const result = spawnSync(process.execPath, [cli.pathname, "geo", "citation-changes", input], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.type, "geo_citation_change_report");
+    assert.equal(report.events.length, 1);
+    assert.equal(report.events[0].changeType, "citation_disappearance");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("CLI evaluates labelled GEO citation alert quality cases", async () => {
+  const result = spawnSync(process.execPath, [cli.pathname, "geo", "quality-evaluate", new URL("../examples/geo-citation-alert-quality-input.json", import.meta.url).pathname], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.type, "geo_citation_alert_quality_report");
+  assert.equal(report.caseCount, 2);
+  assert.equal(report.counts.truePositive, 1);
+  assert.equal(report.counts.falsePositive, 0);
+  assert.equal(report.metrics.falsePositiveRate, 0);
+});
