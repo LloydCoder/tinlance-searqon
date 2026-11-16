@@ -53,6 +53,28 @@ BEGIN
 END
 $$;
 
+-- Authorized writes are attributed to the authenticated actor.
+INSERT INTO searqon.projects (organization_id, name, target_url, created_by)
+VALUES ('20000000-0000-4000-8000-000000000001', 'Member project', 'https://member.example.test',
+  '10000000-0000-4000-8000-000000000001');
+INSERT INTO searqon.assessments (organization_id, project_id, requested_by, assessment_type, methodology_version)
+VALUES ('20000000-0000-4000-8000-000000000001',
+  (SELECT id FROM searqon.projects WHERE name = 'Member project'),
+  '10000000-0000-4000-8000-000000000001', 'aeo', '1.0.0');
+
+-- Audit records are append-only even for a tenant member.
+DO $
+BEGIN
+  BEGIN
+    UPDATE searqon.audit_events SET subject_id = 'tampered'
+    WHERE subject_id = '30000000-0000-4000-8000-000000000001';
+    RAISE EXCEPTION 'audit event update unexpectedly succeeded';
+  EXCEPTION WHEN object_not_in_prerequisite_state THEN
+    NULL;
+  END;
+END
+$;
+
 -- A request without authenticated user context sees no tenant-scoped records.
 SET LOCAL searqon.user_id = '';
 DO $$
