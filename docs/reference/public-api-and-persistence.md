@@ -20,7 +20,7 @@
 | `src/evidence-redaction.js` | `createEvidenceRedactionManifest(...)`, `verifyEvidenceRedactionManifest(...)`, `filterEvidenceByRedaction(...)` | Ed25519-signed approval and logical export suppression. Does not physically delete or sanitize source storage. |
 | `src/evidence-redaction-store.js` | `openEvidenceRedactionStore(path, publicKey)`, `verifyEvidenceRedactionJournal(...)`, `verifyEvidenceRedactionJournalEntry(...)` | Local fsync'd hash-linked JSONL journal for signed manifests; single-process writer admission, not WORM or cross-process locking. |
 | `src/evidence-redaction-checkpoint.js` | `createEvidenceRedactionJournalCheckpoint(...)`, `verifyEvidenceRedactionJournalCheckpoint(...)` | Detached Ed25519 checkpoint of a journal prefix; external checkpoint and public-key custody remain caller responsibilities. |
-| `src/evidence-recovery.js` | `verifyEvidenceRecoveryBundle(bundle)` | Offline pre-restore integrity gate for an evidence ledger and redaction journal, both with independently trusted checkpoints; no file restore, replication or sanitization. |
+| `src/evidence-recovery.js` | `verifyEvidenceRecoveryBundle(bundle)` | Offline pre-restore integrity gate for an evidence ledger and redaction journal, both with independently trusted checkpoints; no file restore, replication or sanitization. |\n| `src/evidence-legal-holds.js` | `createEvidenceLegalHoldEvent(...)`, `verifyEvidenceLegalHoldEvent(...)`, `deriveActiveEvidenceHolds(...)` | Signed, ordered legal-hold state events; one trusted public key per event history, caller-managed durable storage and actor authorization. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
