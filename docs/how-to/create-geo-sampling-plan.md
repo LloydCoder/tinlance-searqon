@@ -31,7 +31,7 @@ Normalize and validate it:
 node src/cli.js geo registry brand-input.json --out brand-truth-registry.json
 ~~~
 
-Facts are explicitly classified as owner_asserted, corroborated, disputed, or retired. A corroborated or disputed fact requires a reviewer, review timestamp and at least one HTTPS source. This is provenance metadata, not an independent guarantee that the claim is true. The registry digest detects accidental or unauthorized changes after creation.
+Facts are explicitly classified as owner_asserted, corroborated, disputed, or retired. A corroborated or disputed fact requires a reviewer, review timestamp and at least one HTTPS source. This is provenance metadata, not an independent guarantee that the claim is true. The registry digest detects accidental edits or content changes that do not also replace the digest. It is a checksum, not a signature or authenticity guarantee; anchor it in a separately trusted evidence record if tamper evidence is required.
 
 ## 2. Define a prompt cohort
 
