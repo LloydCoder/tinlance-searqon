@@ -367,27 +367,133 @@
       }
     },
     "suppressedAlert": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/alert"
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alertId",
+        "dedupeKey",
+        "type",
+        "metric",
+        "label",
+        "direction",
+        "severity",
+        "dimensions",
+        "baseline",
+        "current",
+        "delta",
+        "absoluteChange",
+        "confidenceMethod",
+        "baselineId",
+        "currentId",
+        "baselineAt",
+        "currentAt",
+        "evaluatedAt",
+        "evidence",
+        "suppressionReason",
+        "lastNotifiedAt"
+      ],
+      "properties": {
+        "alertId": {
+          "type": "string"
         },
-        {
+        "dedupeKey": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "type": {
+          "enum": [
+            "mention_change",
+            "brand_citation_change"
+          ]
+        },
+        "metric": {
+          "enum": [
+            "mention",
+            "brand_citation"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "decline",
+            "increase"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "dimensions": {
+          "$ref": "#/$defs/dimensions"
+        },
+        "baseline": {
+          "$ref": "#/$defs/sample"
+        },
+        "current": {
+          "$ref": "#/$defs/sample"
+        },
+        "delta": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "absoluteChange": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidenceMethod": {
+          "const": "non_overlapping_wilson_95"
+        },
+        "baselineId": {
+          "type": "string"
+        },
+        "currentId": {
+          "type": "string"
+        },
+        "baselineAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "currentAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evaluatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence": {
           "type": "object",
+          "additionalProperties": false,
           "required": [
-            "suppressionReason",
-            "lastNotifiedAt"
+            "baselineSampleSize",
+            "currentSampleSize"
           ],
           "properties": {
-            "suppressionReason": {
-              "const": "cooldown"
+            "baselineSampleSize": {
+              "type": "integer",
+              "minimum": 1
             },
-            "lastNotifiedAt": {
-              "type": "string",
-              "format": "date-time"
+            "currentSampleSize": {
+              "type": "integer",
+              "minimum": 1
             }
           }
+        },
+        "suppressionReason": {
+          "const": "cooldown"
+        },
+        "lastNotifiedAt": {
+          "type": "string",
+          "format": "date-time"
         }
-      ]
+      }
     }
   }
 }
