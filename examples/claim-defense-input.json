@@ -1,0 +1,56 @@
+{
+  "registry": {
+    "schemaVersion": "1.0.0",
+    "type": "brand_truth_registry",
+    "registryId": "btr_91200e0862f532fdc806",
+    "brand": {
+      "name": "Searqon Example",
+      "primaryDomain": "searqon-example.com",
+      "aliases": [
+        "Searqon Example Intelligence"
+      ]
+    },
+    "assertedBy": "example-owner",
+    "createdAt": "2026-11-16T12:00:00.000Z",
+    "updatedAt": "2026-11-16T12:00:00.000Z",
+    "facts": [
+      {
+        "factId": "fact_f75fa108d0949ea22532",
+        "attribute": "product.category",
+        "value": "AI-search intelligence platform",
+        "statement": "Searqon Example is an AI-search intelligence platform.",
+        "status": "owner_asserted",
+        "sourceUrls": [
+          "https://searqon-example.com/about"
+        ],
+        "assertedBy": "example-owner",
+        "assertedAt": "2026-11-16T12:00:00.000Z",
+        "reviewedBy": null,
+        "reviewedAt": null
+      }
+    ],
+    "contentDigest": "73de03f8ca400ad82129c347fdda9b1fd9f0e9edf0355b32ad548ac8399c7227"
+  },
+  "observedAt": "2026-11-16T13:00:00.000Z",
+  "competitorDomains": [
+    "competitor.example.com"
+  ],
+  "claims": [
+    {
+      "text": "Searqon Example is a social scheduling tool.",
+      "attribute": "product.category",
+      "value": "social scheduling tool",
+      "citationUrls": [
+        "https://competitor.example.com/brands/searqon"
+      ]
+    },
+    {
+      "text": "Searqon Example is an AI-search intelligence platform.",
+      "attribute": "product.category",
+      "value": "AI-search intelligence platform",
+      "citationUrls": [
+        "https://searqon-example.com/about?utm_source=answer"
+      ]
+    }
+  ]
+}
