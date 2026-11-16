@@ -184,13 +184,15 @@ export function buildGeoAlerts(input) {
     baselineId, currentId, baselineAt: baselineAt.toISOString(), currentAt: currentAt.toISOString(),
     minSampleSize: input.minSampleSize ?? DEFAULT_MIN_SAMPLE_SIZE,
     minAbsoluteChange: input.minAbsoluteChange ?? DEFAULT_MIN_ABSOLUTE_CHANGE,
-    cooldownSeconds: input.cooldownSeconds ?? 0
+    cooldownSeconds: input.cooldownSeconds ?? 0,
+    maxObservationAgeSeconds: input.maxObservationAgeSeconds ?? 86_400
   };
   boundedInteger(policy.minSampleSize, "minSampleSize", 2, 1_000_000);
   if (typeof policy.minAbsoluteChange !== "number" || !Number.isFinite(policy.minAbsoluteChange) || policy.minAbsoluteChange <= 0 || policy.minAbsoluteChange > 1) {
     throw new RangeError("minAbsoluteChange must be greater than 0 and no greater than 1");
   }
   boundedInteger(policy.cooldownSeconds, "cooldownSeconds", 0, 31_536_000);
+  boundedInteger(policy.maxObservationAgeSeconds, "maxObservationAgeSeconds", 1, 604_800);
   if (!Array.isArray(input.previousAlerts ?? []) || (input.previousAlerts ?? []).length > MAX_PREVIOUS_ALERTS) {
     throw new RangeError("previousAlerts must be a bounded array");
   }
@@ -265,7 +267,8 @@ export function buildGeoAlerts(input) {
     currentAt: currentAt.toISOString(),
     evaluatedAt: evaluatedAt.toISOString(),
     observationLagSeconds: Math.floor((evaluatedAt.getTime() - currentAt.getTime()) / 1000),
-    policy: Object.freeze({ minSampleSize: policy.minSampleSize, minAbsoluteChange: policy.minAbsoluteChange, cooldownSeconds: policy.cooldownSeconds, confidenceMethod: "wilson_95_non_overlap" }),
+    observationFreshness: (evaluatedAt.getTime() - currentAt.getTime()) / 1000 <= policy.maxObservationAgeSeconds ? "fresh" : "stale",
+    policy: Object.freeze({ minSampleSize: policy.minSampleSize, minAbsoluteChange: policy.minAbsoluteChange, cooldownSeconds: policy.cooldownSeconds, maxObservationAgeSeconds: policy.maxObservationAgeSeconds, confidenceMethod: "wilson_95_non_overlap" }),
     summary: Object.freeze({ cohortsCompared: comparedCohorts.size, alerts: alerts.length, suppressed: suppressedAlerts.length, evaluations: evaluations.length }),
     evaluations: Object.freeze(evaluations),
     alerts: Object.freeze(alerts),
@@ -452,7 +455,9 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
   if (!policy || typeof policy !== "object" || Array.isArray(policy)) throw new TypeError("policy must be an object");
   const minSamples = policy.minimumSamples ?? 10;
   const minChange = policy.minimumAbsoluteChange ?? 0.1;
+  const maxObservationAgeSeconds = policy.maxObservationAgeSeconds ?? 86_400;
   boundedInteger(minSamples, "minimumSamples", 2, 10_000);
+  boundedInteger(maxObservationAgeSeconds, "maxObservationAgeSeconds", 1, 604_800);
   if (typeof minChange !== "number" || !Number.isFinite(minChange) || minChange <= 0 || minChange > 1) {
     throw new RangeError("minimumAbsoluteChange must be greater than 0 and no greater than 1");
   }
@@ -629,10 +634,113 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
       targetDomain: dimensions[6]
     }),
     observedAt: observed.toISOString(),
-    policy: Object.freeze({ minimumSamples: minSamples, minimumAbsoluteChange: minChange, confidenceMethod: "wilson_95_non_overlap" }),
+    observationLagSeconds: Math.floor((observed.getTime() - Math.max(...after.map(item => item.sampledAt.getTime()))) / 1000),
+    observationFreshness: (observed.getTime() - Math.max(...after.map(item => item.sampledAt.getTime()))) / 1000 <= maxObservationAgeSeconds ? "fresh" : "stale",
+    policy: Object.freeze({ minimumSamples: minSamples, minimumAbsoluteChange: minChange, maxObservationAgeSeconds, confidenceMethod: "wilson_95_non_overlap" }),
     summary: Object.freeze({ baselineSampleSize: before.length, currentSampleSize: after.length, events: events.length, suppressed: suppressed.length }),
     events: Object.freeze(events),
     suppressed: Object.freeze(suppressed),
     evaluations: Object.freeze(evaluations)
+  });
+}
+
+
+/**
+ * In-memory replay guard for a single process/test worker. Production receivers
+ * must use a durable unique constraint keyed by event ID.
+ */
+export function createWebhookReplayGuard({ maxEntries = 10_000, ttlSeconds = 900, timestampToleranceSeconds = 300 } = {}) {
+  boundedInteger(maxEntries, "maxEntries", 1, 100_000);
+  boundedInteger(ttlSeconds, "ttlSeconds", 301, 86_400);
+  boundedInteger(timestampToleranceSeconds, "timestampToleranceSeconds", 1, 900);
+  const seen = new Map();
+  return Object.freeze({
+    claim(eventId, timestampSeconds, nowSeconds = Math.floor(Date.now() / 1000)) {
+      if (typeof eventId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eventId)) {
+        throw new TypeError("eventId must be a UUID v4");
+      }
+      boundedInteger(timestampSeconds, "timestampSeconds", 1, Number.MAX_SAFE_INTEGER);
+      boundedInteger(nowSeconds, "nowSeconds", 1, Number.MAX_SAFE_INTEGER);
+      if (Math.abs(nowSeconds - timestampSeconds) > timestampToleranceSeconds) throw new TypeError("Webhook timestamp is outside the accepted tolerance");
+      for (const [id, seenAt] of seen) if (nowSeconds - seenAt > ttlSeconds) seen.delete(id);
+      if (seen.has(eventId)) return false;
+      if (seen.size >= maxEntries) throw new RangeError("Webhook replay guard capacity reached; fail closed");
+      seen.set(eventId, nowSeconds);
+      return true;
+    },
+    size() { return seen.size; }
+  });
+}
+
+/**
+ * Evaluate detector behavior against explicitly labelled domains. This reports
+ * precision/recall on the supplied labels only; synthetic fixtures are not market evidence.
+ */
+export function evaluateGeoCitationAlertQuality({ cases, policy = {} } = {}) {
+  if (!Array.isArray(cases) || cases.length === 0 || cases.length > 1_000) throw new RangeError("cases must contain between 1 and 1,000 labelled cases");
+  if (!policy || typeof policy !== "object" || Array.isArray(policy)) throw new TypeError("policy must be an object");
+  const caseIds = new Set();
+  const counts = { truePositive: 0, falsePositive: 0, falseNegative: 0, trueNegative: 0 };
+  const results = [];
+  for (const item of cases) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) throw new TypeError("labelled cases must be objects");
+    const caseId = boundedIdentifier(item.caseId, "caseId", 128);
+    if (caseIds.has(caseId)) throw new TypeError("duplicate labelled caseId");
+    caseIds.add(caseId);
+    if (!Array.isArray(item.candidateDomains) || item.candidateDomains.length === 0 || item.candidateDomains.length > 500) {
+      throw new TypeError("candidateDomains must be a non-empty bounded array");
+    }
+    if (!Array.isArray(item.expectedDisappearedDomains)) throw new TypeError("expectedDisappearedDomains must be an array");
+    const candidates = item.candidateDomains.map((domain, index) => boundedIdentifier(domain, "candidateDomains[" + index + "]", 253).toLowerCase());
+    const expected = item.expectedDisappearedDomains.map((domain, index) => boundedIdentifier(domain, "expectedDisappearedDomains[" + index + "]", 253).toLowerCase());
+    if (new Set(candidates).size !== candidates.length || new Set(expected).size !== expected.length) throw new TypeError("candidate and expected domains must be unique");
+    if (expected.some(domain => !candidates.includes(domain))) throw new TypeError("expected domains must be included in candidateDomains");
+    const report = detectCitationChanges({
+      baseline: item.baseline,
+      current: item.current,
+      observedAt: item.observedAt,
+      policy: { ...policy, ...(item.policy ?? {}) }
+    });
+    const predicted = new Set(report.events.map(event => event.domain));
+    const domainUniverse = new Set([...candidates, ...predicted]);
+    const local = { truePositive: 0, falsePositive: 0, falseNegative: 0, trueNegative: 0 };
+    for (const domain of domainUniverse) {
+      const truth = expected.includes(domain);
+      const prediction = predicted.has(domain);
+      if (truth && prediction) local.truePositive++;
+      else if (!truth && prediction) local.falsePositive++;
+      else if (truth && !prediction) local.falseNegative++;
+      else local.trueNegative++;
+    }
+    for (const key of Object.keys(counts)) counts[key] += local[key];
+    results.push(Object.freeze({
+      caseId,
+      ...local,
+      predictedDomains: Object.freeze([...predicted].sort()),
+      expectedDisappearedDomains: Object.freeze([...expected].sort()),
+      observationLagSeconds: report.observationLagSeconds,
+      observationFreshness: report.observationFreshness
+    }));
+  }
+  const ratio = (numerator, denominator) => denominator === 0 ? null : Number((numerator / denominator).toFixed(4));
+  const precision = ratio(counts.truePositive, counts.truePositive + counts.falsePositive);
+  const recall = ratio(counts.truePositive, counts.truePositive + counts.falseNegative);
+  const specificity = ratio(counts.trueNegative, counts.trueNegative + counts.falsePositive);
+  const f1 = precision === null || recall === null || precision + recall === 0 ? null : Number((2 * precision * recall / (precision + recall)).toFixed(4));
+  return Object.freeze({
+    schemaVersion: "1.0.0",
+    type: "geo_citation_alert_quality_report",
+    evaluationMethod: "caller_labelled_domain_disappearance",
+    labelSource: "caller_supplied",
+    caseCount: results.length,
+    counts: Object.freeze(counts),
+    metrics: Object.freeze({
+      precision,
+      recall,
+      specificity,
+      falsePositiveRate: specificity === null ? null : Number((1 - specificity).toFixed(4)),
+      f1
+    }),
+    cases: Object.freeze(results)
   });
 }
