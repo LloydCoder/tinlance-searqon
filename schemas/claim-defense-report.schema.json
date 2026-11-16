@@ -107,7 +107,7 @@
           "assessment",
           "freshness",
           "ageDays",
-          "confidence",
+          "provenanceTier",
           "citationAssessment",
           "citations",
           "sourceUrls",
@@ -204,14 +204,6 @@
             ],
             "minimum": 0
           },
-          "confidence": {
-            "enum": [
-              "none",
-              "low",
-              "medium",
-              "high"
-            ]
-          },
           "citationAssessment": {
             "enum": [
               "missing_citation",
@@ -246,6 +238,14 @@
               "minLength": 1,
               "maxLength": 64
             }
+          },
+          "provenanceTier": {
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
           }
         }
       }
