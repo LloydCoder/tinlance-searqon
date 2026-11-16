@@ -76,7 +76,7 @@ export function verifyEvidenceRecoveryBundle(bundle) {
   }
 
   const uniqueErrors = [...new Set(errors)].sort();
-  const suppressedEvidenceIds = [...suppressed].sort();
+  const suppressedEvidenceIds = uniqueErrors.length === 0 ? [...suppressed].sort() : [];
   return Object.freeze({
     valid: uniqueErrors.length === 0,
     errors: Object.freeze(uniqueErrors),
