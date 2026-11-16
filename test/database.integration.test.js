@@ -6,7 +6,7 @@ const databaseUrl = process.env.DATABASE_URL;
 const enabled = Boolean(databaseUrl);
 
 test("PostgreSQL pool applies transaction-local tenant identity and RLS on real connections", { skip: !enabled }, async () => {
-  const db = createDatabase({ connectionString: databaseUrl });
+  const db = createDatabase({ connectionString: databaseUrl, maxConnections: 1 });
   const { pool } = db;
   const userA = "51000000-0000-4000-8000-000000000001";
   const userB = "51000000-0000-4000-8000-000000000002";
