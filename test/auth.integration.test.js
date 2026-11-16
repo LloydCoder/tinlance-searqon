@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
-import { createDatabase } from "../src/platform/database.js";
+import { createHash, randomUUID } from "node:crypto";
+import { createDatabase, withUserTransaction } from "../src/platform/database.js";
 import { createAuthService, AuthError } from "../src/platform/auth.js";
 
 const databaseUrl = process.env.SEARQON_RUNTIME_DATABASE_URL ?? process.env.DATABASE_URL;
@@ -61,6 +61,12 @@ test("passwordless auth completes registration, token replacement, session looku
     assert.ok(profile.user.email_verified_at);
     assert.equal(profile.organizations.length, 1);
     assert.equal(profile.organizations[0].role, "owner");
+
+    const sessionHash = createHash("sha256").update(session.sessionToken, "utf8").digest();
+    await withUserTransaction(database.pool, session.userId, async client => {
+      await client.query("UPDATE searqon.sessions SET last_seen_at = now() - interval '31 minutes' WHERE token_hash = $1", [sessionHash]);
+    });
+    assert.equal(await auth.getProfile(session.sessionToken), null, "sessions idle for more than 30 minutes must expire");
     assert.deepEqual(await auth.logout(session.sessionToken), { revoked: true });
     assert.equal(await auth.getProfile(session.sessionToken), null);
   } finally {
