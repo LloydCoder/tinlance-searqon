@@ -168,6 +168,7 @@ function renderProjectDetail(project) {
   heading.append(node("span", "eyebrow", "PROJECT"), node("h3", "", project.name), node("p", "project-url", project.targetUrl));
   projectDetail.append(heading);
   const form = node("form", "assessment-form");
+  form.hidden = !["owner", "admin", "analyst"].includes(activeOrganization?.role);
   form.id = "assessment-form";
   form.append(node("h4", "", "Assess supplied content"));
   form.append(node("p", "muted-copy", "Paste HTML, Markdown, an OpenAPI document or a normalized MCP metadata snapshot. Searqon analyzes only the content submitted here; it does not fetch or execute the target URL."));
