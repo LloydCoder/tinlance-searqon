@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.com/schemas/geo-citation-change-report.schema.json",
+  "title": "Searqon GEO citation change report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "type",
+    "dimensions",
+    "observedAt",
+    "policy",
+    "summary",
+    "events",
+    "suppressed",
+    "evaluations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "type": {
+      "const": "geo_citation_change_report"
+    },
+    "dimensions": {
+      "$ref": "#/$defs/dimensions"
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumSamples",
+        "minimumAbsoluteChange",
+        "confidenceMethod"
+      ],
+      "properties": {
+        "minimumSamples": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "minimumAbsoluteChange": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        },
+        "confidenceMethod": {
+          "const": "wilson_95_non_overlap"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baselineSampleSize",
+        "currentSampleSize",
+        "events",
+        "suppressed"
+      ],
+      "properties": {
+        "baselineSampleSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currentSampleSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "suppressed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "suppressed": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain",
+          "reason",
+          "baselineSampleSize",
+          "currentSampleSize"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "insufficient_samples",
+              "overlapping_confidence_intervals"
+            ]
+          },
+          "baselineSampleSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "currentSampleSize": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "evaluations": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "$defs": {
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observationClass",
+        "provider",
+        "model",
+        "region",
+        "locale",
+        "brand",
+        "targetDomain"
+      ],
+      "properties": {
+        "observationClass": {
+          "enum": [
+            "consumer_observation",
+            "model_api"
+          ]
+        },
+        "provider": {
+          "type": "string"
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "region": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locale": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "brand": {
+          "type": "string"
+        },
+        "targetDomain": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lower",
+        "upper"
+      ],
+      "properties": {
+        "lower": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "upper": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eventId",
+        "changeType",
+        "domain",
+        "dimensions",
+        "baselineRate",
+        "currentRate",
+        "delta",
+        "baselineSampleSize",
+        "currentSampleSize",
+        "baselineInterval95",
+        "currentInterval95",
+        "evidenceIds",
+        "observedAt",
+        "confidenceMethod"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string"
+        },
+        "changeType": {
+          "const": "citation_disappearance"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "dimensions": {
+          "$ref": "#/$defs/dimensions"
+        },
+        "baselineRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "currentRate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "delta": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 0
+        },
+        "baselineSampleSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currentSampleSize": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "baselineInterval95": {
+          "$ref": "#/$defs/interval"
+        },
+        "currentInterval95": {
+          "$ref": "#/$defs/interval"
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^evidence_[a-f0-9]{20}$"
+          }
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "confidenceMethod": {
+          "const": "non_overlapping_wilson_95"
+        }
+      }
+    }
+  }
+}
