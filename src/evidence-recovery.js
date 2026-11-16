@@ -1,0 +1,93 @@
+import { verifyEvidenceLedger } from "./evidence-ledger.js";
+import { verifyEvidenceLedgerCheckpoint } from "./evidence-checkpoint.js";
+import { verifyEvidenceRedactionJournal } from "./evidence-redaction-store.js";
+import { verifyEvidenceRedactionJournalCheckpoint } from "./evidence-redaction-checkpoint.js";
+
+/**
+ * Validate a local recovery bundle before any restored data is made available.
+ * This is an integrity gate, not a backup transport, restore, or sanitization
+ * implementation. It requires detached checkpoints and caller-trusted keys.
+ */
+export function verifyEvidenceRecoveryBundle(bundle) {
+  if (!bundle || typeof bundle !== "object" || Array.isArray(bundle)) {
+    return Object.freeze({
+      valid: false,
+      errors: Object.freeze(["invalid_recovery_bundle"]),
+      suppressedEvidenceIds: Object.freeze([])
+    });
+  }
+
+  const errors = [];
+  const {
+    ledgerEntries,
+    ledgerCheckpoint,
+    ledgerCheckpointPublicKey,
+    redactionEntries,
+    redactionCheckpoint,
+    redactionCheckpointPublicKey,
+    manifestPublicKey
+  } = bundle;
+
+  const ledgerVerification = verifyEvidenceLedger(ledgerEntries);
+  if (!ledgerVerification.valid) errors.push("invalid_evidence_ledger");
+  if (!ledgerCheckpoint) errors.push("missing_evidence_ledger_checkpoint");
+  else {
+    const checkpoint = verifyEvidenceLedgerCheckpoint(
+      ledgerCheckpoint,
+      ledgerEntries,
+      ledgerCheckpointPublicKey
+    );
+    if (!checkpoint.valid) errors.push("invalid_evidence_ledger_checkpoint");
+  }
+
+  const redactionVerification = verifyEvidenceRedactionJournal(redactionEntries, manifestPublicKey);
+  if (!redactionVerification.valid) errors.push("invalid_redaction_journal");
+  if (!redactionCheckpoint) errors.push("missing_redaction_journal_checkpoint");
+  else {
+    const checkpoint = verifyEvidenceRedactionJournalCheckpoint(
+      redactionCheckpoint,
+      redactionEntries,
+      redactionCheckpointPublicKey,
+      manifestPublicKey
+    );
+    if (!checkpoint.valid) errors.push("invalid_redaction_journal_checkpoint");
+  }
+
+  const evidenceIds = new Set();
+  if (Array.isArray(ledgerEntries)) {
+    for (const entry of ledgerEntries) {
+      const id = entry?.record?.id;
+      if (typeof id !== "string") continue;
+      if (evidenceIds.has(id)) errors.push("duplicate_evidence_identifier");
+      evidenceIds.add(id);
+    }
+  }
+
+  const suppressed = new Set();
+  if (Array.isArray(redactionEntries)) {
+    for (const entry of redactionEntries) {
+      const ids = entry?.manifest?.evidenceIds;
+      if (!Array.isArray(ids)) continue;
+      for (const id of ids) {
+        if (!evidenceIds.has(id)) errors.push("redaction_references_unknown_evidence");
+        suppressed.add(id);
+      }
+    }
+  }
+
+  const uniqueErrors = [...new Set(errors)].sort();
+  const suppressedEvidenceIds = [...suppressed].sort();
+  return Object.freeze({
+    valid: uniqueErrors.length === 0,
+    errors: Object.freeze(uniqueErrors),
+    ledger: Object.freeze({
+      valid: ledgerVerification.valid,
+      entryCount: Array.isArray(ledgerEntries) ? ledgerEntries.length : 0
+    }),
+    redactions: Object.freeze({
+      valid: redactionVerification.valid,
+      entryCount: Array.isArray(redactionEntries) ? redactionEntries.length : 0
+    }),
+    suppressedEvidenceIds: Object.freeze(suppressedEvidenceIds)
+  });
+}
