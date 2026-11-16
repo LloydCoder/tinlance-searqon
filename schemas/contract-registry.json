@@ -35,7 +35,7 @@
         "geo-registry",
         "claim-defense"
       ],
-      "notes": "Owner-attested brand facts with source provenance and explicit corroboration state; registry content is not independently verified by the schema."
+      "notes": "Owner-attested brand facts with source provenance and explicit corroboration state; the content digest is a checksum, not a signature or authenticity guarantee."
     },
     {
       "name": "evidence-ledger-checkpoint",
@@ -172,7 +172,7 @@
         "geo-sampling-plan",
         "geo-analysis"
       ],
-      "notes": "Deterministic, locale-scoped prompt cohort tied to a Brand Truth Registry identity."
+      "notes": "Deterministic, locale-scoped prompt cohort pinned to a specific Brand Truth Registry content digest."
     },
     {
       "name": "geo-sampling-plan",
@@ -184,7 +184,7 @@
       "consumers": [
         "geo-collector"
       ],
-      "notes": "Preflight sampling plan with explicit policy review, provider separation, manual consumer observation, official API-only model observations, per-provider sample caps and a hard estimated-cost ceiling. It does not execute collection."
+      "notes": "Preflight sampling plan pinned to the exact registry revision, with explicit policy review, provider separation, manual consumer observation, official API-only model observations, per-provider sample caps and a hard estimated-cost ceiling. It does not execute collection."
     },
     {
       "name": "mcp-snapshot",
