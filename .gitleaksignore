@@ -8,3 +8,4 @@ a945be5bce44f328cb67b05c31077e72fcff5b20:test/geo-alerts.test.js:generic-api-key
 # Historical false positives for the generic-api-key rule on the METRICS object property named "key".
 4a7acd5279cc3d6eb0cc972c5ee7fe16f3267f57:src/geo-alerts.js:generic-api-key:7
 bc43c35c103060776954be8940cbafa60d6b9a62:src/geo-alerts.js:generic-api-key:7
+cc01682a21e51b26528916f0ebe60f2e02e80c75:src/geo-alerts.js:generic-api-key:8
