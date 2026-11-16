@@ -317,7 +317,30 @@ REVOKE ALL ON FUNCTION searqon.issue_magic_link(text, bytea, timestamptz) FROM P
 REVOKE ALL ON FUNCTION searqon.consume_magic_link_and_create_session(bytea, bytea, timestamptz) FROM PUBLIC;
 REVOKE ALL ON FUNCTION searqon.lookup_session(bytea) FROM PUBLIC;
 REVOKE ALL ON FUNCTION searqon.revoke_session(bytea) FROM PUBLIC;
-REVOKE ALL ON FUNCTION searqon.consume_auth_rate_limit(bytea, integer, integer) FROM PUBLIC;
+CREATE OR REPLACE FUNCTION searqon.consume_auth_email_rate_limit(p_key_hash bytea)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = pg_catalog, searqon
+AS $
+  SELECT searqon.consume_auth_rate_limit(p_key_hash, 5, 900)
+$;
+
+CREATE OR REPLACE FUNCTION searqon.consume_auth_ip_rate_limit(p_key_hash bytea)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = pg_catalog, searqon
+AS $
+  SELECT searqon.consume_auth_rate_limit(p_key_hash, 10, 900)
+$;
+
+REVOKE ALL ON FUNCTION searqon.consume_auth_rate_limit(bytea, integer, integer) FROM PUBLIC, searqon_app;
+REVOKE ALL ON FUNCTION searqon.consume_auth_email_rate_limit(bytea) FROM PUBLIC;
+REVOKE ALL ON FUNCTION searqon.consume_auth_ip_rate_limit(bytea) FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION searqon.consume_auth_email_rate_limit(bytea) TO searqon_app;
+GRANT EXECUTE ON FUNCTION searqon.consume_auth_ip_rate_limit(bytea) TO searqon_app;
 
 GRANT EXECUTE ON FUNCTION searqon.register_account(text, text, text, text, bytea, timestamptz) TO searqon_app;
 GRANT EXECUTE ON FUNCTION searqon.issue_magic_link(text, bytea, timestamptz) TO searqon_app;
