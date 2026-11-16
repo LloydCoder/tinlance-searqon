@@ -108,3 +108,8 @@ Accepted direction: modular TypeScript-first architecture; evidence-ledger metho
 - Robots Exclusion Protocol: RFC 9309 defines crawler access guidance; it is not an authorization or access-control mechanism: https://www.rfc-editor.org/rfc/rfc9309.html
 - llms.txt: the llmstxt.org document is a community proposal. Searqon treats it as an optional artifact and makes no guarantee that engines consume it: https://llmstxt.org/
 - NIST SP 800-88 Rev. 2: media sanitization program guidance, including cryptographic erase considerations: https://csrc.nist.gov/pubs/sp/800/88/r2/final
+
+
+### Agent Artifact Compiler — current implementation
+
+The first local compiler increment is implemented in `src/artifact-compiler.js`. It normalizes caller-supplied Markdown, canonicalizes OpenAPI JSON, reuses passive analyzer findings, records source/evidence digests, optionally emits a derived `llms.txt` proposal and produces bounded deterministic diffs. The CLI command is `searqon artifacts compile`. It is deliberately side-effect-free: no repository acquisition, filesystem patch application, GitHub branch/PR, merge or publication. See [the module contract](MODULE_CONTRACTS.md#c-agent-artifact-compiler). The full Phase 10 GitHub adapter and repository-scope authorization remain future work.
