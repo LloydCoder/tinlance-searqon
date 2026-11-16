@@ -5,7 +5,15 @@
   "description": "Open-source toolkit for AI discoverability and agent readiness",
   "license": "Apache-2.0",
   "type": "module",
-  "engines": { "node": ">=22" },
-  "bin": { "searqon": "./src/cli.js" },
-  "scripts": { "test": "node --test", "scan": "node src/cli.js scan" }
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "searqon": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "scan": "node src/cli.js scan",
+    "dev:web": "node apps/web/server.js"
+  }
 }
