@@ -80,3 +80,21 @@ test("lists registered migration edges without exposing mutable registry state",
   assert.equal(Object.isFrozen(migrations), true);
   assert.equal(Object.isFrozen(migrations[0]), true);
 });
+
+test("preserves schemaVersion through every migration edge", () => {
+  const registry = new ContractMigrationRegistry();
+  registry.register({ contract: "report", fromVersion: "1.0.0", toVersion: "2.0.0", migrate: value => ({ summary: value.summary }) });
+  assert.throws(
+    () => registry.migrate("report", { schemaVersion: "1.0.0", summary: "ok" }, { fromVersion: "1.0.0", toVersion: "2.0.0" }),
+    /must preserve schemaVersion/
+  );
+});
+
+test("rejects sparse arrays and non-JSON values inside records", () => {
+  const registry = new ContractMigrationRegistry();
+  registry.register({ contract: "report", fromVersion: "1.0.0", toVersion: "2.0.0", migrate: value => ({ ...value, schemaVersion: "2.0.0" }) });
+  const sparse = [];
+  sparse.length = 1;
+  assert.throws(() => registry.migrate("report", { items: sparse }, { fromVersion: "1.0.0", toVersion: "2.0.0" }), /JSON-compatible/);
+  assert.throws(() => registry.migrate("report", { value: Number.NaN }, { fromVersion: "1.0.0", toVersion: "2.0.0" }), /JSON-compatible/);
+});
