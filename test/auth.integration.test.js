@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createDatabase } from "../src/platform/database.js";
 import { createAuthService, AuthError } from "../src/platform/auth.js";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.SEARQON_RUNTIME_DATABASE_URL ?? process.env.DATABASE_URL;
 let isDisposableDatabase = false;
 if (databaseUrl && process.env.SEARQON_TEST_DATABASE === "1") {
   try {
@@ -64,19 +64,7 @@ test("passwordless auth completes registration, token replacement, session looku
     assert.deepEqual(await auth.logout(session.sessionToken), { revoked: true });
     assert.equal(await auth.getProfile(session.sessionToken), null);
   } finally {
-    // This test is enabled only against an explicitly marked disposable *_test or *_ci database.
-    // TRUNCATE bypasses row DELETE triggers while retaining the production append-only audit invariant.
-    await database.pool.query(`TRUNCATE TABLE
-      searqon.audit_events,
-      searqon.assessments,
-      searqon.projects,
-      searqon.sessions,
-      searqon.auth_tokens,
-      searqon.auth_rate_limits,
-      searqon.memberships,
-      searqon.organizations,
-      searqon.app_users
-      RESTART IDENTITY CASCADE`);
+    // Records remain only in the explicitly disposable *_test / *_ci database.
     await database.close();
   }
 });
