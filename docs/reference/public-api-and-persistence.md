@@ -15,6 +15,7 @@
 | `src/evidence-checkpoint.js` | `createEvidenceLedgerCheckpoint(...)`, `verifyEvidenceLedgerCheckpoint(...)`, checkpoint version | Detached Ed25519 signatures; trusted verification depends on independent public-key custody. |
 | `src/geo.js` | `analyzeGeoObservation(input)`, `aggregateGeoObservations(items, options)`, `GEO_OBSERVATION_CLASSES` | Supplied observation processing only. No provider querying, consumer-interface scraping, scheduler or history service. |
 | `src/report-html.js` | `renderHtmlReport(report)`, `escapeHtml(value)` | Deterministic local HTML rendering; no hosted report service. |
+| `src/contract-migrations.js` | `ContractMigrationRegistry` | Explicit synchronous JSON transformations between registered versions; rejects unknown or ambiguous paths. Does not validate schemas, persist migrations or claim losslessness. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
@@ -36,7 +37,7 @@ CLI output is JSON (or HTML for `report`); `--out` creates a new file and refuse
 
 ## Version selection and migration
 
-The registry is authoritative for the exact schema identity and contract version. Producers must emit the version they actually implement. Consumers must reject unknown versions rather than assume the latest. Published schemas are immutable; breaking changes require a new major version. No implicit migration or lossy coercion is supported. Every future migration must have a named source/target pair, deterministic transformation, provenance preservation, and explicit loss/round-trip tests.
+The registry is authoritative for the exact schema identity and contract version. Producers must emit the version they actually implement. Consumers must reject unknown versions rather than assume the latest. Published schemas are immutable; breaking changes require a new major version. No implicit migration or lossy coercion is supported. The local `ContractMigrationRegistry` requires explicit source/target versions, rejects ambiguous paths, clones and freezes transform input, and enforces JSON-compatible output. It does not validate JSON Schemas, persist migrations or prove transform determinism/losslessness. Every real migration must have named schema identities, provenance-preserving fixture tests, consumer compatibility tests and explicit loss/round-trip review. See [contract migration registry](contract-migrations.md).
 
 ## Security boundary
 

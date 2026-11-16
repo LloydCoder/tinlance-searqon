@@ -24,6 +24,7 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [MCP snapshot schema](../schemas/mcp-snapshot.schema.json)
 - [Versioned contract registry](../schemas/contract-registry.json)
 - [Public API and persistence boundaries](reference/public-api-and-persistence.md)
+- [Explicit contract migration registry](reference/contract-migrations.md)
 - [Remote scan result schema](../schemas/remote-scan-result.schema.json)
 
 ## Project operations
