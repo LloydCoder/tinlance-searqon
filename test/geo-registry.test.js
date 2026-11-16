@@ -221,3 +221,20 @@ test("prompt cohort pins the exact Brand Truth Registry revision", () => {
   assert.notEqual(a.registryContentDigest, b.registryContentDigest);
   assert.notEqual(a.cohortId, b.cohortId);
 });
+
+
+test("brand domains and provenance sources reject private or reserved destinations", () => {
+  assert.throws(() => createBrandTruthRegistry({
+    brandName: "Local", primaryDomain: "127.0.0.1", assertedBy: "owner",
+    createdAt: "2026-11-16T12:00:00.000Z"
+  }), /public|reserved|domain/i);
+  assert.throws(() => createBrandTruthRegistry({
+    brandName: "Local", primaryDomain: "brand.local", assertedBy: "owner",
+    createdAt: "2026-11-16T12:00:00.000Z"
+  }), /public|reserved|domain/i);
+  assert.throws(() => createBrandTruthRegistry({
+    brandName: "Brand", primaryDomain: "brand.com", assertedBy: "owner",
+    createdAt: "2026-11-16T12:00:00.000Z",
+    facts: [{ attribute: "source", value: "x", statement: "x", status: "owner_asserted", sourceUrls: ["https://127.0.0.1/private"] }]
+  }), /public|reserved|target/i);
+});
