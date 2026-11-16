@@ -11,7 +11,7 @@ function fakeDatabase({ rateAllowed = true, registerRows, issueRows, verifyRows,
     async query(sql, values) {
       calls.push({ sql, values, transaction: true });
       if (sql.includes("FROM searqon.app_users")) return { rows: [{ id: USER_ID, email: "user@example.test", display_name: "User", email_verified_at: new Date() }] };
-      if (sql.includes("FROM searqon.organizations")) return { rows: [{ id: ORG_ID, name: "Workspace", slug: "workspace", role: "owner" }] };
+      if (sql.includes("JOIN searqon.organizations")) return { rows: [{ id: ORG_ID, name: "Workspace", slug: "workspace", role: "owner" }] };
       return { rows: [] };
     },
     release() {}
