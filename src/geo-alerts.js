@@ -133,7 +133,7 @@ function compareMetric(cohort, metric, baseline, current, policy, evaluatedAt) {
     alertId,
     dedupeKey,
     type: metric.metricName === "mention" ? "mention_change" : "brand_citation_change",
-    metric: metric.key,
+    metric: metric.metricName,
     label: metric.label,
     direction,
     severity,
