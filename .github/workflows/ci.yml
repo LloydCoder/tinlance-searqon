@@ -38,6 +38,12 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
@@ -46,6 +52,8 @@ jobs:
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file db/migrations/0001_platform_core.sql
       - name: Verify row-level tenant isolation and append-only audit
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file db/tests/tenant-isolation.sql
+      - name: Verify Node.js tenant transactions against PostgreSQL
+        run: node --test test/database.integration.test.js
 
   test:
     name: Tests and package validation (Node ${{ matrix.node-version }})
