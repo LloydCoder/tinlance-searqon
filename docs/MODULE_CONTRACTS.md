@@ -64,6 +64,8 @@ Every module emits versioned schema-valid outputs; records source/evidence IDs, 
 8. Outages, rate limits, partial samples and stale baselines create degraded states, not false hijack alerts.
 9. Labelled evaluation fixtures quantify false positives before release.
 
+**Current implementation increment (not full acceptance):** the local toolkit now compares supplied aggregate snapshots using exact provider/locale/observation-class dimensions, minimum sample/effect thresholds, non-overlapping Wilson 95% intervals, deduplication and cooldown metadata. A raw-observation detector emits evidence-linked citation-domain disappearance events for one comparable cohort. HMAC-signed event envelopes, bounded delivery receipts and Slack/Teams/PagerDuty payload builders are available. This does not yet provide durable alert state, replay storage, source-domain replacement/order events, live collection, outbound delivery, retry queues or labelled false-positive evaluation. The interval rule is a conservative screen, not a multiple-comparison-corrected significance test.
+
 ## C. Agent Artifact Compiler
 
 **Input:** authorized repository/revision or documentation scope; OpenAPI/MCP source material; output profile; scoped repository permission.
