@@ -13,7 +13,9 @@
     "summary",
     "events",
     "suppressed",
-    "evaluations"
+    "evaluations",
+    "observationLagSeconds",
+    "observationFreshness"
   ],
   "properties": {
     "schemaVersion": {
@@ -35,7 +37,8 @@
       "required": [
         "minimumSamples",
         "minimumAbsoluteChange",
-        "confidenceMethod"
+        "confidenceMethod",
+        "maxObservationAgeSeconds"
       ],
       "properties": {
         "minimumSamples": {
@@ -49,6 +52,11 @@
         },
         "confidenceMethod": {
           "const": "wilson_95_non_overlap"
+        },
+        "maxObservationAgeSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 604800
         }
       }
     },
@@ -126,6 +134,16 @@
       "items": {
         "type": "object"
       }
+    },
+    "observationLagSeconds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "observationFreshness": {
+      "enum": [
+        "fresh",
+        "stale"
+      ]
     }
   },
   "$defs": {
