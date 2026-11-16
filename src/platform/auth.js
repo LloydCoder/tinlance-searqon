@@ -106,10 +106,14 @@ export function createAuthService({
     }
   }
 
-  async function deliverMagicLink(email, token, tokenId) {
+  function ensureEmailAvailable() {
     if (emailSender.available === false) {
       throw new AuthError(503, "email_not_configured", "Sign-in email delivery is not configured for this environment.");
     }
+  }
+
+  async function deliverMagicLink(email, token, tokenId) {
+    ensureEmailAvailable();
     const url = new URL("/auth/verify/", origin);
     url.hash = "token=" + token;
     try {
@@ -146,6 +150,7 @@ export function createAuthService({
       const email = normalizeEmail(input.email);
       const displayName = boundedText(input.displayName, "Display name", 120);
       const organizationName = boundedText(input.organizationName, "Organization name", 160);
+      ensureEmailAvailable();
       await enforceRateLimits(email, ipAddress);
 
       const token = randomBytes(32).toString("base64url");
@@ -170,6 +175,7 @@ export function createAuthService({
 
     async requestMagicLink(rawEmail, ipAddress) {
       const email = normalizeEmail(rawEmail);
+      ensureEmailAvailable();
       await enforceRateLimits(email, ipAddress);
       await issueMagicLink(email);
       // Identical response whether the address is registered or not.
