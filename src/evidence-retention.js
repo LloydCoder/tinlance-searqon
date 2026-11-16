@@ -1,3 +1,5 @@
+import { verifyEvidenceRecord } from "./evidence.js";
+
 export const EVIDENCE_RETENTION_POLICY_VERSION = "1.0.0";
 const MAX_RETENTION_DAYS = 36_500;
 const DAY_MS = 86_400_000;
@@ -38,17 +40,12 @@ export function evaluateEvidenceRetention(records, { retentionDays, now } = {}) 
   const retained = [];
 
   for (const record of records) {
-    if (!record || typeof record !== "object" || Array.isArray(record)) {
-      throw new TypeError("each evidence record must be an object");
-    }
-    if (typeof record.id !== "string" || !record.id.trim()) {
-      throw new TypeError("each evidence record must have a non-empty evidence id");
+    const verification = verifyEvidenceRecord(record);
+    if (!verification.valid) {
+      throw new TypeError("invalid evidence record: " + verification.errors.join(", "));
     }
     if (seenIds.has(record.id)) throw new Error("duplicate evidence identifier: " + record.id);
     seenIds.add(record.id);
-    if (!isCanonicalUtcTimestamp(record.collectedAt)) {
-      throw new TypeError("each evidence record collectedAt must be a canonical ISO 8601 UTC timestamp");
-    }
 
     const expiryMs = Date.parse(record.collectedAt) + retentionDays * DAY_MS;
     const expiryDate = new Date(expiryMs);
