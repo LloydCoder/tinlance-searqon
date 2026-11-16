@@ -48,3 +48,8 @@ The API returns the existing v1 assessment report, including evidence metadata, 
 A hosted product requires separate, reviewed work for identity and session management, organization/tenant authorization, durable Postgres persistence, job orchestration, quotas and rate limits, encryption/key management, audit events, data lifecycle enforcement, backups/recovery, provider adapters and operational controls. Tenant isolation must be enforced in the database and every API/worker boundary. These concerns must not be simulated with browser-only state or hard-coded demo accounts.
 
 The complete hosted product belongs in this same Searqon repository. Keep the open-source/local toolkit independently usable through modular boundaries and configuration, while implementing hosted identity, tenant persistence, billing and operations as internal packages and deployable applications in this codebase. Do not create a separate Searqon Cloud repository.
+
+
+## Passwordless authentication
+
+The same repository includes email-based registration, one-time magic-link login, server-side sessions, same-origin checks, cookie handling and an authenticated workspace shell. See [the authentication security and operations guide](AUTHENTICATION.md). Authentication is enabled only when a PostgreSQL runtime URL is configured. Email delivery uses Resend when configured; local-only console delivery requires explicit `SEARQON_EMAIL_MODE=console`. Project and assessment screens remain honest empty states until their persistence/API routes are implemented.
