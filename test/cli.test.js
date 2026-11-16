@@ -231,16 +231,16 @@ test("CLI detects evidence-linked citation disappearance from raw local GEO coho
         targetDomain: "searqon.com",
         citations: ["https://searqon.com/docs"],
         provider: { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
-        sampledAt: "2026-11-10T12:0" + index + ":00.000Z"
+        sampledAt: "2026-11-10T12:00:00.000Z"
       })),
-      current: Array.from({ length: 3 }, (_, index) => ({
+      current: Array.from({ length: 30 }, (_, index) => ({
         prompt: "Which tools help teams discover documentation? " + index,
         answer: "Searqon is a platform for discoverability.",
         brand: "Searqon",
         targetDomain: "searqon.com",
         citations: ["https://competitor.example/guide"],
         provider: { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
-        sampledAt: "2026-11-16T12:0" + index + ":00.000Z"
+        sampledAt: "2026-11-16T12:00:00.000Z"
       })),
       observedAt: "2026-11-16T13:00:00.000Z",
       policy: { minimumSamples: 20, minimumAbsoluteChange: 0.2 }
