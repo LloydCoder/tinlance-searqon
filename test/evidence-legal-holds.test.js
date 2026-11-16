@@ -92,5 +92,5 @@ test("requires explicit event arrays and a trusted verification key for non-empt
   const keys = generateKeyPairSync("ed25519");
   const hold = event(keys);
   assert.throws(() => deriveActiveEvidenceHolds(hold, keys.publicKey), /array/);
-  assert.throws(() => deriveActiveEvidenceHolds([hold]), /public key/);
+  assert.throws(() => deriveActiveEvidenceHolds([hold]), /invalid_public_key/);
 });
