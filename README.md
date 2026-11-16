@@ -39,7 +39,7 @@ flowchart TD
 
 ## Product direction
 
-Searqon's four-discipline foundation (SEO, AEO, GEO and AgEO) is being extended with an owner-attested Brand Truth Registry, deterministic locale/market prompt cohorts and policy-reviewed, cost-bounded GEO sampling plans. Deterministic, registry-relative brand-claim and citation defense now emits human-review correction manifests; citation-change alerts, machine-readable artifact generation and isolated agent-journey simulation remain planned modules. See the [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md) and [16-phase roadmap](docs/ROADMAP_16_PHASE.md). GEO snapshot comparisons are available through `searqon geo alerts`; see the [alert guide](docs/how-to/compare-geo-snapshots-and-alerts.md).
+Searqon's four-discipline foundation (SEO, AEO, GEO and AgEO) is being extended with an owner-attested Brand Truth Registry, deterministic locale/market prompt cohorts and policy-reviewed, cost-bounded GEO sampling plans. Deterministic, registry-relative brand-claim and citation defense now emits human-review correction manifests. GEO snapshot alerts and evidence-linked citation-domain disappearance detection are implemented for supplied observations; live collection, durable delivery, machine-readable artifact generation and isolated agent-journey simulation remain planned. See the [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md) and [16-phase roadmap](docs/ROADMAP_16_PHASE.md). GEO snapshot comparisons are available through `searqon geo alerts`; see the [alert guide](docs/how-to/compare-geo-snapshots-and-alerts.md).
 
 ## Why Searqon
 
