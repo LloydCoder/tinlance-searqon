@@ -13,6 +13,8 @@ Searqon measures and improves how businesses are discovered, represented and saf
 
 ## Architecture
 
+Published v1 contracts are enumerated in [schemas/contract-registry.json](../schemas/contract-registry.json). The registry records exact schema identities, version-field semantics, consumers and compatibility policy. The supported programmatic and persistence boundaries are documented in [Public API and Persistence Boundaries](reference/public-api-and-persistence.md); this is a local toolkit contract, not a hosted API.
+
 1. Domain contracts: versioned assessments, observations, findings, evidence, confidence, recommendation and action states.
 2. Acquisition gateway: bounded, policy-compliant public HTTP acquisition with SSRF, redirect, DNS and parser isolation controls.
 3. Evidence ledger: provenance from source and acquisition through parser, methodology, assessment, recommendation and verification.

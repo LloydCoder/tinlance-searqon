@@ -4,6 +4,8 @@ Status: normative requirements for future implementation. A contract is not evid
 
 ## Shared contract
 
+Current published schema identities and version selection are governed by [the contract registry](../schemas/contract-registry.json). Current CLI/programmatic entry points and local persistence limitations are documented in [Public API and Persistence Boundaries](reference/public-api-and-persistence.md). These are implemented boundaries, not promises of hosted API availability.
+
 Every module emits versioned schema-valid outputs; records source/evidence IDs, observation class, timestamps, methodology version, scope and limitations; separates observed facts from inference; explains confidence; bounds input/output/time/concurrency/retries/cost; supports disabled/no-op mode; applies data minimization, retention, deletion and redaction; and has unit, integration, adversarial and regression tests.
 
 ## A. Hallucination & Citation Defense

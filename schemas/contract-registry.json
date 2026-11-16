@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "registryVersion": "1.0.0",
+  "compatibilityPolicy": {
+    "schemaDialect": "2020-12",
+    "immutablePublishedVersions": true,
+    "breakingChangeRule": "Publish a new major contract version and retain the previous schema for historical validation.",
+    "enumExpansionRule": "Treat enum expansion as breaking for strict consumers; publish a new major contract version.",
+    "additionalPropertiesRule": "Schemas currently using additionalProperties=false reject unknown fields. Additive fields are not assumed backward-compatible; validate against an explicitly selected contract version.",
+    "migrationRule": "No implicit migration. Every migration must identify source and target versions, be deterministic, preserve evidence provenance, and include round-trip or documented-loss tests.",
+    "unknownVersionRule": "Reject unknown contract versions; never silently coerce to the latest schema."
+  },
+  "contracts": [
+    {
+      "name": "evidence-record",
+      "file": "evidence-record.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/evidence-record/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": null,
+      "status": "stable",
+      "consumers": [
+        "evidence-ledger-entry",
+        "assessment-report",
+        "geo-observation"
+      ],
+      "notes": "Version is carried by schema identity; record shape itself has no schemaVersion field."
+    },
+    {
+      "name": "assessment-report",
+      "file": "assessment-report.schema.json",
+      "schemaId": "https://tinlance.com/schemas/searqon-assessment-report-1.0.0.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "local-cli",
+        "remote-scan-result"
+      ],
+      "notes": "Contains nested evidence metadata; its observationClass must remain aligned with evidence-record v1."
+    },
+    {
+      "name": "geo-observation",
+      "file": "geo-observation.schema.json",
+      "schemaId": "https://tinlance.com/schemas/searqon-geo-observation-1.0.0.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "geo-analysis",
+        "geo-aggregation"
+      ],
+      "notes": "GEO observationClass is a strict subset of evidence-record v1."
+    },
+    {
+      "name": "remote-scan-result",
+      "file": "remote-scan-result.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/remote-scan-result/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "remote-scan-cli"
+      ],
+      "notes": "References assessment-report.schema.json for nested assessment."
+    },
+    {
+      "name": "evidence-ledger-entry",
+      "file": "evidence-ledger-entry.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/evidence-ledger-entry/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "evidence-ledger"
+      ],
+      "notes": "Append-only logical ledger entry; local store limitations are documented separately."
+    },
+    {
+      "name": "evidence-ledger-checkpoint",
+      "file": "evidence-ledger-checkpoint.schema.json",
+      "schemaId": "https://tinlance.com/schemas/evidence-ledger-checkpoint-1.0.0.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "evidence-ledger-checkpoint"
+      ],
+      "notes": "Detached Ed25519 checkpoint; signature trust depends on out-of-band public-key custody."
+    },
+    {
+      "name": "mcp-snapshot",
+      "file": "mcp-snapshot.schema.json",
+      "schemaId": "https://tinlance.com/schemas/searqon-mcp-snapshot-1.1.0.json",
+      "contractVersion": "1.1.0",
+      "versionField": null,
+      "status": "stable",
+      "consumers": [
+        "passive-agent-readiness-scanner"
+      ],
+      "notes": "Caller-supplied normalized MCP metadata snapshot; no network connection or tool invocation."
+    }
+  ]
+}
