@@ -40,7 +40,7 @@ signOut?.addEventListener("click", async () => {
     await fetch("/api/v1/auth/logout", {
       method: "POST",
       credentials: "same-origin",
-      headers: { origin: window.location.origin }
+      headers: {}
     });
   } finally {
     window.location.replace("/auth/login/");
