@@ -107,6 +107,9 @@ export function createAuthService({
   }
 
   async function deliverMagicLink(email, token, tokenId) {
+    if (emailSender.available === false) {
+      throw new AuthError(503, "email_not_configured", "Sign-in email delivery is not configured for this environment.");
+    }
     const url = new URL("/auth/verify/", origin);
     url.hash = "token=" + token;
     try {
