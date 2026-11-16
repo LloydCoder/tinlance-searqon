@@ -27,6 +27,7 @@ export function createEmailSender({
   if (apiKey && from) {
     if (typeof fetchImpl !== "function") throw new TypeError("A fetch implementation is required.");
     return {
+      available: true,
       async sendMagicLink({ to, url, idempotencyKey }) {
         if (typeof to !== "string" || typeof url !== "string" || typeof idempotencyKey !== "string") {
           throw new TypeError("A recipient, URL and idempotency key are required.");
@@ -59,6 +60,7 @@ export function createEmailSender({
 
   if (mode === "console" && nodeEnv !== "production") {
     return {
+      available: true,
       async sendMagicLink({ to, url, idempotencyKey }) {
         logger({
           event: "searqon_magic_link_local_only",
@@ -72,6 +74,7 @@ export function createEmailSender({
   }
 
   return {
+    available: false,
     async sendMagicLink() {
       throw new EmailDeliveryError("email_not_configured");
     }
