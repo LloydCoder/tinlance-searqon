@@ -28,7 +28,11 @@ Open `http://127.0.0.1:4173`. For a production process manager, use `npm run sta
 | `/api/v1/assessments` | POST | Analyze caller-supplied HTML, Markdown or OpenAPI JSON; requires authentication in production |
 | Other `/api/*` | Any | Structured 404 response |
 
-The assessment request is JSON:
+Project and assessment routes require a valid passwordless session. Project creation and assessment writes require an exact same-origin `Origin` header. Organization membership is derived from the authenticated session and enforced again by PostgreSQL row-level security; request-supplied organization IDs are selectors, not authorization. `owner`, `admin` and `analyst` roles may create projects and assessments; `viewer` is read-only. Project target URLs pass the existing public HTTP(S) URL policy before persistence. This endpoint does not fetch the target URL.
+
+Project assessments accept caller-supplied HTML, Markdown, OpenAPI JSON or normalized MCP metadata snapshots up to 2 MiB. Reports are stored with project/organization IDs, requester identity, status, methodology version, evidence record and append-only audit event. Execution is synchronous in this increment; there is no worker queue or scheduler. The legacy `/api/v1/assessments` route remains local-only analysis and is not a persisted hosted project assessment.
+
+The local document assessment request is JSON:
 
 ```json
 {
