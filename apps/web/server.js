@@ -89,7 +89,7 @@ function isSameOrigin(request, expectedOrigin) {
   return typeof request.headers.origin === "string" && request.headers.origin === expectedOrigin;
 }
 function requireJsonContentType(request, response) {
-  if (/^application\\/json(?:\\s*;|$)/i.test(request.headers["content-type"] ?? "")) return true;
+  if (/^application\/json(?:\s*;|$)/i.test(request.headers["content-type"] ?? "")) return true;
   sendJson(response, 415, { error: { code: "unsupported_media_type", message: "Send an application/json request body." } });
   return false;
 }
