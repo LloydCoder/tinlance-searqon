@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.com/schemas/geo-citation-change-report.schema.json",
+  "title": "Searqon GEO Citation Change Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "type",
+    "methodologyVersion",
+    "observedAt",
+    "policy",
+    "cohort",
+    "events",
+    "suppressed",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "type": {
+      "const": "geo_citation_change_report"
+    },
+    "methodologyVersion": {
+      "const": "geo-citation-change-2026-11-16.1"
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumSamples",
+        "minimumAbsoluteChange"
+      ],
+      "properties": {
+        "minimumSamples": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 1000
+        },
+        "minimumAbsoluteChange": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observationClass",
+        "provider",
+        "brand",
+        "targetDomain"
+      ],
+      "properties": {
+        "observationClass": {
+          "enum": [
+            "consumer_observation",
+            "model_api"
+          ]
+        },
+        "provider": {
+          "type": "object"
+        },
+        "brand": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "targetDomain": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "schemaVersion",
+          "type",
+          "changeType",
+          "citationUrl",
+          "provider",
+          "observationClass",
+          "brand",
+          "targetDomain",
+          "baselineSampleSize",
+          "currentSampleSize",
+          "baselineCitationCount",
+          "currentCitationCount",
+          "baselineRate",
+          "currentRate",
+          "delta",
+          "baselineInterval",
+          "currentInterval",
+          "baselineEvidenceIds",
+          "currentEvidenceIds",
+          "observedAt",
+          "limitations"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "pattern": "^geo_change_[a-f0-9]{24}$"
+          },
+          "schemaVersion": {
+            "const": "1.0.0"
+          },
+          "type": {
+            "const": "geo_citation_change"
+          },
+          "changeType": {
+            "enum": [
+              "citation_disappearance",
+              "citation_appearance",
+              "citation_prevalence_change"
+            ]
+          },
+          "citationUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "provider": {
+            "type": "object"
+          },
+          "observationClass": {
+            "enum": [
+              "consumer_observation",
+              "model_api"
+            ]
+          },
+          "brand": {
+            "type": "string"
+          },
+          "targetDomain": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "baselineSampleSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "currentSampleSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "baselineCitationCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currentCitationCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "baselineRate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "currentRate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "delta": {
+            "type": "number",
+            "minimum": -1,
+            "maximum": 1
+          },
+          "baselineInterval": {
+            "$ref": "#/$defs/interval"
+          },
+          "currentInterval": {
+            "$ref": "#/$defs/interval"
+          },
+          "baselineEvidenceIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^evidence_[a-f0-9]{20}$"
+            }
+          },
+          "currentEvidenceIds": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^evidence_[a-f0-9]{20}$"
+            }
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "limitations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "suppressed": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparedCitations",
+        "eventCount",
+        "suppressedCount"
+      ],
+      "properties": {
+        "comparedCitations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "eventCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "suppressedCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lower",
+        "upper"
+      ],
+      "properties": {
+        "lower": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "upper": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+}
