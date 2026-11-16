@@ -6,6 +6,7 @@ Searqon provides a deterministic retention evaluator for evidence metadata. It c
 
 ```js
 import { evaluateEvidenceRetention } from "./src/evidence-retention.js";
+import { createEvidenceLegalHoldEvent } from "./src/evidence-legal-holds.js";
 
 const decision = evaluateEvidenceRetention(records, {
   retentionDays: 90,
@@ -15,7 +16,7 @@ const decision = evaluateEvidenceRetention(records, {
 
 The caller must supply the evaluation time. The evaluator accepts canonical UTC ISO 8601 timestamps, requires a positive integer retention interval (maximum 36,500 days), rejects duplicate evidence IDs, and calculates expiry as collectedAt plus the configured number of 24-hour days. A record is eligible when its expiry instant is less than or equal to the supplied evaluation time.
 
-The result includes policy version, evaluation time, retention interval, sorted metadata-only eligible/retained lists and counts. It does not return source labels, URLs, hashes or payloads.
+The result includes policy version, evaluation time, retention interval, sorted metadata-only eligible/retained lists, a `held` subset and counts. Active legal holds are verified against a caller-supplied Ed25519 public key and are never marked purge-eligible. It does not return source labels, URLs, hashes or payloads.
 
 ## Critical limitations
 
@@ -25,4 +26,4 @@ The result includes policy version, evaluation time, retention interval, sorted 
 - Secure media sanitization cannot be claimed from unlinking or rewriting a local file. A storage-specific sanitization and verification process is required.
 - No retention interval is globally hard-coded. The product owner or data controller must choose policy by data category and applicable obligations.
 
-The evaluator is intentionally a pure policy decision. Physical deletion, cryptographic erasure, signed redaction events, legal holds, audit custody and backup expiration remain separate Phase 5 controls. An offline recovery-bundle integrity gate is available through `verifyEvidenceRecoveryBundle`; it validates the restored ledger and redaction journal against independent checkpoints but does not perform restoration or prove backup completeness. See NIST SP 800-88 Rev. 2 for media-sanitization program guidance: https://csrc.nist.gov/pubs/sp/800/88/r2/final.
+The evaluator is intentionally a pure policy decision. Physical deletion, cryptographic erasure, audit custody and backup expiration remain separate Phase 5 controls. Signed legal-hold events are described in [evidence legal holds](evidence-legal-holds.md). An offline recovery-bundle integrity gate is available through `verifyEvidenceRecoveryBundle`; it validates the restored ledger and redaction journal against independent checkpoints but does not perform restoration or prove backup completeness. See NIST SP 800-88 Rev. 2 for media-sanitization program guidance: https://csrc.nist.gov/pubs/sp/800/88/r2/final.
