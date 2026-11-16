@@ -218,3 +218,38 @@ test("CLI builds a cohort-safe GEO alert report from local aggregate snapshots",
     assert.equal(report.alerts.length, 2);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("CLI detects evidence-linked citation disappearance from raw local GEO cohorts", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-citation-changes-"));
+  try {
+    const input = join(dir, "citation-changes.json");
+    await writeFile(input, JSON.stringify({
+      baseline: Array.from({ length: 3 }, (_, index) => ({
+        prompt: "Which tools help teams discover documentation? " + index,
+        answer: "Searqon is a platform for discoverability.",
+        brand: "Searqon",
+        targetDomain: "searqon.com",
+        citations: ["https://searqon.com/docs"],
+        provider: { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
+        sampledAt: "2026-11-10T12:0" + index + ":00.000Z"
+      })),
+      current: Array.from({ length: 3 }, (_, index) => ({
+        prompt: "Which tools help teams discover documentation? " + index,
+        answer: "Searqon is a platform for discoverability.",
+        brand: "Searqon",
+        targetDomain: "searqon.com",
+        citations: ["https://competitor.example/guide"],
+        provider: { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
+        sampledAt: "2026-11-16T12:0" + index + ":00.000Z"
+      })),
+      observedAt: "2026-11-16T13:00:00.000Z",
+      policy: { minimumSamples: 2, minimumAbsoluteChange: 0.2 }
+    }));
+    const result = spawnSync(process.execPath, [cli.pathname, "geo", "citation-changes", input], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.type, "geo_citation_change_report");
+    assert.equal(report.events.length, 1);
+    assert.equal(report.events[0].changeType, "citation_disappearance");
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
