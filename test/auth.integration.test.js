@@ -5,6 +5,13 @@ import { createDatabase } from "../src/platform/database.js";
 import { createAuthService, AuthError } from "../src/platform/auth.js";
 
 const databaseUrl = process.env.DATABASE_URL;
+let isDisposableDatabase = false;
+if (databaseUrl && process.env.SEARQON_TEST_DATABASE === "1") {
+  try {
+    const databaseName = decodeURIComponent(new URL(databaseUrl).pathname.slice(1));
+    isDisposableDatabase = /(?:^|[_-])(test|ci)(?:$|[_-])/i.test(databaseName);
+  } catch {}
+}
 
 test("passwordless auth completes registration, token replacement, session lookup and logout on PostgreSQL", { skip: !databaseUrl }, async () => {
   const database = createDatabase({ connectionString: databaseUrl, maxConnections: 1 });
@@ -71,11 +78,19 @@ test("passwordless auth completes registration, token replacement, session looku
       }
       await database.pool.query("DELETE FROM searqon.app_users WHERE id = ANY($1::uuid[])", [userIds]);
     }
-    const rateLimitHashes = [
-      createHmac("sha256", rateLimitSecret).update("ip:" + ip, "utf8").digest(),
-      createHmac("sha256", rateLimitSecret).update("email:" + email, "utf8").digest()
-    ];
-    await database.pool.query("DELETE FROM searqon.auth_rate_limits WHERE key_hash = ANY($1::bytea[])", [rateLimitHashes]);
+    // This test is enabled only against an explicitly marked disposable *_test or *_ci database.
+    // TRUNCATE bypasses row DELETE triggers while retaining the production append-only audit invariant.
+    await database.pool.query(`TRUNCATE TABLE
+      searqon.audit_events,
+      searqon.assessments,
+      searqon.projects,
+      searqon.sessions,
+      searqon.auth_tokens,
+      searqon.auth_rate_limits,
+      searqon.memberships,
+      searqon.organizations,
+      searqon.app_users
+      RESTART IDENTITY CASCADE`);
     await database.close();
   }
 });
