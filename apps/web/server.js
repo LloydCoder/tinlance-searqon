@@ -379,6 +379,10 @@ export function createAppServer({ database = null, authService = null, workspace
         sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use POST." } });
         return;
       }
+      if (auth && !isSameOrigin(request, auth.publicOrigin)) {
+        sendJson(response, 403, { error: { code: "origin_rejected", message: "The request origin is not allowed." } });
+        return;
+      }
       if (process.env.NODE_ENV === "production") {
         if (!auth) {
           sendJson(response, 503, { error: { code: "assessment_unavailable", message: "Authenticated assessment service is not configured." } });
