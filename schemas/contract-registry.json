@@ -74,6 +74,30 @@
       "notes": "Detached Ed25519 checkpoint of a journal prefix; store checkpoint and trusted checkpoint public key outside the journal trust domain."
     },
     {
+      "name": "evidence-legal-hold-journal-checkpoint",
+      "file": "evidence-legal-hold-journal-checkpoint.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/evidence-legal-hold-journal-checkpoint/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "evidence-legal-hold-journal-verifier"
+      ],
+      "notes": "Detached Ed25519 checkpoint of a journal prefix; store checkpoint and trusted checkpoint public key outside the journal trust domain."
+    },
+    {
+      "name": "evidence-legal-hold-journal-entry",
+      "file": "evidence-legal-hold-journal-entry.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/evidence-legal-hold-journal-entry/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "evidence-legal-hold-store"
+      ],
+      "notes": "Hash-linked envelope around a signed legal-hold event; local persistence remains single-process and non-WORM."
+    },
+    {
       "name": "evidence-legal-hold-journal-entry",
       "file": "evidence-legal-hold-journal-entry.schema.json",
       "schemaId": "https://searqon.tinlance.com/schemas/evidence-legal-hold-journal-entry/1.0.0",
