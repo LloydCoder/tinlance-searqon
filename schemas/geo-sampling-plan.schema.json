@@ -9,6 +9,7 @@
     "type",
     "cohortId",
     "registryId",
+    "registryContentDigest",
     "createdAt",
     "sampleCount",
     "costCapUsd",
@@ -193,6 +194,10 @@
     "planId": {
       "type": "string",
       "pattern": "^sampling_[a-f0-9]{20}$"
+    },
+    "registryContentDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     }
   }
 }
