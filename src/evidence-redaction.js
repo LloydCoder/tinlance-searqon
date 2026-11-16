@@ -18,6 +18,7 @@ const MANIFEST_FIELDS = new Set([
 const EVIDENCE_ID_PATTERN = /^evidence_[a-f0-9]{20}$/;
 const ACTOR_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/;
 const REQUEST_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const MAX_REDACTION_EVIDENCE_IDS = 10_000;
 
 function isCanonicalTimestamp(value) {
   if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return false;
@@ -78,9 +79,11 @@ function validateManifestShape(manifest) {
   if (typeof manifest.approvedBy !== "string" || !ACTOR_PATTERN.test(manifest.approvedBy)) errors.push("invalid_approver");
   if (manifest.requestedBy === manifest.approvedBy) errors.push("requester_and_approver_must_be_different");
   if (!isCanonicalTimestamp(manifest.createdAt)) errors.push("invalid_created_at");
-  if (!Array.isArray(manifest.evidenceIds) || manifest.evidenceIds.length < 1) {
+  if (!Array.isArray(manifest.evidenceIds) || manifest.evidenceIds.length < 1 || manifest.evidenceIds.length > MAX_REDACTION_EVIDENCE_IDS) {
     errors.push("invalid_evidence_ids");
   } else {
+    const arrayKeys = Reflect.ownKeys(manifest.evidenceIds).filter(key => key !== "length");
+    if (arrayKeys.length !== manifest.evidenceIds.length || arrayKeys.some((key, index) => key !== String(index))) errors.push("invalid_evidence_ids");
     if (manifest.evidenceIds.some(id => typeof id !== "string" || !EVIDENCE_ID_PATTERN.test(id))) errors.push("invalid_evidence_id");
     if (new Set(manifest.evidenceIds).size !== manifest.evidenceIds.length) errors.push("duplicate_evidence_ids");
     const sorted = [...manifest.evidenceIds].sort();
@@ -89,8 +92,12 @@ function validateManifestShape(manifest) {
   if (typeof manifest.signature !== "string") {
     errors.push("invalid_signature");
   } else {
-    const decoded = Buffer.from(manifest.signature, "base64");
-    if (decoded.length !== 64 || decoded.toString("base64") !== manifest.signature) errors.push("invalid_signature_encoding");
+    if (manifest.signature.length !== 88 || !/^[A-Za-z0-9+/]{86}==$/.test(manifest.signature)) {
+      errors.push("invalid_signature_encoding");
+    } else {
+      const decoded = Buffer.from(manifest.signature, "base64");
+      if (decoded.length !== 64 || decoded.toString("base64") !== manifest.signature) errors.push("invalid_signature_encoding");
+    }
   }
   return errors;
 }
@@ -98,7 +105,7 @@ function validateManifestShape(manifest) {
 export function createEvidenceRedactionManifest(input, privateKeyInput) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new TypeError("redaction request must be an object");
   const { evidenceIds, requestId, reasonCode, requestedBy, approvedBy, createdAt } = input;
-  if (!Array.isArray(evidenceIds) || evidenceIds.length < 1) throw new TypeError("at least one evidence identifier is required");
+  if (!Array.isArray(evidenceIds) || evidenceIds.length < 1 || evidenceIds.length > MAX_REDACTION_EVIDENCE_IDS) throw new TypeError("evidenceIds must contain between 1 and 10000 identifiers");
   if (evidenceIds.some(id => typeof id !== "string" || !EVIDENCE_ID_PATTERN.test(id))) {
     throw new TypeError("invalid evidence identifier");
   }
