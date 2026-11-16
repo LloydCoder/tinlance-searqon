@@ -83,3 +83,12 @@ See [Create a governed GEO sampling plan](../how-to/create-geo-sampling-plan.md)
 - `searqon claims audit <claim-input.json> [--out <json-file>]` evaluates supplied or sentence-extracted brand claims against a versioned Brand Truth Registry and emits a correction manifest that cannot auto-publish.
 
 See [Audit brand claims and citations](../how-to/audit-brand-claims.md) for assessment semantics and limitations.
+
+
+## GEO citation-change comparison
+
+```bash
+node src/cli.js geo alerts ./citation-change-input.json --out ./citation-change-report.json
+```
+
+The JSON input contains two arrays of previously captured, validated GEO observations: `baseline` and `current`, plus a canonical UTC `observedAt` timestamp and optional policy (`minimumSamples`, `minimumAbsoluteChange`). The default minimum is 20 observations in each cohort and a 0.20 absolute citation-presence rate change. The command does not collect provider data, fetch citation URLs, schedule scans, or deliver notifications. See [the citation-change module contract](../MODULE_CONTRACTS.md#c-competitor-citation-change-detection).
