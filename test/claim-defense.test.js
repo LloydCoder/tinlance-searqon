@@ -190,3 +190,15 @@ test("citation provenance requires public HTTPS URLs", () => {
     claims: [{ text: "Searqon is an AI-search intelligence platform.", attribute: "product.category", value: "AI-search intelligence platform", citationUrls: ["http://searqon.com/about"] }]
   }), /HTTPS/i);
 });
+
+
+test("answers with no brand claims produce a valid empty report", () => {
+  const report = evaluateBrandClaims({
+    registry: makeRegistry(), observedAt,
+    answerText: "A generic answer that does not mention the tracked brand."
+  });
+  assert.equal(report.summary.totalClaims, 0);
+  assert.equal(report.results.length, 0);
+  assert.equal(report.correctionManifest.status, "clear");
+  assert.equal(report.correctionManifest.approvalRequired, false);
+});
