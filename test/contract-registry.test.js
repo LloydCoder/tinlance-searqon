@@ -44,7 +44,7 @@ test("local schema references resolve to a registered contract", async () => {
     visit(schema);
     for (const ref of refs) {
       const referenceTarget = ref.split("#", 1)[0];
-      if (/^https?:\\/\\//i.test(referenceTarget)) {
+      if (referenceTarget.startsWith("https://") || referenceTarget.startsWith("http://")) {
         const targetContract = registry.contracts.find(item => item.schemaId === referenceTarget);
         assert.ok(targetContract, contract.name + " has an unregistered absolute schema reference " + ref);
         assert.ok(registered.has(targetContract.file));
