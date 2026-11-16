@@ -206,3 +206,18 @@ test("prompt cohort deduplication is independent of duplicate input order", () =
   const reverse = createPromptCohort({ ...input, prompts: [...input.prompts].reverse() });
   assert.deepEqual(forward, reverse);
 });
+
+
+test("prompt cohort pins the exact Brand Truth Registry revision", () => {
+  const base = registry();
+  const revised = createBrandTruthRegistry({
+    brandName: "Searqon", primaryDomain: "searqon.com", aliases: ["Searqon Intelligence"],
+    assertedBy: "founder-01", createdAt: "2026-11-16T12:00:00.000Z", updatedAt: "2026-11-17T12:00:00.000Z",
+    facts: [{ attribute: "product.category", value: "Updated category", statement: "Updated statement.", status: "owner_asserted" }]
+  });
+  const prompts = [{ prompt: "How do teams improve AI answer visibility?", intent: "informational", journeyStage: "awareness" }];
+  const a = createPromptCohort({ registry: base, locale: "en-CA", createdAt: "2026-11-16T12:00:00.000Z", prompts });
+  const b = createPromptCohort({ registry: revised, locale: "en-CA", createdAt: "2026-11-16T12:00:00.000Z", prompts });
+  assert.notEqual(a.registryContentDigest, b.registryContentDigest);
+  assert.notEqual(a.cohortId, b.cohortId);
+});
