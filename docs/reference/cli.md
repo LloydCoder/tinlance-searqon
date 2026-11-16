@@ -14,6 +14,7 @@ node src/cli.js <command>
 | `scan-url <public-url>` | Scan one explicitly authorized public page |
 | `geo analyze <observation.json>` | Normalize and analyze one supplied GEO observation |
 | `geo aggregate <observations.json>` | Aggregate an array of supplied GEO observations |
+| `geo alerts <baseline-current-input.json>` | Compare two supplied aggregate snapshots and generate evidence-labelled alerts |
 | `report <assessment.json>` | Render an assessment JSON file as standalone HTML |
 
 ## Local scan options
@@ -83,3 +84,12 @@ See [Create a governed GEO sampling plan](../how-to/create-geo-sampling-plan.md)
 - `searqon claims audit <claim-input.json> [--out <json-file>]` evaluates supplied or sentence-extracted brand claims against a versioned Brand Truth Registry and emits a correction manifest that cannot auto-publish.
 
 See [Audit brand claims and citations](../how-to/audit-brand-claims.md) for assessment semantics and limitations.
+
+
+## GEO change alerts
+
+```bash
+node src/cli.js geo alerts ./examples/geo-alert-input.json
+```
+
+The input contains baseline/current aggregate arrays, stable snapshot IDs, UTC timestamps and optional minimum-sample, effect-size and cooldown policy. The command emits separate mention-rate and brand-domain citation-rate evaluations. It never queries providers or sends notifications. See [Compare GEO snapshots and generate alerts](../how-to/compare-geo-snapshots-and-alerts.md).
