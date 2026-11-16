@@ -2,18 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { compileAgentArtifacts } from "../src/artifact-compiler.js";
 
-const markdown = `# API Guide
-
-Use bearer authentication.
-
-## Errors
-
-Return documented HTTP status codes.
-
-```http
-GET /v1/status
-```
-`;
+const markdown = ["# API Guide", "", "Use bearer authentication.", "", "## Errors", "", "Return documented HTTP status codes.", "", "```http", "GET /v1/status", "```", ""].join("\n");
 
 const openapi = {
   openapi: "3.2.1",
