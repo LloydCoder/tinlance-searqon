@@ -178,13 +178,14 @@ export function createPromptCohort(input) {
     }));
   }
   prompts.sort((a, b) => a.promptId.localeCompare(b.promptId));
-  const cohortId = identifier("cohort_", JSON.stringify([input.registry.registryId, locale, market, prompts.map(item => item.promptId)]));
+  const brand = Object.freeze({ name: input.registry.brand.name, primaryDomain: input.registry.brand.primaryDomain });
+  const cohortId = identifier("cohort_", JSON.stringify([input.registry.registryId, brand.name, brand.primaryDomain, locale, market, prompts.map(item => item.promptId)]));
   return Object.freeze({
     schemaVersion: "1.0.0",
     type: "geo_prompt_cohort",
     cohortId,
     registryId: input.registry.registryId,
-    brand: Object.freeze({ name: input.registry.brand.name, primaryDomain: input.registry.brand.primaryDomain }),
+    brand,
     locale,
     market,
     createdAt,
@@ -235,6 +236,13 @@ function assertCohort(cohort) {
     throw new TypeError("A normalized version 1.0.0 GEO prompt cohort is required");
   }
   const locale = normalizeLocale(cohort.locale);
+  canonicalTimestamp(cohort.createdAt, "cohort.createdAt");
+  const brandName = requiredText(cohort.brand?.name, "cohort.brand.name", 128);
+  const primaryDomain = normalizeDomain(cohort.brand?.primaryDomain);
+  const expectedRegistryId = identifier("btr_", JSON.stringify([brandName.toLocaleLowerCase("en"), primaryDomain]));
+  if (expectedRegistryId !== cohort.registryId) throw new TypeError("GEO prompt cohort brand and domain do not match registry identity");
+  const market = cohort.market === null ? null : requiredText(cohort.market, "cohort.market", 3).toUpperCase();
+  if (market && !/^[A-Z]{2,3}$/.test(market)) throw new TypeError("GEO prompt cohort market is invalid");
   const promptIds = [];
   for (const prompt of cohort.prompts) {
     if (!prompt || typeof prompt !== "object" || prompt.locale !== locale ||
@@ -248,7 +256,7 @@ function assertCohort(cohort) {
     promptIds.push(prompt.promptId);
   }
   if (new Set(promptIds).size !== promptIds.length) throw new TypeError("GEO prompt cohort contains duplicate prompt identifiers");
-  const expectedCohortId = identifier("cohort_", JSON.stringify([cohort.registryId, locale, cohort.market, promptIds]));
+  const expectedCohortId = identifier("cohort_", JSON.stringify([cohort.registryId, brandName, primaryDomain, locale, market, promptIds]));
   if (expectedCohortId !== cohort.cohortId) throw new TypeError("GEO prompt cohort identity failed integrity verification");
 }
  
