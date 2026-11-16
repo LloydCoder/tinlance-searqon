@@ -42,12 +42,12 @@ const decision = evaluateEvidenceRetention(records, {
 });
 ```
 
-`deriveActiveEvidenceHolds(events, publicKey)` verifies every signature and reconstructs the active hold set. `evaluateEvidenceRetention` fails closed when a supplied event is malformed, out of sequence, incorrectly signed or verified with an untrusted key. Active holds are returned in the metadata-only `held` list and are also included in `retained`; they are excluded from `eligibleForPurge`. Releasing a hold allows normal retention evaluation to apply again.
+`deriveActiveEvidenceHolds(events, publicKeyOrRegistry)` verifies every signature and reconstructs the active hold set. For actor binding, register each approver key in `EvidenceLegalHoldApproverRegistry` using `register({ actorId, publicKey })`, then pass the registry instead of a bare public key. The registry requires `event.approvedBy` to equal the actor bound to the signing key, rejects unknown/revoked keys and prevents one key from being assigned to two actors. Register a replacement key for the same actor before using it, then revoke the old key with `revoke(keyId)` after the transition is approved. `evaluateEvidenceRetention` fails closed when a supplied event is malformed, out of sequence, incorrectly signed or verified with an untrusted key. Active holds are returned in the metadata-only `held` list and are also included in `retained`; they are excluded from `eligibleForPurge`. Releasing a hold allows normal retention evaluation to apply again.
 
 ## Security and operational limits
 
-- A valid signature proves control of the corresponding private key, not the human identity or legal authority named in the event. The caller must bind the public key to an authenticated approver and enforce approval policy.
-- The current reducer accepts one trusted public key for the supplied event history. Key rotation requires a separately designed versioned key registry and transition procedure.
+- A bare public-key verification proves control of the corresponding private key, not the human identity or legal authority named in the event. The optional registry binds the signer to the approvedBy actor identifier, but the application must still authenticate that actor and authorize the legal decision.
+- The reducer accepts either one trusted public key or the optional in-memory approver registry. The registry is not durable or distributed; callers must persist its actor/key assignments and revocations in a separately protected control plane.
 - Events are supplied by the caller. This module does not provide durable journal storage, cross-process ordering, external checkpoint custody, legal case management or automatic backup retention.
 - Hold events never delete or mutate evidence. The retention evaluator remains a decision function and does not execute a purge.
 - The data controller remains responsible for deciding whether a hold is legally required, its scope, release authority and applicable retention policy.
