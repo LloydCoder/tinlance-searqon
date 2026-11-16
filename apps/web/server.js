@@ -6,7 +6,7 @@ import { analyzeDocument } from "../../src/analyzer.js";
 import { createDatabase } from "../../src/platform/database.js";
 import { createAuthService } from "../../src/platform/auth.js";
 import { createEmailSender } from "../../src/platform/email.js";
-import { createWorkspaceService, WorkspaceError } from "../../src/platform/workspaces.js";
+import { createWorkspaceService } from "../../src/platform/workspaces.js";
 
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
