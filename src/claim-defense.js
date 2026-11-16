@@ -37,6 +37,7 @@ function canonicalCitation(value) {
   try { target = validateTargetUrl(text(value, "citationUrl", 2048)); }
   catch { throw new TypeError("citationUrl must be a public HTTP or HTTPS URL without credentials"); }
   const url = new URL(target.href);
+  if (url.protocol !== "https:") throw new TypeError("citationUrl must use HTTPS");
   url.search = "";
   url.hash = "";
   return url.href;
