@@ -21,7 +21,8 @@ If structured claims are not supplied, the analyzer can extract sentences that m
 Each claim receives one of these classifications:
 - registry_consistent: the claim value matches a current registry fact;
 - potential_contradiction: a supplied attribute maps to a registry fact but the claimed value differs;
-- unverified: no registry fact supports the supplied claim;
+- unverified: a brand entity is resolved but no registry fact supports the supplied claim;
+- entity_unresolved: the claim cannot be confidently associated with the registry brand or an approved alias;
 - disputed: the matching registry fact is marked disputed;
 - stale: the fact is retired, older than maxAgeDays, or dated after the observation.
 
