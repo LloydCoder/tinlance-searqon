@@ -19,6 +19,7 @@
 | `src/evidence-retention.js` | `evaluateEvidenceRetention(records, options)`, `EVIDENCE_RETENTION_POLICY_VERSION` | Deterministic, metadata-only expiry evaluation. It does not delete, redact or mutate ledger data. |
 | `src/evidence-redaction.js` | `createEvidenceRedactionManifest(...)`, `verifyEvidenceRedactionManifest(...)`, `filterEvidenceByRedaction(...)` | Ed25519-signed approval and logical export suppression. Does not physically delete or sanitize source storage. |
 | `src/evidence-redaction-store.js` | `openEvidenceRedactionStore(path, publicKey)`, `verifyEvidenceRedactionJournal(...)`, `verifyEvidenceRedactionJournalEntry(...)` | Local fsync'd hash-linked JSONL journal for signed manifests; single-process writer admission, not WORM or cross-process locking. |
+| `src/evidence-redaction-checkpoint.js` | `createEvidenceRedactionJournalCheckpoint(...)`, `verifyEvidenceRedactionJournalCheckpoint(...)` | Detached Ed25519 checkpoint of a journal prefix; external checkpoint and public-key custody remain caller responsibilities. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
