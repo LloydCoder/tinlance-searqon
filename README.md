@@ -166,6 +166,10 @@ The CLI prints usage when invoked without a valid command. Run `node src/cli.js`
 | Standalone HTML reports | Implemented; local output only |
 | Hosted API, UI and multi-tenant service | Not implemented |
 
+## Local web application
+
+The repository now includes an early local web interface and same-origin assessment API. Run `npm run dev:web` and open `http://127.0.0.1:4173`. The interface uses the existing deterministic analyzer for supplied HTML, Markdown and OpenAPI JSON. Dashboard figures are illustrative only. This is not a hosted, authenticated or multi-tenant service; see [the web application boundary](docs/WEB_APP.md).
+
 ## Documentation
 
 | Guide | Purpose |
