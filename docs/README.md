@@ -27,7 +27,7 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Explicit contract migration registry](reference/contract-migrations.md)
 - [Evidence retention evaluation](reference/evidence-retention.md)
 - [Signed evidence redaction manifests](reference/evidence-redaction.md)
-- [Persistent signed redaction journal](reference/evidence-redaction-journal.md)
+- [Persistent signed redaction journal and detached checkpoints](reference/evidence-redaction-journal.md)
 - [Remote scan result schema](../schemas/remote-scan-result.schema.json)
 
 ## Project operations
