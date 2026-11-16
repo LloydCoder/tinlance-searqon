@@ -211,6 +211,7 @@ export function buildGeoAlerts(input) {
   }
 
   const evaluations = [];
+  const comparedCohorts = new Set();
   const alerts = [];
   const suppressedAlerts = [];
   const keys = [...new Set([...baselineMap.keys(), ...currentMap.keys()])].sort();
@@ -225,6 +226,7 @@ export function buildGeoAlerts(input) {
       evaluations.push(Object.freeze({ status: "cohort_missing", dimensions: JSON.parse(key) }));
       continue;
     }
+    comparedCohorts.add(key);
     const cohort = {
       observationClass: before.observationClass,
       provider: before.provider,
@@ -256,7 +258,7 @@ export function buildGeoAlerts(input) {
     evaluatedAt: evaluatedAt.toISOString(),
     observationLagSeconds: Math.floor((evaluatedAt.getTime() - currentAt.getTime()) / 1000),
     policy: Object.freeze({ minSampleSize: policy.minSampleSize, minAbsoluteChange: policy.minAbsoluteChange, cooldownSeconds: policy.cooldownSeconds, confidenceMethod: "wilson_95_non_overlap" }),
-    summary: Object.freeze({ cohortsCompared: evaluations.filter(item => !["new_cohort", "cohort_missing"].includes(item.status)).length, alerts: alerts.length, suppressed: suppressedAlerts.length, evaluations: evaluations.length }),
+    summary: Object.freeze({ cohortsCompared: comparedCohorts.size, alerts: alerts.length, suppressed: suppressedAlerts.length, evaluations: evaluations.length }),
     evaluations: Object.freeze(evaluations),
     alerts: Object.freeze(alerts),
     suppressedAlerts: Object.freeze(suppressedAlerts)
