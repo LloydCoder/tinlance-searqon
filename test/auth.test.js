@@ -84,7 +84,8 @@ test("registration normalizes identity, creates workspace, and sends a fragment-
   assert.equal(Buffer.from(registration.values[4]).length, 32);
   assert.equal(mail.sent.length, 1);
   assert.equal(mail.sent[0].to, "user@example.test");
-  assert.match(mail.sent[0].url, /^https://app.example.test/auth/verify/#token=[A-Za-z0-9_-]{43}$/);
+  assert.ok(mail.sent[0].url.startsWith("https://app.example.test/auth/verify/#token="));
+  assert.match(new URL(mail.sent[0].url).hash, /^#token=[A-Za-z0-9_-]{43}$/);
   assert.match(mail.sent[0].idempotencyKey, /^searqon-magic-link\//);
 });
 
