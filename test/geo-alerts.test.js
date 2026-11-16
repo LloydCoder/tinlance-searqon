@@ -144,7 +144,7 @@ test("alerts detect significant mention and citation declines only for comparabl
 test("small samples and overlapping Wilson intervals do not produce alerts", () => {
   const small = buildGeoAlerts(input({
     baseline: [row({ sampleSize: 4, mentionCount: 4, brandCitationCount: 3 })],
-    current: [row({ sampleSize: 4, mentionCount: 1, brandCitationCount: 1 })],
+    current: [row({ sampleSize: 4, mentionCount: 1, brandCitationCount: 1, evidenceSeed: "current" })],
     minSampleSize: 5
   }));
   assert.equal(small.alerts.length, 0);
@@ -152,7 +152,7 @@ test("small samples and overlapping Wilson intervals do not produce alerts", () 
 
   const overlap = buildGeoAlerts(input({
     baseline: [row({ mentionCount: 70, brandCitationCount: 60 })],
-    current: [row({ mentionCount: 65, brandCitationCount: 58 })]
+    current: [row({ mentionCount: 65, brandCitationCount: 58, evidenceSeed: "current" })]
   }));
   assert.equal(overlap.alerts.length, 0);
   assert.ok(overlap.evaluations.every(item => item.status === "no_significant_change"));
@@ -396,4 +396,10 @@ test("citation alert reports disclose observation lag and stale data status", ()
   });
   assert.equal(report.observationLagSeconds, 3600);
   assert.equal(report.observationFreshness, "stale");
+});
+
+test("aggregate snapshot comparisons reject reused evidence identifiers", () => {
+  assert.throws(() => buildGeoAlerts(input({
+    current: [row({ mentionCount: 40, brandCitationCount: 20, evidenceSeed: "baseline" })]
+  })), /duplicate evidence identifiers/i);
 });
