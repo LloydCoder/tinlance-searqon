@@ -20,7 +20,7 @@
       "const": "searqon.geo.alert"
     },
     "apiVersion": {
-      "const": "1.0"
+      "const": "1.0.0"
     },
     "createdAt": {
       "type": "string",
