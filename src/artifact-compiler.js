@@ -59,8 +59,13 @@ function normalizeOpenApi(content) {
 }
 
 function diffLines(path, before, after) {
-  const a = before.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n");
-  const b = after.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n");
+  const toLines = value => {
+    if (value === "") return [];
+    const normalized = value.replace(/\r\n?/g, "\n");
+    return (normalized.endsWith("\n") ? normalized.slice(0, -1) : normalized).split("\n");
+  };
+  const a = toLines(before);
+  const b = toLines(after);
   if (a.length > MAX_DIFF_LINES || b.length > MAX_DIFF_LINES) {
     return "--- a/" + path + "\n+++ b/" + path + "\n@@ diff omitted: line limit exceeded @@\n";
   }
