@@ -144,3 +144,12 @@ This register separates implemented repository capabilities from customer, secur
 - Added unit coverage for unregistered/ambiguous routes, duplicate edges, source/target version mismatches, non-mutation, frozen input, async transform rejection, sparse arrays and non-JSON values. Added the registry to the documented public API.
 - Added migration framework reference documentation. No actual published schema has a v2 migration; the framework is infrastructure only and does not claim schema validation or deterministic/lossless migration by itself.
 - Phase 3 remains IN_PROGRESS pending exact-head CI/CodeQL/secret-scan, forensic audit, and real versioned consumer fixtures when a new schema version is introduced.
+
+
+## 2026-11-16 — Phase 5 retention evaluation (in progress)
+
+- Added a pure retention evaluator requiring an explicit UTC evaluation time and a bounded positive retention interval.
+- Evaluator rejects malformed timestamps and duplicate evidence IDs, calculates deterministic expiry instants, returns metadata-only sorted decisions and never mutates or deletes source records.
+- Added regression coverage for expiry boundaries, future-dated evidence, duplicate IDs, invalid policies/timestamps, immutable results, source non-mutation and timestamp overflow.
+- This is eligibility evaluation only. Physical deletion, redaction, legal holds, signed lifecycle events, backup expiration, checkpoint custody and storage sanitization remain unimplemented. The current JSONL ledger remains plaintext, non-WORM and single-process.
+- Phase 5 remains IN_PROGRESS; no secure deletion or cryptographic-erasure claim is made.

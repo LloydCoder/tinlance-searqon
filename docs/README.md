@@ -25,6 +25,7 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Versioned contract registry](../schemas/contract-registry.json)
 - [Public API and persistence boundaries](reference/public-api-and-persistence.md)
 - [Explicit contract migration registry](reference/contract-migrations.md)
+- [Evidence retention evaluation](reference/evidence-retention.md)
 - [Remote scan result schema](../schemas/remote-scan-result.schema.json)
 
 ## Project operations
