@@ -285,7 +285,7 @@ export function createSignedAlertEvent(alert, secret, timestampSeconds = Math.fl
   const envelope = {
     id: eventId,
     type: "searqon.geo.alert",
-    apiVersion: "1.0",
+    apiVersion: "1.0.0",
     createdAt: new Date(timestampSeconds * 1000).toISOString(),
     data: alert
   };
@@ -318,7 +318,7 @@ export function verifySignedAlertEvent({ rawBody, secret, timestamp, signature, 
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) throw new TypeError("Webhook signature verification failed");
   let envelope;
   try { envelope = JSON.parse(rawBody); } catch { throw new TypeError("Webhook body is not valid JSON"); }
-  if (!envelope || envelope.type !== "searqon.geo.alert" || envelope.apiVersion !== "1.0" ||
+  if (!envelope || envelope.type !== "searqon.geo.alert" || envelope.apiVersion !== "1.0.0" ||
       typeof envelope.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(envelope.id) ||
       typeof eventId !== "string" || envelope.id !== eventId ||
       canonicalTimestamp(envelope.createdAt, "createdAt").getTime() / 1000 !== timestampSeconds ||
