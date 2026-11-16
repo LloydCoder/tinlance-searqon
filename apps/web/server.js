@@ -4,7 +4,7 @@ import { extname, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { analyzeDocument } from "../../src/analyzer.js";
 
-const ROOT = fileURLToPath(new URL("./public/", import.meta.url));
+const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = new Set(["text/html", "text/markdown", "application/json"]);
