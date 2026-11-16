@@ -11,6 +11,7 @@ test("documented programmatic API exports remain available", async () => {
     import("../src/evidence-checkpoint.js"),
     import("../src/geo.js"),
     import("../src/report-html.js"),
+    import("../src/evidence-retention.js"),
     import("../src/contract-migrations.js")
   ]);
 
@@ -23,6 +24,7 @@ test("documented programmatic API exports remain available", async () => {
     [checkpoint, ["createEvidenceLedgerCheckpoint", "verifyEvidenceLedgerCheckpoint", "EVIDENCE_LEDGER_CHECKPOINT_SCHEMA_VERSION"]],
     [geo, ["analyzeGeoObservation", "aggregateGeoObservations", "GEO_OBSERVATION_CLASSES"]],
     [report, ["renderHtmlReport", "escapeHtml"]],
+    [retention, ["evaluateEvidenceRetention", "EVIDENCE_RETENTION_POLICY_VERSION"]],
     [migrations, ["ContractMigrationRegistry"]]
   ]) {
     for (const name of names) assert.ok(Object.hasOwn(module, name), "missing documented export " + name);
