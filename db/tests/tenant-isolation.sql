@@ -20,6 +20,25 @@ INSERT INTO searqon.audit_events (organization_id, actor_user_id, event_type, su
 VALUES ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001',
   'project.created', 'project', '30000000-0000-4000-8000-000000000001');
 
+DO $body$
+BEGIN
+  IF has_table_privilege('searqon_app', 'searqon.audit_events', 'UPDATE') THEN
+    RAISE EXCEPTION 'application role must not be granted audit UPDATE';
+  END IF;
+  IF has_table_privilege('searqon_app', 'searqon.audit_events', 'DELETE') THEN
+    RAISE EXCEPTION 'application role must not be granted audit DELETE';
+  END IF;
+END
+$body$;
+-- Temporarily grant UPDATE and an RLS policy only inside this rolled-back test
+-- so the trigger is independently exercised even if privileges are misconfigured.
+GRANT UPDATE ON searqon.audit_events TO searqon_app;
+CREATE POLICY audit_events_update_test ON searqon.audit_events
+  FOR UPDATE USING (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = audit_events.organization_id AND m.user_id = searqon.current_user_id()
+  ));
+
 SET LOCAL ROLE searqon_app;
 SET LOCAL searqon.user_id = '10000000-0000-4000-8000-000000000001';
 
