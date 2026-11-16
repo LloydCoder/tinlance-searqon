@@ -116,3 +116,17 @@ test("rejects duplicate source identities and excessively deep OpenAPI documents
   const document = { openapi: "3.2.1", info: { title: "API", version: "1" }, paths: {}, nested };
   assert.throws(() => compileAgentArtifacts({ sources: [{ sourceId: "deep", path: "openapi.json", kind: "openapi", content: JSON.stringify(document) }] }), /nesting exceeds/);
 });
+
+test("bounds aggregate diff generation across large artifact sets", () => {
+  const sources = Array.from({ length: 22 }, (_, index) => ({
+    sourceId: "doc-" + index,
+    path: "docs/page-" + index + ".md",
+    kind: "markdown",
+    content: "# New " + index + "\n"
+  }));
+  const previousArtifacts = sources.map(source => ({ path: source.path, content: "# Old " + source.sourceId + "\n" }));
+  const report = compileAgentArtifacts({ sources, previousArtifacts });
+  assert.equal(report.changes.length, 22);
+  assert.equal(report.changes.filter(change => change.unifiedDiff.includes("diff budget exceeded")).length, 2);
+  assert.equal(report.summary.patchesApplied, 0);
+});
