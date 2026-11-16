@@ -253,3 +253,14 @@ test("CLI detects evidence-linked citation disappearance from raw local GEO coho
     assert.equal(report.events[0].changeType, "citation_disappearance");
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("CLI evaluates labelled GEO citation alert quality cases", async () => {
+  const result = spawnSync(process.execPath, [cli.pathname, "geo", "quality-evaluate", join(root, "examples/geo-citation-alert-quality-input.json")], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.type, "geo_citation_alert_quality_report");
+  assert.equal(report.caseCount, 2);
+  assert.equal(report.counts.truePositive, 1);
+  assert.equal(report.counts.falsePositive, 0);
+  assert.equal(report.metrics.falsePositiveRate, 0);
+});
