@@ -74,6 +74,19 @@ BEGIN
   VALUES (v_user_id, p_token_hash, 'magic_login', p_token_expires_at)
   RETURNING id INTO v_token_id;
 
+  PERFORM pg_catalog.set_config('searqon.user_id', v_user_id::text, true);
+  INSERT INTO searqon.audit_events (
+    organization_id, actor_user_id, event_type, subject_type, subject_id, metadata
+  ) VALUES (
+    v_organization_id, v_user_id, 'workspace.created', 'organization', v_organization_id::text, '{}'::jsonb
+  );
+  INSERT INTO searqon.audit_events (
+    organization_id, actor_user_id, event_type, subject_type, subject_id, metadata
+  ) VALUES (
+    v_organization_id, v_user_id, 'auth.magic_link.issued', 'auth_token', v_token_id::text,
+    '{"auth_method":"email_magic_link"}'::jsonb
+  );
+
   RETURN QUERY SELECT v_user_id, v_organization_id, v_token_id;
 END
 $$;
@@ -91,6 +104,7 @@ AS $$
 DECLARE
   v_user_id uuid;
   v_token_id uuid;
+  v_organization_id uuid;
 BEGIN
   IF p_token_hash IS NULL OR octet_length(p_token_hash) <> 32
      OR p_token_expires_at <= now()
@@ -121,6 +135,18 @@ BEGIN
   VALUES (v_user_id, p_token_hash, 'magic_login', p_token_expires_at)
   RETURNING id INTO v_token_id;
 
+  PERFORM pg_catalog.set_config('searqon.user_id', v_user_id::text, true);
+  FOR v_organization_id IN
+    SELECT m.organization_id FROM searqon.memberships AS m WHERE m.user_id = v_user_id
+  LOOP
+    INSERT INTO searqon.audit_events (
+      organization_id, actor_user_id, event_type, subject_type, subject_id, metadata
+    ) VALUES (
+      v_organization_id, v_user_id, 'auth.magic_link.issued', 'auth_token', v_token_id::text,
+      '{"auth_method":"email_magic_link"}'::jsonb
+    );
+  END LOOP;
+
   RETURN QUERY SELECT v_user_id, v_token_id;
 END
 $$;
@@ -138,6 +164,7 @@ AS $$
 DECLARE
   v_user_id uuid;
   v_session_id uuid;
+  v_organization_id uuid;
 BEGIN
   IF p_token_hash IS NULL OR octet_length(p_token_hash) <> 32
      OR p_session_hash IS NULL OR octet_length(p_session_hash) <> 32
@@ -166,6 +193,18 @@ BEGIN
   INSERT INTO searqon.sessions (user_id, token_hash, expires_at)
   VALUES (v_user_id, p_session_hash, p_session_expires_at)
   RETURNING id INTO v_session_id;
+
+  PERFORM pg_catalog.set_config('searqon.user_id', v_user_id::text, true);
+  FOR v_organization_id IN
+    SELECT m.organization_id FROM searqon.memberships AS m WHERE m.user_id = v_user_id
+  LOOP
+    INSERT INTO searqon.audit_events (
+      organization_id, actor_user_id, event_type, subject_type, subject_id, metadata
+    ) VALUES (
+      v_organization_id, v_user_id, 'auth.session.created', 'session', v_session_id::text,
+      '{"auth_method":"email_magic_link"}'::jsonb
+    );
+  END LOOP;
 
   RETURN QUERY SELECT v_user_id, v_session_id, p_session_expires_at;
 END
@@ -196,12 +235,31 @@ SET search_path = pg_catalog, searqon
 AS $$
 DECLARE
   v_revoked boolean := false;
+  v_user_id uuid;
+  v_organization_id uuid;
+  v_session_id uuid;
 BEGIN
   UPDATE searqon.sessions AS s
   SET revoked_at = COALESCE(s.revoked_at, now())
   WHERE s.token_hash = p_session_hash
-    AND s.revoked_at IS NULL;
+    AND s.revoked_at IS NULL
+  RETURNING s.user_id, s.id INTO v_user_id, v_session_id;
   v_revoked := FOUND;
+
+  IF v_revoked THEN
+    PERFORM pg_catalog.set_config('searqon.user_id', v_user_id::text, true);
+    FOR v_organization_id IN
+      SELECT m.organization_id FROM searqon.memberships AS m WHERE m.user_id = v_user_id
+    LOOP
+      INSERT INTO searqon.audit_events (
+        organization_id, actor_user_id, event_type, subject_type, subject_id, metadata
+      ) VALUES (
+        v_organization_id, v_user_id, 'auth.session.revoked', 'session', v_session_id::text,
+        '{"auth_method":"email_magic_link"}'::jsonb
+      );
+    END LOOP;
+  END IF;
+
   RETURN v_revoked;
 END
 $$;
