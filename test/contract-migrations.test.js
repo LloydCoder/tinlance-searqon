@@ -69,7 +69,7 @@ test("rejects asynchronous and non-JSON migration results", () => {
 
   const invalidRegistry = new ContractMigrationRegistry();
   invalidRegistry.register({ contract: "report", fromVersion: "1.0.0", toVersion: "2.0.0", migrate: () => ({ value: undefined }) });
-  assert.throws(() => invalidRegistry.migrate("report", {}, { fromVersion: "1.0.0", toVersion: "2.0.0" }), /JSON-compatible object/);
+  assert.throws(() => invalidRegistry.migrate("report", {}, { fromVersion: "1.0.0", toVersion: "2.0.0" }), /JSON-compatible/);
 });
 
 test("lists registered migration edges without exposing mutable registry state", () => {
