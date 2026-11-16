@@ -108,7 +108,8 @@
       "items": {
         "type": "string",
         "pattern": "^evidence_[a-f0-9]{20}$"
-      }
+      },
+      "minItems": 1
     },
     "evidenceCount": {
       "type": "integer",
