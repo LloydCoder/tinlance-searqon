@@ -1,6 +1,6 @@
 # Hosted platform database foundation
 
-**Status:** Phase 9 foundation only. This migration is not a complete hosted service.
+**Status:** Hosted SaaS foundation (cross-cutting; product roadmap Phase 13). This is not a complete hosted service.
 
 ## Requirements
 
@@ -17,6 +17,9 @@
 - `projects`: organization-scoped target properties.
 - `assessments`: organization/project-scoped assessment lifecycle and JSON report.
 - `sessions`: token digest, expiry, last-seen and revocation metadata.
+- `auth_tokens`: one-time magic-link token digests and consumption state.
+- `auth_rate_limits`: HMAC-keyed distributed abuse-control windows; raw email/IP values are not stored.
+- `schema_migrations`: ordered migration names and SHA-256 checksums.
 - `audit_events`: append-only workspace audit records.
 
 The assessment table has a composite foreign key to `projects(organization_id, id)`, preventing an assessment from referencing a project under a different organization.
@@ -32,7 +35,7 @@ For each authenticated request, the API:
 4. Execute all tenant-scoped queries through the restricted runtime role.
 5. Commit or roll back; transaction-local context must not leak through the connection pool.
 
-RLS derives workspace access by checking a membership row for the authenticated user. A caller-provided `organization_id` is never authorization. The CI integration test proves that a user sees only their workspace's projects, assessments, organizations and audit records; a missing identity context sees no tenant data; cross-tenant writes are rejected.
+RLS derives workspace access by checking a membership row for the authenticated user. A caller-provided `organization_id` is never authorization. The CI integration test proves that a user sees only their workspace's projects, assessments, organizations and audit records; a missing identity context sees no tenant data; cross-tenant writes are rejected. A separate end-to-end PostgreSQL test covers account provisioning, token replacement and replay rejection, session creation, profile resolution, logout and cleanup.
 
 **Trust boundary:** the application database role is a trusted server-side identity. PostgreSQL custom settings are not an independent cryptographic authentication mechanism. A compromised runtime role that can execute arbitrary SQL can attempt to set a different user context. Parameterized queries, strict query construction, least-privilege roles, network isolation and application authorization remain mandatory. Do not claim RLS alone protects against a fully compromised application/database credential.
 
