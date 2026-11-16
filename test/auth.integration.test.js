@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { createDatabase } from "../src/platform/database.js";
 import { createAuthService, AuthError } from "../src/platform/auth.js";
 
@@ -19,9 +19,9 @@ test("passwordless auth completes registration, token replacement, session looku
     },
     nodeEnv: "test",
     publicOrigin: "http://127.0.0.1:4173",
-    rateLimitSecret: "searqon-postgres-integration-secret-32-bytes"
+    rateLimitSecret
   });
-  let userId;
+  const rateLimitSecret = "searqon-postgres-integration-secret-32-bytes";
 
   try {
     assert.deepEqual(await auth.register({
@@ -54,14 +54,23 @@ test("passwordless auth completes registration, token replacement, session looku
     assert.ok(profile.user.email_verified_at);
     assert.equal(profile.organizations.length, 1);
     assert.equal(profile.organizations[0].role, "owner");
-    userId = profile.user.id;
-
     assert.deepEqual(await auth.logout(session.sessionToken), { revoked: true });
     assert.equal(await auth.getProfile(session.sessionToken), null);
   } finally {
-    if (userId) {
-      await database.pool.query("DELETE FROM searqon.app_users WHERE id = $1", [userId]);
+    const userRows = await database.pool.query("SELECT id FROM searqon.app_users WHERE email = $1", [email]);
+    const userIds = userRows.rows.map(row => row.id);
+    if (userIds.length) {
+      await database.pool.query(
+        "DELETE FROM searqon.organizations WHERE id IN (SELECT organization_id FROM searqon.memberships WHERE user_id = ANY($1::uuid[]))",
+        [userIds]
+      );
+      await database.pool.query("DELETE FROM searqon.app_users WHERE id = ANY($1::uuid[])", [userIds]);
     }
+    const rateLimitHashes = [
+      createHmac("sha256", rateLimitSecret).update("ip:" + ip, "utf8").digest(),
+      createHmac("sha256", rateLimitSecret).update("email:" + email, "utf8").digest()
+    ];
+    await database.pool.query("DELETE FROM searqon.auth_rate_limits WHERE key_hash = ANY($1::bytea[])", [rateLimitHashes]);
     await database.close();
   }
 });
