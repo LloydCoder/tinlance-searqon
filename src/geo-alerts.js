@@ -653,6 +653,7 @@ export function createWebhookReplayGuard({ maxEntries = 10_000, ttlSeconds = 900
   boundedInteger(maxEntries, "maxEntries", 1, 100_000);
   boundedInteger(ttlSeconds, "ttlSeconds", 301, 86_400);
   boundedInteger(timestampToleranceSeconds, "timestampToleranceSeconds", 1, 900);
+  if (ttlSeconds <= timestampToleranceSeconds) throw new RangeError("ttlSeconds must exceed timestampToleranceSeconds");
   const seen = new Map();
   return Object.freeze({
     claim(eventId, timestampSeconds, nowSeconds = Math.floor(Date.now() / 1000)) {
