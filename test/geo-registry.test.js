@@ -169,3 +169,15 @@ test("registry timestamps are monotonic and provider credentials are rejected", 
     providers: [{ name: "API", observationClass: "model_api", collectionMode: "official_api", adapterId: "api.v1", apiKey: "never-store-this", policyReview: reviewed, estimatedCostPerSampleUsd: 0, maxSamples: 2 }]
   }), /credential|secret|token|api.?key/i);
 });
+
+
+test("prompt cohorts reject a tampered Brand Truth Registry digest", () => {
+  const altered = structuredClone(registry());
+  altered.brand.name = "Different Brand";
+  assert.throws(() => createPromptCohort({
+    registry: altered,
+    locale: "en-CA",
+    createdAt: "2026-11-16T12:00:00.000Z",
+    prompts: [{ prompt: "Best tools?" }]
+  }), /digest|integrity/i);
+});
