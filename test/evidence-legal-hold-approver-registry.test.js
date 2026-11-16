@@ -49,8 +49,19 @@ test("revoked approver keys fail closed", () => {
   const keys = generateKeyPairSync("ed25519");
   const registry = new EvidenceLegalHoldApproverRegistry();
   const keyId = registry.register({ actorId: "approver-01", publicKey: keys.publicKey });
-  registry.revoke(keyId);
+  registry.revoke(keyId, { revokedAt: "2026-11-16T00:00:00.000Z" });
 
+  assert.throws(() => deriveActiveEvidenceHolds([createEvent(keys)], registry), /approver_key_revoked/);
+});
+
+test("preserves historical signatures created before a key revocation cutoff", () => {
+  const keys = generateKeyPairSync("ed25519");
+  const registry = new EvidenceLegalHoldApproverRegistry();
+  const keyId = registry.register({ actorId: "approver-01", publicKey: keys.publicKey });
+  const historical = createEvent(keys, { createdAt: "2026-11-15T23:59:59.000Z" });
+  registry.revoke(keyId, { revokedAt: "2026-11-16T00:00:00.000Z" });
+
+  assert.equal(deriveActiveEvidenceHolds([historical], registry).activeEvidenceIds.length, 1);
   assert.throws(() => deriveActiveEvidenceHolds([createEvent(keys)], registry), /approver_key_revoked/);
 });
 
