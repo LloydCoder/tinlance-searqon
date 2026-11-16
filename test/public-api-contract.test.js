@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 test("documented programmatic API exports remain available", async () => {
-  const [analyzer, remote, evidence, ledger, store, checkpoint, geo, report, migrations] = await Promise.all([
+  const [analyzer, remote, evidence, ledger, store, checkpoint, geo, report, retention, migrations] = await Promise.all([
     import("../src/analyzer.js"),
     import("../src/remote-scan.js"),
     import("../src/evidence.js"),
