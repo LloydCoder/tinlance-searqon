@@ -195,3 +195,11 @@ This register separates implemented repository capabilities from customer, secur
 - Added `verifyEvidenceRecoveryBundle` to validate the evidence-ledger chain and detached checkpoint, signed redaction journal and detached checkpoint, duplicate evidence IDs, and redaction-to-ledger references before a restored bundle is exposed.
 - Added fail-closed tests for missing/invalid checkpoints, unknown redaction references, duplicate evidence identifiers and malformed input.
 - This is an offline integrity gate only. It does not restore files, verify backup completeness against a remote source, sanitize storage, enforce legal holds, expire backups or authenticate human/key custody.
+
+
+## 2026-11-16 — Phase 5 legal-hold precedence (in progress)
+
+- Added a versioned Ed25519-signed legal-hold event contract with per-hold sequence numbers, fixed evidence scope, place/release transitions, monotonic timestamps and unique request IDs.
+- Added a fail-closed state reducer and retention integration. Active held evidence remains in the retained set and is excluded from purge eligibility; released holds permit normal expiry evaluation.
+- Added schema-registry alignment, state-transition/signature tests and documentation of key-identity, key-rotation and caller-managed journal limitations.
+- This does not create a durable legal case system, authenticate actor identity, execute deletion, implement key rotation or replace data-controller/legal review.
