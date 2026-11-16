@@ -22,6 +22,8 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Evidence record schema](../schemas/evidence-record.schema.json)
 - [GEO observation schema](../schemas/geo-observation.schema.json)
 - [MCP snapshot schema](../schemas/mcp-snapshot.schema.json)
+- [Versioned contract registry](../schemas/contract-registry.json)
+- [Public API and persistence boundaries](reference/public-api-and-persistence.md)
 - [Remote scan result schema](../schemas/remote-scan-result.schema.json)
 
 ## Project operations
