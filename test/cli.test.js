@@ -264,3 +264,14 @@ test("CLI evaluates labelled GEO citation alert quality cases", async () => {
   assert.equal(report.counts.falsePositive, 0);
   assert.equal(report.metrics.falsePositiveRate, 0);
 });
+
+test("CLI compiles provenance-linked agent artifacts without applying repository changes", async () => {
+  const input = new URL("../examples/agent-artifact-compiler-input.json", import.meta.url).pathname;
+  const result = spawnSync(process.execPath, [cli.pathname, "artifacts", "compile", input], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.type, "agent_artifact_compilation");
+  assert.equal(report.artifacts.length, 3);
+  assert.equal(report.artifacts.some(item => item.path === "llms.txt"), true);
+  assert.equal(report.summary.patchesApplied, 0);
+});

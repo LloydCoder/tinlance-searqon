@@ -298,6 +298,19 @@
         "remote-scan-cli"
       ],
       "notes": "References assessment-report.schema.json for nested assessment."
+    },
+    {
+      "name": "agent-artifact-compilation",
+      "file": "agent-artifact-compilation.schema.json",
+      "schemaId": "https://searqon.com/schemas/agent-artifact-compilation.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "agent-artifact-compiler",
+        "local-cli"
+      ],
+      "notes": "Deterministic, provenance-linked Markdown/OpenAPI compilation and unapplied diff proposals; no filesystem, GitHub, or publishing side effects."
     }
   ]
 }

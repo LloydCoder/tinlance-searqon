@@ -1,0 +1,21 @@
+{
+  "sources": [
+    {
+      "sourceId": "api-guide",
+      "path": "docs/api-guide.md",
+      "kind": "markdown",
+      "content": "# API Guide\n\nAuthentication uses bearer tokens. Errors use documented HTTP status codes.\n"
+    },
+    {
+      "sourceId": "openapi",
+      "path": "openapi.json",
+      "kind": "openapi",
+      "content": "{\n  \"openapi\": \"3.2.1\",\n  \"info\": {\n    \"title\": \"Example API\",\n    \"version\": \"1.0.0\",\n    \"description\": \"Read-only example API.\"\n  },\n  \"servers\": [\n    {\n      \"url\": \"https://api.example.test\"\n    }\n  ],\n  \"paths\": {\n    \"/v1/status\": {\n      \"get\": {\n        \"operationId\": \"getStatus\",\n        \"summary\": \"Read service status\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"OK\"\n          }\n        }\n      }\n    }\n  }\n}"
+    }
+  ],
+  "options": {
+    "includeLlmsTxt": true,
+    "productName": "Example API",
+    "summary": "Read-only API documentation and machine-readable contract."
+  }
+}

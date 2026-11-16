@@ -2,18 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { compileAgentArtifacts } from "../src/artifact-compiler.js";
 
-const markdown = `# API Guide
-
-Use bearer authentication.
-
-## Errors
-
-Return documented HTTP status codes.
-
-```http
-GET /v1/status
-```
-`;
+const markdown = ["# API Guide", "", "Use bearer authentication.", "", "## Errors", "", "Return documented HTTP status codes.", "", "```http", "GET /v1/status", "```", ""].join("\n");
 
 const openapi = {
   openapi: "3.2.1",
@@ -103,4 +92,61 @@ test("rejects unknown or unsafe llms.txt links and metadata", () => {
     sources: [{ sourceId: "guide", path: "docs/API.md", kind: "markdown", content: markdown }],
     options: { includeLlmsTxt: true, productName: "Searqon", summary: "Summary", links: [{ label: "Private", path: "../../secrets" }] }
   }), /safe relative path/);
+});
+
+test("rejects duplicate source identities and excessively deep OpenAPI documents", () => {
+  assert.throws(() => compileAgentArtifacts({ sources: [
+    { sourceId: "same", path: "docs/A.md", kind: "markdown", content: "A" },
+    { sourceId: "same", path: "docs/B.md", kind: "markdown", content: "B" }
+  ] }), /duplicate sourceId/);
+  let nested = {};
+  let cursor = nested;
+  for (let index = 0; index < 70; index++) { cursor.child = {}; cursor = cursor.child; }
+  const document = { openapi: "3.2.1", info: { title: "API", version: "1" }, paths: {}, nested };
+  assert.throws(() => compileAgentArtifacts({ sources: [{ sourceId: "deep", path: "openapi.json", kind: "openapi", content: JSON.stringify(document) }] }), /nesting exceeds/);
+});
+
+test("bounds aggregate diff generation across large artifact sets", () => {
+  const sources = Array.from({ length: 22 }, (_, index) => ({
+    sourceId: "doc-" + index,
+    path: "docs/page-" + index + ".md",
+    kind: "markdown",
+    content: "# New " + index + "\n"
+  }));
+  const previousArtifacts = sources.map(source => ({ path: source.path, content: "# Old " + source.sourceId + "\n" }));
+  const report = compileAgentArtifacts({ sources, previousArtifacts });
+  assert.equal(report.changes.length, 22);
+  assert.equal(report.changes.filter(change => change.unifiedDiff.includes("diff budget exceeded")).length, 2);
+  assert.equal(report.summary.patchesApplied, 0);
+});
+
+test("derived llms.txt provenance binds source content and metadata", () => {
+  const compile = content => compileAgentArtifacts({
+    sources: [{ sourceId: "guide", path: "docs/API.md", kind: "markdown", content }],
+    options: { includeLlmsTxt: true, productName: "Searqon", summary: "Discoverability intelligence." }
+  }).artifacts.find(item => item.path === "llms.txt");
+  const first = compile("# API\n");
+  const second = compile("# Updated API\n");
+  assert.notEqual(first.provenance.sourceSha256, second.provenance.sourceSha256);
+});
+
+test("diff proposals distinguish empty, added, unchanged and removed artifacts", () => {
+  const added = compileAgentArtifacts({ sources: [{ sourceId: "new", path: "docs/New.md", kind: "markdown", content: "# New\n" }] });
+  assert.equal(added.changes[0].status, "added");
+  assert.equal(added.changes[0].unifiedDiff.split("\n").some(line => line.startsWith("-") && !line.startsWith("---")), false);
+  const unchanged = compileAgentArtifacts({
+    sources: [{ sourceId: "same", path: "docs/Same.md", kind: "markdown", content: "# Same\n" }],
+    previousArtifacts: [{ path: "docs/Same.md", content: "# Same\n" }]
+  });
+  assert.equal(unchanged.changes[0].status, "unchanged");
+  assert.equal(unchanged.changes[0].unifiedDiff, "");
+  const removed = compileAgentArtifacts({ sources: [{ sourceId: "keep", path: "docs/Keep.md", kind: "markdown", content: "# Keep\n" }], previousArtifacts: [{ path: "docs/Gone.md", content: "# Gone\n" }] });
+  assert.equal(removed.changes.find(change => change.path === "docs/Gone.md").status, "removed");
+});
+
+test("bounds aggregate previous artifact bytes before diff computation", () => {
+  assert.throws(() => compileAgentArtifacts({
+    sources: [{ sourceId: "small", path: "docs/small.md", kind: "markdown", content: "small" }],
+    previousArtifacts: [{ path: "docs/large.md", content: "x".repeat(2_097_153) }]
+  }), /Combined previous artifact content exceeds the 2 MiB compiler limit/);
 });

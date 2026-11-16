@@ -99,3 +99,15 @@ The input contains baseline/current aggregate arrays, stable snapshot IDs, UTC t
 `geo citation-changes` accepts raw GEO observation input arrays, normalizes them through the existing analyzer, and reports evidence-linked citation-domain disappearances for one exact comparable cohort. See [the GEO alert guide](../how-to/compare-geo-snapshots-and-alerts.md).
 
 `geo quality-evaluate` evaluates a caller-labelled set of raw observation cohorts and reports precision, recall, specificity and false-positive rate. The checked-in fixture is synthetic regression data, not real-world validation.
+
+
+## Agent artifact compiler
+
+Compile caller-supplied Markdown and OpenAPI 3.1/3.2 JSON into deterministic, provenance-linked artifact proposals:
+
+```bash
+node src/cli.js artifacts compile ./examples/agent-artifact-compiler-input.json
+node src/cli.js artifacts compile ./examples/agent-artifact-compiler-input.json --out ./artifact-compilation.json
+```
+
+The JSON input contains a bounded `sources` array with unique `sourceId`, safe relative `path`, `kind` (`markdown` or `openapi`) and string `content`. Optional `options.includeLlmsTxt` explicitly enables a derived `llms.txt` proposal; product name and summary are required. Optional `previousArtifacts` enables deterministic added/modified/unchanged/removed diff proposals. No patch is applied. The command does not read the repository, fetch URLs, write source files, create Git branches or PRs, merge, or publish. See the [Phase 10 compiler boundary](../MODULE_CONTRACTS.md#c-agent-artifact-compiler).

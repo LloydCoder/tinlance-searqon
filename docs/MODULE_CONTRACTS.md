@@ -118,3 +118,11 @@ Compatibility and versioning decisions are recorded in [ADR-0001](adr/0001-domai
 ## Non-functional gates
 
 Security: no unresolved critical/high findings; threat model and abuse cases reviewed. Reliability: bounded execution and explicit degraded states. Privacy: documented minimization, retention, deletion and redaction. Cost: per-run/per-tenant instrumentation and hard budget enforcement. Accessibility: keyboard-operable reports and alert configuration. Operations: secret-free structured logs, metrics, traces, audit events and runbooks.
+
+### Agent Artifact Compiler — current implementation boundary
+
+**Implemented local slice:** `compileAgentArtifacts` accepts bounded caller-supplied Markdown and OpenAPI 3.1/3.2 JSON sources. It normalizes line endings/whitespace, canonicalizes JSON key order, reuses the passive analyzer for source-linked quality findings, computes SHA-256 digests, preserves source IDs/paths and evidence references, optionally proposes a metadata-only `llms.txt`, and generates deterministic unapplied unified-diff proposals against caller-supplied prior artifacts.
+
+**Safety boundary:** the compiler has no filesystem reads/writes, network acquisition, GitHub token access, branch creation, PR creation, merge, or publish behavior. Output paths are normalized relative paths; traversal, hidden path segments, absolute paths, duplicate source IDs/paths, malformed OpenAPI, excessive nesting and inputs above 2 MiB are rejected. Diff computation is bounded by 500 lines per artifact and a 20-file compilation diff budget. Generated patches are never applied.
+
+**Remaining Phase 10 gates:** repository/revision acquisition with explicit scope, OpenAPI semantic lint beyond the existing passive analyzer, broken-link/anchor/code-block/schema-reference validation, richer source maps for each generated statement, malicious prompt-injection fixtures, patch application in a disposable worktree, GitHub adapter with least-privilege authorization, dedicated branch/diff-hash PR creation and no auto-merge. This slice is not the full Agent Artifact Compiler acceptance.
