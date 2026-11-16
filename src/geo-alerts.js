@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { wilsonInterval } from "./geo.js";
+import { verifyEvidenceRecord } from "./evidence.js";
 
 const OBSERVATION_CLASSES = new Set(["consumer_observation", "model_api"]);
 const METRICS = Object.freeze([
@@ -318,7 +319,9 @@ export function verifySignedAlertEvent({ rawBody, secret, timestamp, signature, 
   let envelope;
   try { envelope = JSON.parse(rawBody); } catch { throw new TypeError("Webhook body is not valid JSON"); }
   if (!envelope || envelope.type !== "searqon.geo.alert" || envelope.apiVersion !== "1.0" ||
-      typeof envelope.id !== "string" || typeof eventId !== "string" || envelope.id !== eventId ||
+      typeof envelope.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(envelope.id) ||
+      typeof eventId !== "string" || envelope.id !== eventId ||
+      canonicalTimestamp(envelope.createdAt, "createdAt").getTime() / 1000 !== timestampSeconds ||
       !envelope.data || typeof envelope.data.alertId !== "string") {
     throw new TypeError("Webhook event envelope is invalid");
   }
@@ -373,8 +376,8 @@ export function toSlackWebhookPayload(alert) {
     text,
     blocks: [
       { type: "header", text: { type: "plain_text", text: "Searqon GEO alert" } },
-      { type: "section", text: { type: "mrkdwn", text: "*" + title + "* " + direction + " by *" + percent + "%*." } },
-      { type: "context", elements: [{ type: "mrkdwn", text: safeText(brand + " · " + provider + " · " + alert.dimensions?.observationClass, 200) }] }
+      { type: "section", text: { type: "plain_text", text: title + " " + direction + " by " + percent + "%." } },
+      { type: "context", elements: [{ type: "plain_text", text: safeText(brand + " · " + provider + " · " + alert.dimensions?.observationClass, 200) }] }
     ]
   });
 }
@@ -437,6 +440,7 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
   }
   if (baseline.length > 10_000 || current.length > 10_000) throw new RangeError("citation change snapshots exceed the 10,000 observation limit");
   const observed = canonicalTimestamp(observedAt, "observedAt");
+  if (!policy || typeof policy !== "object" || Array.isArray(policy)) throw new TypeError("policy must be an object");
   const minSamples = policy.minimumSamples ?? 10;
   const minChange = policy.minimumAbsoluteChange ?? 0.1;
   boundedInteger(minSamples, "minimumSamples", 2, 10_000);
@@ -455,6 +459,8 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
       }
       if (seen.has(item.evidence.id)) throw new TypeError("duplicate evidence identifier in " + label);
       seen.add(item.evidence.id);
+      boundedIdentifier(item.provider.name, label + ".provider.name");
+      boundedIdentifier(item.brand, label + ".brand");
       const sampledAt = canonicalTimestamp(item.sampledAt, label + ".sampledAt");
       if (!Array.isArray(item.citations) || item.citations.length > 100) throw new TypeError(label + " citations are invalid");
       const domains = new Set();
@@ -499,6 +505,14 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
   for (const item of [...before, ...after]) {
     if (allEvidenceIds.has(item.evidenceId)) throw new TypeError("duplicate evidence identifier across GEO snapshots");
     allEvidenceIds.add(item.evidenceId);
+    const evidence = item.observation.evidence;
+    const verification = verifyEvidenceRecord(evidence);
+    if (!verification.valid || evidence.source !== item.observation.provider.name ||
+        evidence.acquisitionMethod !== "provider_observation" ||
+        evidence.observationClass !== item.observation.observationClass ||
+        evidence.collectedAt !== item.observation.sampledAt || evidence.contentType !== "application/json") {
+      throw new TypeError("GEO observation evidence provenance is invalid");
+    }
   }
   const baselineTime = Math.max(...before.map(item => item.sampledAt.getTime()));
   const currentTime = Math.min(...after.map(item => item.sampledAt.getTime()));
