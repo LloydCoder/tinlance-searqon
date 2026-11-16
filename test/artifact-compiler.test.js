@@ -129,3 +129,17 @@ test("derived llms.txt provenance binds source content and metadata", () => {
   const second = compile("# Updated API\n");
   assert.notEqual(first.provenance.sourceSha256, second.provenance.sourceSha256);
 });
+
+test("diff proposals distinguish empty, added, unchanged and removed artifacts", () => {
+  const added = compileAgentArtifacts({ sources: [{ sourceId: "new", path: "docs/New.md", kind: "markdown", content: "# New\n" }] });
+  assert.equal(added.changes[0].status, "added");
+  assert.equal(added.changes[0].unifiedDiff.includes("-"), false);
+  const unchanged = compileAgentArtifacts({
+    sources: [{ sourceId: "same", path: "docs/Same.md", kind: "markdown", content: "# Same\n" }],
+    previousArtifacts: [{ path: "docs/Same.md", content: "# Same\n" }]
+  });
+  assert.equal(unchanged.changes[0].status, "unchanged");
+  assert.equal(unchanged.changes[0].unifiedDiff, "");
+  const removed = compileAgentArtifacts({ sources: [{ sourceId: "keep", path: "docs/Keep.md", kind: "markdown", content: "# Keep\n" }], previousArtifacts: [{ path: "docs/Gone.md", content: "# Gone\n" }] });
+  assert.equal(removed.changes.find(change => change.path === "docs/Gone.md").status, "removed");
+});
