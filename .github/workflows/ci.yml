@@ -49,7 +49,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
       - name: Apply platform schema
-        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file db/migrations/0001_platform_core.sql
+        run: npm run db:migrate
       - name: Verify row-level tenant isolation and append-only audit
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file db/tests/tenant-isolation.sql
       - name: Verify Node.js tenant transactions against PostgreSQL
