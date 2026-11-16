@@ -70,6 +70,24 @@ test("workspace projects and persisted assessments enforce tenant and role bound
     assert.ok(assessment.evidenceId);
     assert.equal(assessment.report.schemaVersion, "1.0.0");
     assert.equal((await service.listAssessments(userA, project.id)).length, 1);
+
+    const failingService = createWorkspaceService({ database, analyze() { throw new Error("synthetic analyzer failure"); } });
+    await assert.rejects(
+      failingService.createAssessment(userA, project.id, { contentType: "text/html", content: "<html></html>" }),
+      error => error instanceof WorkspaceError && error.code === "assessment_failed"
+    );
+    const history = await service.listAssessments(userA, project.id);
+    assert.equal(history.filter(item => item.status === "failed").length, 1, "failed assessments must remain auditable");
+
+    await assert.rejects(
+      service.createAssessment(userA, project.id, { contentType: "text/plain", content: "unsupported" }),
+      error => error instanceof WorkspaceError && error.statusCode === 415
+    );
+    await assert.rejects(
+      service.createAssessment(userA, project.id, { contentType: "text/html", content: "x".repeat(2 * 1024 * 1024 + 1) }),
+      error => error instanceof WorkspaceError && error.statusCode === 413
+    );
+
     assert.equal(await service.getProject(userB, project.id), null);
     assert.equal((await service.listAssessments(userB, project.id)).length, 0);
   } finally {
