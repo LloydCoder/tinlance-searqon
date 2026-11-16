@@ -20,7 +20,8 @@
 | `src/evidence-redaction.js` | `createEvidenceRedactionManifest(...)`, `verifyEvidenceRedactionManifest(...)`, `filterEvidenceByRedaction(...)` | Ed25519-signed approval and logical export suppression. Does not physically delete or sanitize source storage. |
 | `src/evidence-redaction-store.js` | `openEvidenceRedactionStore(path, publicKey)`, `verifyEvidenceRedactionJournal(...)`, `verifyEvidenceRedactionJournalEntry(...)` | Local fsync'd hash-linked JSONL journal for signed manifests; single-process writer admission, not WORM or cross-process locking. |
 | `src/evidence-redaction-checkpoint.js` | `createEvidenceRedactionJournalCheckpoint(...)`, `verifyEvidenceRedactionJournalCheckpoint(...)` | Detached Ed25519 checkpoint of a journal prefix; external checkpoint and public-key custody remain caller responsibilities. |
-| `src/evidence-recovery.js` | `verifyEvidenceRecoveryBundle(bundle)` | Offline pre-restore integrity gate for an evidence ledger and redaction journal, both with independently trusted checkpoints; no file restore, replication or sanitization. |\n| `src/evidence-legal-holds.js` | `createEvidenceLegalHoldEvent(...)`, `verifyEvidenceLegalHoldEvent(...)`, `deriveActiveEvidenceHolds(...)` | Signed, ordered legal-hold state events; one trusted public key per event history, caller-managed durable storage and actor authorization. |
+| `src/evidence-recovery.js` | `verifyEvidenceRecoveryBundle(bundle)` | Offline pre-restore integrity gate for an evidence ledger and redaction journal, both with independently trusted checkpoints; no file restore, replication or sanitization. |
+| `src/evidence-legal-holds.js` | `createEvidenceLegalHoldEvent(...)`, `verifyEvidenceLegalHoldEvent(...)`, `deriveActiveEvidenceHolds(...)` | Signed, ordered legal-hold state events; one trusted public key per event history, caller-managed durable storage and actor authorization. |\n| `src/evidence-legal-holds.js` | `createEvidenceLegalHoldEvent(...)`, `verifyEvidenceLegalHoldEvent(...)`, `deriveActiveEvidenceHolds(...)` | Signed, ordered legal-hold state events; one trusted public key per event history, caller-managed durable storage and actor authorization. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
@@ -38,7 +39,7 @@ CLI output is JSON (or HTML for `report`); `--out` creates a new file and refuse
 - The current store is a single-process local-file implementation with bounded file/entry sizes and owner-only file permissions where supported.
 - It is not encrypted, WORM, remotely replicated, multi-process safe, tenant-isolated or backed up automatically.
 - Signed checkpoints do not create trusted timestamps. Store checkpoint artifacts and trusted public keys outside the ledger's trust domain.
-- Retention, deletion/redaction, access control, tenant isolation and backup/restore are not yet implemented as a complete lifecycle.
+- Retention evaluation, signed logical redaction and signed legal-hold state events exist, but physical deletion/sanitization, durable hold journaling, access control, tenant isolation and backup/restore are not implemented as a complete lifecycle.
 
 ## Version selection and migration
 
