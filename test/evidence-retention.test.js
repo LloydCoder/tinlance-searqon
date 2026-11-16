@@ -166,7 +166,7 @@ test("invalid or untrusted legal-hold events fail retention evaluation closed", 
 
 test("rejects ambiguous retention hold verification configuration", () => {
   const keys = generateKeyPairSync("ed25519");
-  const registry = new (Object.getPrototypeOf(createEvidenceLegalHoldEvent) === null ? Object : Object)();
+  const registry = {};
   assert.throws(() => evaluateEvidenceRetention([], {
     retentionDays: 30,
     now: "2026-11-16T00:00:00.000Z",
