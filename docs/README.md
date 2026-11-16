@@ -13,6 +13,8 @@ This index organizes the documentation by the reader's goal. Existing root-level
 ## Explanation
 - [Assessment and evidence boundaries](explanation/assessment-boundaries.md)
 - [Architecture and system boundaries](ARCHITECTURE.md)
+- [Single-repository product architecture decision](adr/0002-single-repository-product.md)
+- [Hosted platform database foundation](PLATFORM_DATABASE.md)
 - [Product scope and intended users](PRODUCT_CHARTER.md)
 - [Security policy and threat boundaries](../SECURITY.md)
 
