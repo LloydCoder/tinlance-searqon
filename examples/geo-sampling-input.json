@@ -2,7 +2,7 @@
   "cohort": {
     "schemaVersion": "1.0.0",
     "type": "geo_prompt_cohort",
-    "cohortId": "cohort_4a3fd8b3022314749b17",
+    "cohortId": "cohort_3279dec0861e565e217c",
     "registryId": "btr_91200e0862f532fdc806",
     "brand": {
       "name": "Searqon Example",
@@ -26,7 +26,8 @@
         "journeyStage": "consideration",
         "locale": "en-CA"
       }
-    ]
+    ],
+    "registryContentDigest": "73de03f8ca400ad82129c347fdda9b1fd9f0e9edf0355b32ad548ac8399c7227"
   },
   "sampleCount": 1,
   "costCapUsd": 0.5,
