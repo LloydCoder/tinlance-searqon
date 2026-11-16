@@ -1,4 +1,4 @@
-const VERSION_PATTERN = /^\\d+\\.\\d+\\.\\d+$/;
+const VERSION_PATTERN = /^\d+\.\d+\.\d+$/;
 const CONTRACT_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 function assertVersion(value, label) {
