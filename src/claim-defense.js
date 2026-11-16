@@ -60,6 +60,16 @@ function factFreshness(fact, observedAt, maxAgeDays) {
   const ageDays = Math.floor(ageMs / 86_400_000);
   return { freshness: ageDays > maxAgeDays ? "stale" : "fresh", ageDays };
 }
+function resolveBrandTerm(claim, registry) {
+  const terms = [registry.brand.name, ...registry.brand.aliases];
+  const supplied = claim.matchedBrandTerm ?? claim.entity;
+  if (supplied) {
+    const match = terms.find(term => normalizedWords(term) === normalizedWords(text(supplied, "claim entity", 128)));
+    if (claim.matchedBrandTerm && !match) throw new TypeError("matchedBrandTerm must match the Brand Truth Registry name or an approved alias");
+    return match ?? null;
+  }
+  return terms.sort((a, b) => b.length - a.length || a.localeCompare(b, "en")).find(term => containsTerm(claim.text, term)) ?? null;
+}
 function matchFact(claim, facts) {
   if (claim.attribute) return facts.find(fact => fact.attribute === claim.attribute) ?? null;
   const claimText = normalizedWords(claim.text);
@@ -75,8 +85,7 @@ function citationAssessment(claim, fact, competitorDomains) {
   if (citations.length === 0) return { assessment: "missing_citation", citations };
   const factSources = new Set(fact?.sourceUrls ?? []);
   if (citations.some(url => factSources.has(url))) return { assessment: "matched_registry_source", citations };
-  const competitorSet = new Set(competitorDomains);
-  if (citations.some(url => competitorSet.has(new URL(url).hostname))) return { assessment: "attribution_swap", citations };
+  if (citations.some(url => competitorDomains.some(domain => new URL(url).hostname === domain || new URL(url).hostname.endsWith("." + domain)))) return { assessment: "attribution_swap", citations };
   return { assessment: "citation_unverified", citations };
 }
 function confidenceFor(fact) {
@@ -88,7 +97,8 @@ function confidenceFor(fact) {
 
 export function extractBrandClaims(answerText, registry) {
   verifyBrandTruthRegistry(registry);
-  const answer = text(answerText, "answerText", MAX_ANSWER_CHARS);
+  if (typeof answerText !== "string" || !answerText.trim() || [...answerText].length > MAX_ANSWER_CHARS || /[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]/.test(answerText)) throw new TypeError("answerText must be non-empty text of at most " + MAX_ANSWER_CHARS + " characters");
+  const answer = answerText.normalize("NFKC").replace(/\\r\\n?/g, "\\n").trim();
   const terms = [registry.brand.name, ...registry.brand.aliases]
     .sort((a, b) => b.length - a.length || a.localeCompare(b, "en"));
   const sentences = answer.split(/(?<=[.!?])\s+|\n+/u).map(value => value.trim()).filter(Boolean);
@@ -125,12 +135,16 @@ export function evaluateBrandClaims(input) {
     const claimText = text(claim.text, "claim.text", 5000);
     const attribute = claim.attribute ? text(claim.attribute, "claim.attribute", 96).toLowerCase() : null;
     const claimedValue = claim.value ? text(claim.value, "claim.value", 512) : null;
-    const fact = matchFact({ ...claim, text: claimText, attribute }, registry.facts);
+    const matchedBrandTerm = resolveBrandTerm({ ...claim, text: claimText }, registry);
+    const fact = matchedBrandTerm ? matchFact({ ...claim, text: claimText, attribute }, registry.facts) : null;
     const riskFlags = [];
     let assessment;
     let freshness = "unknown";
     let ageDays = null;
-    if (!fact) {
+    if (!matchedBrandTerm) {
+      assessment = "entity_unresolved";
+      riskFlags.push("entity_unresolved");
+    } else if (!fact) {
       assessment = "unverified";
       riskFlags.push("unverified_claim");
     } else {
@@ -160,9 +174,6 @@ export function evaluateBrandClaims(input) {
     if (citation.assessment === "attribution_swap") riskFlags.push("attribution_swap");
     if (citation.assessment === "citation_unverified") riskFlags.push("citation_unverified");
     if (citation.assessment === "missing_citation") riskFlags.push("missing_citation");
-    const matchedBrandTerm = claim.matchedBrandTerm
-      ? text(claim.matchedBrandTerm, "claim.matchedBrandTerm", 128)
-      : [registry.brand.name, ...registry.brand.aliases].find(term => containsTerm(claimText, term)) ?? null;
     const claimId = claim.claimId
       ? text(claim.claimId, "claim.claimId", 64)
       : id("claim_", JSON.stringify([registry.registryId, index, normalizedWords(claimText)]));
@@ -205,6 +216,7 @@ export function evaluateBrandClaims(input) {
     registryConsistent: results.filter(result => result.assessment === "registry_consistent").length,
     potentialContradictions: results.filter(result => result.assessment === "potential_contradiction").length,
     unverified: results.filter(result => result.assessment === "unverified").length,
+    entityUnresolved: results.filter(result => result.assessment === "entity_unresolved").length,
     disputed: results.filter(result => result.assessment === "disputed").length,
     stale: results.filter(result => result.assessment === "stale").length,
     citationIssues: results.filter(result => ["citation_unverified", "attribution_swap", "missing_citation"].includes(result.citationAssessment)).length
