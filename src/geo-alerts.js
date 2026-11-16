@@ -1,6 +1,5 @@
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { wilsonInterval } from "./geo.js";
-import { verifyEvidenceRecord } from "./evidence.js";
+import { wilsonInterval, aggregateGeoObservations } from "./geo.js";
 
 const OBSERVATION_CLASSES = new Set(["consumer_observation", "model_api"]);
 const METRICS = Object.freeze([
@@ -58,6 +57,16 @@ function validateAggregateRow(row, field) {
   const sampleSize = boundedInteger(row.sampleSize, field + ".sampleSize", 1, 1_000_000);
   const mentionCount = boundedInteger(row.mentionCount, field + ".mentionCount", 0, sampleSize);
   const brandCitationCount = boundedInteger(row.brandCitationCount, field + ".brandCitationCount", 0, sampleSize);
+  if (!Array.isArray(row.evidenceIds) || row.evidenceIds.length > 500) throw new TypeError(field + " evidenceIds must be a bounded array");
+  const evidenceIds = row.evidenceIds.map((id, index) => boundedIdentifier(id, field + ".evidenceIds[" + index + "]", 64));
+  if (evidenceIds.some(id => !/^evidence_[a-f0-9]{20}$/.test(id)) || new Set(evidenceIds).size !== evidenceIds.length) {
+    throw new TypeError(field + " evidenceIds must contain unique evidence references");
+  }
+  const evidenceCount = boundedInteger(row.evidenceCount, field + ".evidenceCount", sampleSize, sampleSize);
+  if (typeof row.evidenceTruncated !== "boolean" || row.evidenceTruncated !== (evidenceCount > evidenceIds.length) ||
+      (!row.evidenceTruncated && evidenceIds.length !== evidenceCount) || (row.evidenceTruncated && evidenceIds.length !== 500)) {
+    throw new TypeError(field + " evidence reference completeness is inconsistent");
+  }
   if (row.mentionRate !== undefined && (typeof row.mentionRate !== "number" || Math.abs(row.mentionRate - mentionCount / sampleSize) > 0.00011)) {
     throw new TypeError(field + " mentionRate does not match its counts");
   }
@@ -73,6 +82,9 @@ function validateAggregateRow(row, field) {
     sampleSize,
     mentionCount,
     brandCitationCount,
+    evidenceIds: Object.freeze(evidenceIds),
+    evidenceCount,
+    evidenceTruncated: row.evidenceTruncated,
     mentionRate: mentionCount / sampleSize,
     mentionRate95: wilsonInterval(mentionCount, sampleSize),
     brandCitationRate: brandCitationCount / sampleSize,
@@ -110,8 +122,8 @@ function compareMetric(cohort, metric, baseline, current, policy, evaluatedAt) {
     metric: metric.metricName,
     label: metric.label,
     status: "no_significant_change",
-    baseline: { sampleSize: baseline.sampleSize, count: beforeCount, rate: Number(beforeRate.toFixed(4)), interval95: baseInterval },
-    current: { sampleSize: current.sampleSize, count: afterCount, rate: Number(afterRate.toFixed(4)), interval95: currentInterval },
+    baseline: { sampleSize: baseline.sampleSize, count: beforeCount, rate: Number(beforeRate.toFixed(4)), interval95: baseInterval, evidenceIds: baseline.evidenceIds, evidenceCount: baseline.evidenceCount, evidenceTruncated: baseline.evidenceTruncated },
+    current: { sampleSize: current.sampleSize, count: afterCount, rate: Number(afterRate.toFixed(4)), interval95: currentInterval, evidenceIds: current.evidenceIds, evidenceCount: current.evidenceCount, evidenceTruncated: current.evidenceTruncated },
     delta,
     intervalsOverlap
   };
@@ -156,7 +168,12 @@ function compareMetric(cohort, metric, baseline, current, policy, evaluatedAt) {
     evaluatedAt: evaluatedAt.toISOString(),
     evidence: {
       baselineSampleSize: baseline.sampleSize,
-      currentSampleSize: current.sampleSize
+      currentSampleSize: current.sampleSize,
+      baselineEvidenceIds: baseline.evidenceIds,
+      currentEvidenceIds: current.evidenceIds,
+      baselineEvidenceCount: baseline.evidenceCount,
+      currentEvidenceCount: current.evidenceCount,
+      truncated: baseline.evidenceTruncated || current.evidenceTruncated
     }
   });
   evaluation.status = "alert";
@@ -237,6 +254,8 @@ export function buildGeoAlerts(input) {
       continue;
     }
     comparedCohorts.add(key);
+    const currentEvidenceSet = new Set(after.evidenceIds);
+    if (before.evidenceIds.some(id => currentEvidenceSet.has(id))) throw new TypeError("baseline and current snapshots contain duplicate evidence identifiers");
     const cohort = {
       observationClass: before.observationClass,
       provider: before.provider,
@@ -519,18 +538,13 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
       after.some(item => cohort(item) !== currentCohort) || baselineCohort !== currentCohort) {
     throw new TypeError("baseline and current must belong to the same comparable cohort");
   }
+  // Reuse the canonical GEO validator so citation, mention, provider and evidence invariants cannot drift.
+  aggregateGeoObservations(baseline);
+  aggregateGeoObservations(current);
   const allEvidenceIds = new Set();
   for (const item of [...before, ...after]) {
     if (allEvidenceIds.has(item.evidenceId)) throw new TypeError("duplicate evidence identifier across GEO snapshots");
     allEvidenceIds.add(item.evidenceId);
-    const evidence = item.observation.evidence;
-    const verification = verifyEvidenceRecord(evidence);
-    if (!verification.valid || evidence.source !== item.observation.provider.name ||
-        evidence.acquisitionMethod !== "provider_observation" ||
-        evidence.observationClass !== item.observation.observationClass ||
-        evidence.collectedAt !== item.observation.sampledAt || evidence.contentType !== "application/json") {
-      throw new TypeError("GEO observation evidence provenance is invalid");
-    }
   }
   const baselineTime = Math.max(...before.map(item => item.sampledAt.getTime()));
   const currentTime = Math.min(...after.map(item => item.sampledAt.getTime()));
@@ -651,8 +665,9 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
  */
 export function createWebhookReplayGuard({ maxEntries = 10_000, ttlSeconds = 900, timestampToleranceSeconds = 300 } = {}) {
   boundedInteger(maxEntries, "maxEntries", 1, 100_000);
-  boundedInteger(ttlSeconds, "ttlSeconds", 301, 86_400);
+  boundedInteger(ttlSeconds, "ttlSeconds", 1, 86_400);
   boundedInteger(timestampToleranceSeconds, "timestampToleranceSeconds", 1, 900);
+  if (ttlSeconds <= timestampToleranceSeconds) throw new RangeError("ttlSeconds must exceed timestampToleranceSeconds");
   const seen = new Map();
   return Object.freeze({
     claim(eventId, timestampSeconds, nowSeconds = Math.floor(Date.now() / 1000)) {
