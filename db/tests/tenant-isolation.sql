@@ -63,7 +63,7 @@ VALUES ('20000000-0000-4000-8000-000000000001',
   '10000000-0000-4000-8000-000000000001', 'aeo', '1.0.0');
 
 -- Audit records are append-only even for a tenant member.
-DO $
+DO $body$
 BEGIN
   BEGIN
     UPDATE searqon.audit_events SET subject_id = 'tampered'
@@ -73,7 +73,7 @@ BEGIN
     NULL;
   END;
 END
-$;
+$body$;
 
 -- A request without authenticated user context sees no tenant-scoped records.
 SET LOCAL searqon.user_id = '';
