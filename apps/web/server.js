@@ -134,7 +134,7 @@ async function serveStatic(pathname, response, headOnly = false) {
     return;
   }
 
-  const relative = decoded === "/" ? "index.html" : decoded.replace(/^\\/+/, "");
+  const relative = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
   let candidate = resolve(ROOT, relative);
   if (candidate !== ROOT && !candidate.startsWith(ROOT + sep)) {
     sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
