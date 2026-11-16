@@ -52,3 +52,12 @@ This command normalizes each supplied baseline/current observation locally, then
 ## Current limitations
 
 This module consumes supplied aggregate snapshots. It does not schedule observations, query AI providers, scrape consumer interfaces, retrieve citation URLs, monitor competitors continuously or send webhook requests. It does not yet detect citation-domain replacement/order changes; the current citation metric measures whether the tracked brand's target domain was cited in each sample. Provider and observation-class provenance must be preserved by upstream collection.
+
+
+## Provider payload references
+
+Payload envelopes are aligned to the providers' published webhook formats. These adapters construct payloads only; destination registration, secure URL storage, delivery and response handling are separate capabilities.
+
+- [Slack incoming webhooks](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks)
+- [Microsoft Teams Workflows incoming webhooks](https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook)
+- [PagerDuty Events API v2](https://docs.pagerduty.com/developer/events-api-v2-overview)
