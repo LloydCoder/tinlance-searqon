@@ -5,7 +5,7 @@
 ## Requirements
 
 - PostgreSQL 16 or later.
-- Apply ordered migrations with `npm run db:migrate` using a dedicated migration owner with CREATEROLE permission. The runner verifies SHA-256 checksums and serializes concurrent migration runs.
+- Apply ordered migrations with `npm run db:migrate` using `MIGRATION_DATABASE_URL` (or `DATABASE_URL` as a fallback) and a dedicated migration owner with CREATEROLE permission. Keep the runtime `DATABASE_URL` separate and least-privileged. The runner verifies SHA-256 checksums and serializes concurrent migration runs.
 - Do not run migrations with the request-serving database identity.
 - The CI workflow runs the migration against a disposable PostgreSQL 16 service and exercises the row-level security policies.
 
