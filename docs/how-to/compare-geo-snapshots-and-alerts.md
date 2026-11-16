@@ -39,6 +39,16 @@ Use a distinct high-entropy secret (at least 32 bytes) per destination. Store se
 
 Payload builders exist for Slack incoming webhooks, Microsoft Teams Workflows Adaptive Cards and PagerDuty Events API v2. They construct provider payloads only; they do not make network requests or store destination URLs. Delivery receipts record a bounded outcome, HTTP status, provider receipt identifier and retry time without storing credentials. Retry orchestration, durable queueing, destination ownership, encrypted secret storage, delivery idempotency and provider contract tests remain hosted-service work.
 
+## Citation-domain disappearance detection
+
+For raw, normalized observation inputs rather than aggregate snapshots, use:
+
+```bash
+node src/cli.js geo citation-changes ./examples/geo-citation-change-input.json
+```
+
+This command normalizes each supplied baseline/current observation locally, then detects statistically screened disappearance of previously cited domains within one exact comparable cohort. Provider, model, region, locale, brand, target domain and observation class must match. It links both baseline and current evidence IDs. New citation appearances are retained as context in the underlying snapshots but are not yet emitted as separate alert types.
+
 ## Current limitations
 
 This module consumes supplied aggregate snapshots. It does not schedule observations, query AI providers, scrape consumer interfaces, retrieve citation URLs, monitor competitors continuously or send webhook requests. It does not yet detect citation-domain replacement/order changes; the current citation metric measures whether the tracked brand's target domain was cited in each sample. Provider and observation-class provenance must be preserved by upstream collection.
