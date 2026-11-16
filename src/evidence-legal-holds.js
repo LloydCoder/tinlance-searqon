@@ -218,8 +218,9 @@ export class EvidenceLegalHoldApproverRegistry {
 
 /**
  * Reconstruct current hold state from a trusted, ordered event sequence.
- * Events are signed but actor authorization still depends on caller-managed
- * key custody; this function does not authenticate human identities.
+ * A bare public key verifies signatures only. The optional approver registry
+ * binds key IDs to actor labels, but application authentication and legal
+ * authorization remain caller responsibilities.
  */
 export function deriveActiveEvidenceHolds(events, publicKeyInput) {
   if (!Array.isArray(events)) throw new TypeError("legal-hold events must be an array");
