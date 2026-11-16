@@ -135,11 +135,11 @@ BEGIN
   ) THEN RAISE EXCEPTION 'session revocation was not audited'; END IF;
 
   FOR v_attempt IN 1..3 LOOP
-    IF NOT searqon.consume_auth_rate_limit(decode(repeat('f', 64), 'hex'), 3, 900) THEN
+    IF NOT searqon.consume_auth_email_rate_limit(decode(repeat('f', 64), 'hex')) THEN
       RAISE EXCEPTION 'rate limiter rejected an allowed request';
     END IF;
   END LOOP;
-  IF searqon.consume_auth_rate_limit(decode(repeat('f', 64), 'hex'), 3, 900) THEN
+  IF searqon.consume_auth_email_rate_limit(decode(repeat('f', 64), 'hex')) THEN
     RAISE EXCEPTION 'rate limiter allowed a request beyond the configured threshold';
   END IF;
 
@@ -153,6 +153,15 @@ BEGIN
     'searqon.consume_magic_link_and_create_session(bytea, bytea, timestamp with time zone)',
     'EXECUTE'
   ) THEN RAISE EXCEPTION 'application role cannot execute the scoped session function'; END IF;
+  IF has_function_privilege(
+    'searqon_app',
+    'searqon.consume_auth_rate_limit(bytea, integer, integer)',
+    'EXECUTE'
+  ) THEN RAISE EXCEPTION 'application role can override the fixed rate-limit policy'; END IF;
+  IF NOT has_function_privilege('searqon_app', 'searqon.consume_auth_email_rate_limit(bytea)', 'EXECUTE')
+     OR NOT has_function_privilege('searqon_app', 'searqon.consume_auth_ip_rate_limit(bytea)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'application role cannot execute fixed rate-limit policies';
+  END IF;
 END
 $body$;
 
