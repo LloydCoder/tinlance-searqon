@@ -3,6 +3,7 @@
 This index organizes the documentation by the reader's goal. Existing root-level documents remain canonical where noted; the guides below add task-oriented entry points.
 
 ## Tutorials
+- [Run the local web application](WEB_APP.md)
 - [Run your first local assessment](tutorials/first-assessment.md)
 
 ## How-to guides
