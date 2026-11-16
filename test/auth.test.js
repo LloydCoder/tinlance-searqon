@@ -20,7 +20,7 @@ function fakeDatabase({ rateAllowed = true, registerRows, issueRows, verifyRows,
     calls,
     async query(sql, values) {
       calls.push({ sql, values });
-      if (sql.includes("consume_auth_rate_limit")) return { rows: [{ allowed: rateAllowed }] };
+      if (sql.includes("consume_auth_email_rate_limit") || sql.includes("consume_auth_ip_rate_limit")) return { rows: [{ allowed: rateAllowed }] };
       if (sql.includes("register_account")) return { rows: registerRows ?? [{ user_id: USER_ID, organization_id: ORG_ID, token_id: "30000000-0000-4000-8000-000000000001" }] };
       if (sql.includes("issue_magic_link")) return { rows: issueRows ?? [{ user_id: USER_ID, token_id: "30000000-0000-4000-8000-000000000002" }] };
       if (sql.includes("consume_magic_link_and_create_session")) return { rows: verifyRows ?? [{ user_id: USER_ID, session_id: "40000000-0000-4000-8000-000000000001", session_expires_at: new Date(Date.now() + 86400000) }] };
