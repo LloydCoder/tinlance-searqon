@@ -93,7 +93,7 @@ test("duplicate registration sends a new sign-in link without exposing account e
   const database = fakeDatabase();
   database.pool.query = async (sql, values) => {
     database.calls.push({ sql, values });
-    if (sql.includes("consume_auth_rate_limit")) return { rows: [{ allowed: true }] };
+    if (sql.includes("consume_auth_email_rate_limit") || sql.includes("consume_auth_ip_rate_limit")) return { rows: [{ allowed: true }] };
     if (sql.includes("register_account")) {
       const error = new Error("duplicate");
       error.code = "23505";
