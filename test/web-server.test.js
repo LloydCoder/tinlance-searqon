@@ -317,3 +317,13 @@ test("serves the supplied Searqon favicon and keeps authentication pages out of 
     assert.match(verify, /name="referrer" content="no-referrer"/);
   });
 });
+
+test("marketing stylesheet follows the supplied flat-color and amber signal rules", async () => {
+  await withServer(async base => {
+    const stylesheet = await fetch(base + "/styles.css").then(response => response.text());
+    assert.equal(/linear-gradient|radial-gradient|conic-gradient/i.test(stylesheet), false);
+    assert.match(stylesheet, /--amber:#E8A33D/);
+    assert.match(stylesheet, /--amber-deep:#8A5200/);
+    assert.match(stylesheet, /--serif:var\(--sans\)/);
+  });
+});
