@@ -299,3 +299,37 @@ test("delivery receipts bound retries and reject impossible success states", () 
     alert, destination: "slack-1", attempt: 1, attemptedAt: evaluatedAt, outcome: "delivered", httpStatus: 503
   }), /successful/);
 });
+
+test("citation disappearance requires valid evidence provenance", () => {
+  const baseline = cohort(3);
+  const current = cohort(3, { citations: ["https://competitor.example/guide"], sampledAt: "2026-11-16T12:00:00.000Z" });
+  const corrupted = current.map((item, index) => index === 0
+    ? { ...item, evidence: { ...item.evidence, source: "untrusted-source" } }
+    : item);
+  assert.throws(() => detectCitationChanges({
+    baseline,
+    current: corrupted,
+    observedAt: "2026-11-16T13:00:00.000Z",
+    policy: { minimumSamples: 2, minimumAbsoluteChange: 0.2 }
+  }), /evidence provenance/i);
+});
+
+test("signed webhook envelope creation time must match the signed timestamp header", () => {
+  const alert = buildGeoAlerts(input()).alerts[0];
+  const signed = createSignedAlertEvent(alert, "test-signing-secret-with-at-least-32-bytes", 1_800_000_000);
+  const altered = JSON.parse(signed.body);
+  altered.createdAt = "2026-11-16T13:00:00.000Z";
+  const rawBody = JSON.stringify(altered);
+  const { createHmac } = await import("node:crypto");
+  const signature = "v1=" + createHmac("sha256", "test-signing-secret-with-at-least-32-bytes")
+    .update(signed.headers["x-searqon-timestamp"] + "." + rawBody)
+    .digest("hex");
+  assert.throws(() => verifySignedAlertEvent({
+    rawBody,
+    secret: "test-signing-secret-with-at-least-32-bytes",
+    timestamp: signed.headers["x-searqon-timestamp"],
+    signature,
+    eventId: signed.headers["x-searqon-event-id"],
+    nowSeconds: 1_800_000_000
+  }), /envelope/i);
+});
