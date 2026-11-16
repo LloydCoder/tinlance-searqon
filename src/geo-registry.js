@@ -145,6 +145,11 @@ function assertRegistry(registry) {
   if (expectedId !== registry.registryId) throw new TypeError("Brand Truth Registry identity does not match its brand and domain");
 }
 
+export function verifyBrandTruthRegistry(registry) {
+  assertRegistry(registry);
+  return true;
+}
+
 export function createPromptCohort(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new TypeError("Prompt cohort input is required");
   assertRegistry(input.registry);
