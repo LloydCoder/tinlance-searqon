@@ -63,6 +63,18 @@
       "notes": "Version is carried by schema identity; record shape itself has no schemaVersion field."
     },
     {
+      "name": "evidence-redaction-journal-entry",
+      "file": "evidence-redaction-journal-entry.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/evidence-redaction-journal-entry/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "evidence-redaction-store"
+      ],
+      "notes": "Hash-linked envelope for a signed redaction manifest; local journal integrity is not WORM or cross-process locking."
+    },
+    {
       "name": "evidence-redaction-manifest",
       "file": "evidence-redaction-manifest.schema.json",
       "schemaId": "https://searqon.tinlance.com/schemas/evidence-redaction-manifest/1.0.0",

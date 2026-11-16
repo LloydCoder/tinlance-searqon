@@ -18,6 +18,7 @@
 | `src/contract-migrations.js` | `ContractMigrationRegistry` | Explicit synchronous JSON transformations between registered versions; rejects unknown or ambiguous paths. Does not validate schemas, persist migrations or claim losslessness. |
 | `src/evidence-retention.js` | `evaluateEvidenceRetention(records, options)`, `EVIDENCE_RETENTION_POLICY_VERSION` | Deterministic, metadata-only expiry evaluation. It does not delete, redact or mutate ledger data. |
 | `src/evidence-redaction.js` | `createEvidenceRedactionManifest(...)`, `verifyEvidenceRedactionManifest(...)`, `filterEvidenceByRedaction(...)` | Ed25519-signed approval and logical export suppression. Does not physically delete or sanitize source storage. |
+| `src/evidence-redaction-store.js` | `openEvidenceRedactionStore(path, publicKey)`, `verifyEvidenceRedactionJournal(...)`, `verifyEvidenceRedactionJournalEntry(...)` | Local fsync'd hash-linked JSONL journal for signed manifests; single-process writer admission, not WORM or cross-process locking. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
