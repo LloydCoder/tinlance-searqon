@@ -51,3 +51,14 @@ Audit events can be selected and appended by an authorized workspace member. A d
 - Production DB roles, network policies, secrets, backups, SLOs or deployment.
 
 The schema is a foundation contract; it is not yet wired into the running HTTP API.
+
+
+## Node.js database adapter
+
+The repository pins `pg@8.23.1` (node-postgres) and commits the generated npm lockfile. The adapter in `src/platform/database.js` provides a bounded pool, connection and statement timeouts, keepalive, safe pool-error reporting, and a tenant transaction helper. Remote database connections require TLS certificate verification; plaintext is allowed only for loopback development hosts.
+
+`withUserTransaction(pool, userId, work)` starts a transaction and sets `searqon.user_id` with a parameterized transaction-local `set_config` call. The identity must be sourced from an independently authenticated server-side session, not from client input. It commits on success, rolls back on failure, and destroys the connection if rollback fails. The transaction-local setting is cleared by PostgreSQL when the transaction ends.
+
+Unit tests cover URL validation, pool bounds, TLS policy, safe error reporting, commit/rollback behavior and connection disposal. A PostgreSQL integration test runs the helper against a disposable PostgreSQL 16 service with a one-connection pool, proving RLS isolation across sequential identities and absence of tenant context when no identity is set.
+
+This adapter is not yet wired into the public web HTTP server. Authentication/session issuance, secure account provisioning and customer-facing project APIs remain incomplete.
