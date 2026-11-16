@@ -121,3 +121,25 @@ test("CLI creates a Brand Truth Registry, prompt cohort and bounded GEO sampling
     assert.equal(plan.tasks.length, 1);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+
+test("published GEO example fixtures execute end-to-end", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-geo-examples-"));
+  try {
+    const registryPath = join(dir, "registry.json");
+    const cohortPath = join(dir, "cohort.json");
+    const planPath = join(dir, "plan.json");
+    let result = spawnSync(process.execPath, [cli.pathname, "geo", "registry", "examples/brand-truth-input.json", "--out", registryPath], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const registry = JSON.parse(await readFile(registryPath, "utf8"));
+    result = spawnSync(process.execPath, [cli.pathname, "geo", "cohort", "examples/geo-cohort-input.json", "--out", cohortPath], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const cohort = JSON.parse(await readFile(cohortPath, "utf8"));
+    assert.equal(cohort.registryContentDigest, registry.contentDigest);
+    result = spawnSync(process.execPath, [cli.pathname, "geo", "plan", "examples/geo-sampling-input.json", "--out", planPath], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const plan = JSON.parse(await readFile(planPath, "utf8"));
+    assert.equal(plan.registryContentDigest, registry.contentDigest);
+    assert.equal(plan.tasks.length, 2);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
