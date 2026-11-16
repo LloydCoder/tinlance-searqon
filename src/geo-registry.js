@@ -157,27 +157,26 @@ export function createPromptCohort(input) {
   if (!Array.isArray(input.prompts) || input.prompts.length < 1 || input.prompts.length > MAX_PROMPTS) {
     throw new RangeError("prompts must contain between 1 and " + MAX_PROMPTS + " items");
   }
-  const seen = new Set();
-  const prompts = [];
+  const promptMap = new Map();
   for (const raw of input.prompts) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new TypeError("Each prompt must be an object");
-    const prompt = requiredText(raw.prompt, "prompt", 4000);
-    const normalizedPrompt = prompt.toLocaleLowerCase(locale).replace(/\s+/g, " ");
+    const prompt = requiredText(raw.prompt, "prompt", 4000).replace(/\s+/g, " ");
+    const normalizedPrompt = prompt.toLocaleLowerCase(locale);
     const intent = raw.intent ? requiredText(raw.intent, "intent", 64).toLowerCase() : "unspecified";
     const journeyStage = raw.journeyStage ?? "other";
     if (!JOURNEY_STAGES.has(journeyStage)) throw new TypeError("journeyStage is unsupported");
     const key = JSON.stringify([normalizedPrompt, intent, journeyStage, locale]);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    prompts.push(Object.freeze({
+    const candidate = Object.freeze({
       promptId: identifier("prompt_", key),
       prompt,
       intent,
       journeyStage,
       locale
-    }));
+    });
+    const existing = promptMap.get(key);
+    if (!existing || candidate.prompt.localeCompare(existing.prompt, "en") < 0) promptMap.set(key, candidate);
   }
-  prompts.sort((a, b) => a.promptId.localeCompare(b.promptId));
+  const prompts = [...promptMap.values()].sort((a, b) => a.promptId.localeCompare(b.promptId));
   const brand = Object.freeze({ name: input.registry.brand.name, primaryDomain: input.registry.brand.primaryDomain });
   const cohortId = identifier("cohort_", JSON.stringify([input.registry.registryId, brand.name, brand.primaryDomain, locale, market, prompts.map(item => item.promptId)]));
   return Object.freeze({
