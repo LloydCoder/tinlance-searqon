@@ -10,6 +10,8 @@ import {
   createSignedAlertEvent,
   verifySignedAlertEvent,
   createDeliveryReceipt,
+  createWebhookReplayGuard,
+  evaluateGeoCitationAlertQuality,
   toSlackWebhookPayload,
   toTeamsWorkflowPayload,
   toPagerDutyEvent
@@ -331,4 +333,63 @@ test("signed webhook envelope creation time must match the signed timestamp head
     eventId: signed.headers["x-searqon-event-id"],
     nowSeconds: 1_800_000_000
   }), /envelope/i);
+});
+
+test("webhook replay guard rejects duplicate IDs and fails closed at capacity", () => {
+  const guard = createWebhookReplayGuard({ maxEntries: 1, ttlSeconds: 900, timestampToleranceSeconds: 300 });
+  const firstId = "123e4567-e89b-42d3-a456-426614174000";
+  const secondId = "123e4567-e89b-42d3-a456-426614174001";
+  assert.equal(guard.claim(firstId, 1_800_000_000, 1_800_000_000), true);
+  assert.equal(guard.claim(firstId, 1_800_000_000, 1_800_000_000), false);
+  assert.equal(guard.size(), 1);
+  assert.throws(() => guard.claim(secondId, 1_800_000_000, 1_800_000_000), /capacity/i);
+  assert.throws(() => guard.claim(secondId, 1_800_000_000, 1_800_000_400), /timestamp/i);
+});
+
+test("labelled citation alert evaluation reports precision recall and false-positive rate", () => {
+  const positiveBaseline = cohort(20);
+  const positiveCurrent = cohort(20, { citations: ["https://competitor.example/guide"], sampledAt: "2026-11-16T12:00:00.000Z" });
+  const negativeBaseline = cohort(20);
+  const negativeCurrent = cohort(20, { sampledAt: "2026-11-16T12:00:00.000Z" });
+  const quality = evaluateGeoCitationAlertQuality({
+    cases: [
+      {
+        caseId: "positive-loss",
+        baseline: positiveBaseline,
+        current: positiveCurrent,
+        observedAt: "2026-11-16T13:00:00.000Z",
+        candidateDomains: ["searqon.com", "competitor.example"],
+        expectedDisappearedDomains: ["searqon.com"]
+      },
+      {
+        caseId: "negative-stable",
+        baseline: negativeBaseline,
+        current: negativeCurrent,
+        observedAt: "2026-11-16T13:00:00.000Z",
+        candidateDomains: ["searqon.com"],
+        expectedDisappearedDomains: []
+      }
+    ],
+    policy: { minimumSamples: 10, minimumAbsoluteChange: 0.2 }
+  });
+  assert.equal(quality.caseCount, 2);
+  assert.equal(quality.counts.truePositive, 1);
+  assert.equal(quality.counts.falsePositive, 0);
+  assert.equal(quality.counts.falseNegative, 0);
+  assert.equal(quality.metrics.precision, 1);
+  assert.equal(quality.metrics.recall, 1);
+  assert.equal(quality.metrics.falsePositiveRate, 0);
+});
+
+test("citation alert reports disclose observation lag and stale data status", () => {
+  const baseline = cohort(20);
+  const current = cohort(20, { citations: ["https://competitor.example/guide"], sampledAt: "2026-11-16T12:00:00.000Z" });
+  const report = detectCitationChanges({
+    baseline,
+    current,
+    observedAt: "2026-11-16T13:00:00.000Z",
+    policy: { minimumSamples: 10, minimumAbsoluteChange: 0.2, maxObservationAgeSeconds: 60 }
+  });
+  assert.equal(report.observationLagSeconds, 3600);
+  assert.equal(report.observationFreshness, "stale");
 });
