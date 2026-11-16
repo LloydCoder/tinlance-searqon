@@ -62,11 +62,12 @@ function validateCheckpointShape(checkpoint) {
   return errors;
 }
 
-export function createEvidenceRedactionJournalCheckpoint(entries, privateKeyInput, { createdAt } = {}) {
+export function createEvidenceRedactionJournalCheckpoint(entries, privateKeyInput, { createdAt, manifestPublicKey: manifestPublicKeyInput } = {}) {
   if (!canonicalTimestamp(createdAt)) throw new TypeError("createdAt must be a canonical ISO 8601 UTC timestamp");
   const privateKey = privateEd25519Key(privateKeyInput);
   const publicKey = createPublicKey(privateKey);
-  const verification = verifyEvidenceRedactionJournal(entries, publicKey);
+  const manifestPublicKey = publicEd25519Key(manifestPublicKeyInput);
+  const verification = verifyEvidenceRedactionJournal(entries, manifestPublicKey);
   if (!verification.valid) throw new TypeError("A valid redaction journal is required: " + verification.errors.join(", "));
 
   const payload = {
@@ -81,11 +82,11 @@ export function createEvidenceRedactionJournalCheckpoint(entries, privateKeyInpu
   return Object.freeze({ ...payload, signature });
 }
 
-export function verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, publicKeyInput) {
+export function verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, checkpointPublicKeyInput, manifestPublicKeyInput) {
   const errors = validateCheckpointShape(checkpoint);
   let publicKey;
   try {
-    publicKey = publicEd25519Key(publicKeyInput);
+    publicKey = publicEd25519Key(checkpointPublicKeyInput);
     if (checkpoint && typeof checkpoint === "object" && checkpoint.keyId !== keyIdentifier(publicKey)) {
       errors.push("public_key_id_mismatch");
     }
@@ -110,7 +111,8 @@ export function verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, pu
   }
 
   if (Array.isArray(entries) && publicKey && Number.isSafeInteger(checkpoint?.entryCount) && checkpoint.entryCount >= 0 && entries.length >= checkpoint.entryCount) {
-    const journalVerification = verifyEvidenceRedactionJournal(entries, publicKey);
+    const manifestPublicKey = publicEd25519Key(manifestPublicKeyInput);
+    const journalVerification = verifyEvidenceRedactionJournal(entries, manifestPublicKey);
     if (!journalVerification.valid) errors.push("journal_integrity_verification_failed");
     const prefix = entries.slice(0, checkpoint.entryCount);
     const actualHead = prefix.at(-1)?.entryHash ?? null;
