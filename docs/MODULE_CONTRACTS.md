@@ -116,3 +116,11 @@ Compatibility and versioning decisions are recorded in [ADR-0001](adr/0001-domai
 ## Non-functional gates
 
 Security: no unresolved critical/high findings; threat model and abuse cases reviewed. Reliability: bounded execution and explicit degraded states. Privacy: documented minimization, retention, deletion and redaction. Cost: per-run/per-tenant instrumentation and hard budget enforcement. Accessibility: keyboard-operable reports and alert configuration. Operations: secret-free structured logs, metrics, traces, audit events and runbooks.
+
+## C. Competitor Citation-Change Detection
+
+**Implemented increment:** `detectCitationChanges` compares two caller-supplied GEO observation cohorts. It validates every observation through the existing GEO aggregation integrity boundary, requires exactly one comparable provider/channel/brand/target/locale/region cohort on each side, and requires the current capture window to follow the baseline. It emits deterministic, evidence-linked citation appearance, disappearance and prevalence-change events.
+
+**Output:** versioned report with per-URL baseline/current presence rates, sample counts, Wilson 95% intervals, evidence IDs, deterministic event IDs, suppressed candidates and explicit methodology limitations.
+
+**Safety and measurement limits:** consumer observations and direct model API observations are never pooled; provider, model, region, locale, brand and target domain must match exactly; duplicate or invalid evidence records are rejected; default policy requires 20 observations per cohort and a 0.20 absolute rate change; low-sample, low-effect and overlapping-interval changes are suppressed. This measures citation presence per observation, not ranking, causality or provider-wide share-of-voice. No provider acquisition, URL fetching, scheduling, persistence, cross-run deduplication or notification delivery is implemented. Wilson intervals are descriptive and do not correct repeated-testing effects or prompt dependence. External notifications require signed payloads, replay protection, idempotency, bounded retries, receipts and tenant authorization.
