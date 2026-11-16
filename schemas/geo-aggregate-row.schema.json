@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.com/schemas/geo-aggregate-row.schema.json",
+  "title": "Searqon GEO aggregate row",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observationClass",
+    "provider",
+    "brand",
+    "targetDomain",
+    "samplePeriod",
+    "sampleSize",
+    "mentionCount",
+    "mentionOccurrences",
+    "brandCitationCount",
+    "citationCount",
+    "evidenceIds",
+    "evidenceCount",
+    "evidenceTruncated",
+    "mentionRate",
+    "mentionRate95",
+    "brandCitationRate",
+    "brandCitationRate95"
+  ],
+  "properties": {
+    "observationClass": {
+      "enum": [
+        "consumer_observation",
+        "model_api"
+      ]
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "model",
+        "region",
+        "locale"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "region": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locale": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "brand": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targetDomain": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "samplePeriod": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "sampleSize": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "mentionCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "mentionOccurrences": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "brandCitationCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "citationCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidenceIds": {
+      "type": "array",
+      "maxItems": 500,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^evidence_[a-f0-9]{20}$"
+      }
+    },
+    "evidenceCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "evidenceTruncated": {
+      "type": "boolean"
+    },
+    "mentionRate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "brandCitationRate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "mentionRate95": {
+      "$ref": "#/$defs/interval"
+    },
+    "brandCitationRate95": {
+      "$ref": "#/$defs/interval"
+    }
+  },
+  "$defs": {
+    "interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lower",
+        "upper"
+      ],
+      "properties": {
+        "lower": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "upper": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+}
