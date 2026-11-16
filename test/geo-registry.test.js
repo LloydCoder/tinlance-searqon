@@ -93,7 +93,7 @@ test("prompt cohorts normalize locale and deterministically deduplicate equivale
   assert.equal(first.cohortId, second.cohortId);
   assert.equal(first.prompts.length, 2);
   assert.equal(first.locale, "en-CA");
-  assert.equal(first.brand.registryId, registry().registryId);
+  assert.equal(first.registryId, registry().registryId);
   assert.ok(first.prompts.every(item => item.promptId.startsWith("prompt_")));
 });
 
