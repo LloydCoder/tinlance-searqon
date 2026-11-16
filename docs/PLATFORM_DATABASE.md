@@ -5,7 +5,7 @@
 ## Requirements
 
 - PostgreSQL 16 or later.
-- Apply `db/migrations/0001_platform_core.sql` using a dedicated migration owner with permission to create the schema and the non-login `searqon_app` role.
+- Apply ordered migrations with `npm run db:migrate` using a dedicated migration owner with CREATEROLE permission. The runner verifies SHA-256 checksums and serializes concurrent migration runs.
 - Do not run migrations with the request-serving database identity.
 - The CI workflow runs the migration against a disposable PostgreSQL 16 service and exercises the row-level security policies.
 
@@ -25,10 +25,10 @@ The assessment table has a composite foreign key to `projects(organization_id, i
 
 All tenant-owned tables have PostgreSQL RLS enabled. Projects, assessments and audit events also use FORCE RLS. User, organization, membership and session tables do not FORCE RLS so narrowly scoped SECURITY DEFINER authentication functions owned by the migration/table owner can provision accounts and resolve sessions; the request-serving role is not the owner and remains subject to RLS. The non-login `searqon_app` role is non-superuser, non-owner, non-createrole, non-createdb and `NOBYPASSRLS`. It cannot directly provision users, modify memberships or read authentication tokens/rate-limit rows.
 
-For each authenticated request, the future API must:
+For each authenticated request, the API:
 1. Authenticate the user independently of request-supplied organization IDs.
 2. Begin a database transaction.
-3. `SET LOCAL ROLE searqon_app` and set `searqon.user_id` with a parameterized `set_config(..., true)` call inside that transaction.
+3. `SET LOCAL ROLE searqon_app` and set `searqon.user_id` with a parameterized `set_config(..., true)` call inside that transaction. The runtime login role must be a non-owner, non-superuser member of `searqon_app`.
 4. Execute all tenant-scoped queries through the restricted runtime role.
 5. Commit or roll back; transaction-local context must not leak through the connection pool.
 
@@ -50,15 +50,15 @@ Audit events can be selected and appended by an authorized workspace member. A d
 - Encryption/key management, backup/restore automation, data residency or physical deletion workflows.
 - Production DB roles, network policies, secrets, backups, SLOs or deployment.
 
-The passwordless authentication service uses the database adapter and checksum-verified migration runner. Project/assessment persistence and worker execution are not yet wired into the running HTTP API.
+The passwordless authentication service uses narrowly scoped SECURITY DEFINER functions for account provisioning and session lookup; the runtime role cannot directly access authentication-token or rate-limit tables. The Node.js adapter is wired into registration, magic-link verification, session lookup/logout and authenticated profile loading. Project/assessment persistence and worker execution are not yet wired into the running HTTP API.
 
 
 ## Node.js database adapter
 
 The repository pins `pg@8.23.1` (node-postgres) and commits the generated npm lockfile. The adapter in `src/platform/database.js` provides a bounded pool, connection and statement timeouts, keepalive, safe pool-error reporting, and a tenant transaction helper. Remote database connections require TLS certificate verification; plaintext is allowed only for loopback development hosts.
 
-`withUserTransaction(pool, userId, work)` starts a transaction and sets `searqon.user_id` with a parameterized transaction-local `set_config` call. The identity must be sourced from an independently authenticated server-side session, not from client input. It commits on success, rolls back on failure, and destroys the connection if rollback fails. The transaction-local setting is cleared by PostgreSQL when the transaction ends.
+`withUserTransaction(pool, userId, work)` starts a transaction, assumes `searqon_app` with `SET LOCAL ROLE`, and sets `searqon.user_id` with a parameterized transaction-local `set_config` call. The identity must be sourced from an independently authenticated server-side session, not from client input. It commits on success, rolls back on failure, and destroys the connection if rollback fails. The transaction-local setting is cleared by PostgreSQL when the transaction ends.
 
 Unit tests cover URL validation, pool bounds, TLS policy, safe error reporting, commit/rollback behavior and connection disposal. A PostgreSQL integration test runs the helper against a disposable PostgreSQL 16 service with a one-connection pool, proving RLS isolation across sequential identities and absence of tenant context when no identity is set.
 
-This adapter is not yet wired into the public web HTTP server. Authentication/session issuance, secure account provisioning and customer-facing project APIs remain incomplete.
+The adapter is wired into the passwordless authentication service. Customer-facing project/assessment persistence, background workers and production operations remain incomplete.
