@@ -51,7 +51,8 @@ function validateAggregateRow(row, field) {
   };
   const brand = boundedIdentifier(row.brand, field + ".brand");
   const targetDomain = row.targetDomain === null ? null : boundedIdentifier(row.targetDomain, field + ".targetDomain", 253).toLowerCase();
-  if (row.samplePeriod !== null && row.samplePeriod !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(row.samplePeriod)) {
+  if (targetDomain !== null && !/^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/.test(targetDomain)) throw new TypeError(field + " targetDomain must be a normalized hostname");
+  if (row.samplePeriod !== null && row.samplePeriod !== undefined && (!/^\d{4}-\d{2}-\d{2}$/.test(row.samplePeriod) || new Date(row.samplePeriod + "T00:00:00.000Z").toISOString().slice(0, 10) !== row.samplePeriod)) {
     throw new TypeError(field + " samplePeriod must be null or YYYY-MM-DD");
   }
   const sampleSize = boundedInteger(row.sampleSize, field + ".sampleSize", 1, 1_000_000);
