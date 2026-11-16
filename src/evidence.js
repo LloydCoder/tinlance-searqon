@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 
 export const MAX_EVIDENCE_BYTES = 2 * 1024 * 1024;
-const OBSERVATION_CLASSES = new Set(["crawl","first_party","consumer_observation","model_api","derived","estimate"]);
+export const EVIDENCE_OBSERVATION_CLASSES = Object.freeze(["crawl","first_party","consumer_observation","model_api","derived","estimate"]);
+const OBSERVATION_CLASSES = new Set(EVIDENCE_OBSERVATION_CLASSES);
 const MEDIA_TYPE_PATTERN = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/;
 
 function sha256(value) {
