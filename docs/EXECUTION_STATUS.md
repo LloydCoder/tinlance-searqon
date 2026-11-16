@@ -208,7 +208,7 @@ This register separates implemented repository capabilities from customer, secur
 
 ## 2026-11-16 — Roadmap Phase 9 citation-change alert foundation (in progress)
 
-- Added deterministic GEO baseline/current aggregate comparisons with strict matching across observation class, provider, model, region, locale, brand, target domain and sample period.
+- Added deterministic GEO baseline/current aggregate comparisons with strict matching across observation class, provider, model, region, locale, brand, target domain and sample period. Aggregates preserve up to 500 evidence IDs per cohort, total counts and truncation metadata; emitted alerts carry baseline/current references and reject reused evidence IDs.
 - Added minimum sample/effect thresholds, conservative non-overlapping Wilson 95% interval screening, explicit new/missing cohort evaluations, stable deduplication keys and caller-managed cooldown suppression.
 - Added raw observation citation-domain disappearance detection with evidence-record integrity/provenance verification, strict same-cohort checks and baseline/current evidence references.
 - Added signed HMAC-SHA256 webhook event envelopes, timestamp tolerance, raw-body/event-ID binding, bounded delivery receipts, and Slack/Teams Workflows/PagerDuty payload builders.
