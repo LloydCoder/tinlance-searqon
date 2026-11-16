@@ -93,7 +93,7 @@ const baselineAt = "2026-11-16T12:00:00.000Z";
 const currentAt = "2026-11-16T13:00:00.000Z";
 const evaluatedAt = "2026-11-16T13:01:00.000Z";
 
-function row({ mentionCount = 80, brandCitationCount = 70, sampleSize = 100, providerName = "OpenAI", model = "gpt-4.1", region = "us", locale = "en-US", observationClass = "model_api", brand = "Searqon", targetDomain = "searqon.com", evidenceSeed = "baseline" } = {}) {
+function row({ mentionCount = 80, brandCitationCount = 70, sampleSize = 100, providerName = "OpenAI", model = "gpt-4.1", region = "us", locale = "en-US", observationClass = "model_api", brand = "Searqon", targetDomain = "searqon.com", evidenceSeed = "baseline", evidenceIds = null } = {}) {
   return {
     observationClass,
     provider: { name: providerName, model, region, locale },
@@ -105,7 +105,7 @@ function row({ mentionCount = 80, brandCitationCount = 70, sampleSize = 100, pro
     mentionOccurrences: mentionCount,
     brandCitationCount,
     citationCount: brandCitationCount,
-    evidenceIds: Array.from({ length: Math.min(sampleSize, 500) }, (_, index) => "evidence_" + (index + (evidenceSeed === "current" ? 1001 : 1)).toString(16).padStart(20, "0")),
+    evidenceIds: evidenceIds ?? Array.from({ length: Math.min(sampleSize, 500) }, (_, index) => "evidence_" + (index + (evidenceSeed === "current" ? 1001 : 1)).toString(16).padStart(20, "0")),
     evidenceCount: sampleSize,
     evidenceTruncated: sampleSize > 500,
     mentionRate: Number((mentionCount / sampleSize).toFixed(4)),
@@ -408,5 +408,5 @@ test("aggregate snapshot comparisons reject reused evidence identifiers", () => 
 });
 
 test("aggregate alert generation fails closed when evidence references are missing", () => {
-  assert.throws(() => buildGeoAlerts(input({ baseline: [row({ evidenceIds: [] })] })), /evidenceIds/);
+  assert.throws(() => buildGeoAlerts(input({ baseline: [row({ evidenceIds: [] })] })), /evidence/);
 });
