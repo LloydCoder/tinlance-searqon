@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.tinlance.com/schemas/evidence-legal-hold-journal-entry/1.0.0",
+  "title": "Searqon Evidence Legal Hold Journal Entry",
+  "description": "Hash-linked journal envelope containing one signed legal-hold event.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sequence", "previousHash", "event", "entryHash"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "previousHash": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^[a-f0-9]{64}$" }] },
+    "event": { "$ref": "evidence-legal-hold-event.schema.json" },
+    "entryHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}
