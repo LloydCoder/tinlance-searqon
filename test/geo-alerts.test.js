@@ -158,8 +158,8 @@ test("cohort mismatches are reported as new/missing cohorts, never compared", ()
     current: [row({ mentionCount: 10, brandCitationCount: 5, model: "different-model" })]
   }));
   assert.equal(result.alerts.length, 0);
-  assert.ok(result.evaluations.some(item => item.status === "new_cohort"));
-  assert.ok(result.evaluations.some(item => item.status === "cohort_missing"));
+  assert.ok(result.evaluations.some(item => item.status === "new_cohort" && item.dimensions.observationClass));
+  assert.ok(result.evaluations.some(item => item.status === "cohort_missing" && item.dimensions.provider.name));
 });
 
 test("alert evaluation rejects duplicate cohorts and invalid chronological inputs", () => {
