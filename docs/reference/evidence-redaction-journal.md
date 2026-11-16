@@ -27,7 +27,7 @@ try {
 
 ## Trust boundaries and limitations
 
-- The hash chain detects edits, reordering and interior deletion within the retained journal. It cannot detect an attacker truncating a valid suffix or rewriting the entire journal unless a trusted external checkpoint of the journal head is retained.
+- The hash chain detects accidental edits, reordering and interior deletion when later entries remain unchanged. It cannot detect an attacker who can recompute the chain, truncate a valid suffix or replace the entire journal unless a trusted external checkpoint of the journal head is retained.
 - The Ed25519 signature authenticates the manifest to a public key; the application must bind that key to the authorized approver identity. The store does not authenticate users or provide RBAC.
 - Writer exclusion is process-local only. There is no cross-process lock, distributed coordination, encryption, WORM guarantee, remote replication or automatic backup.
 - The journal records logical export suppression. It does not delete the original evidence record or sanitize the evidence ledger, filesystem snapshots or backups.
