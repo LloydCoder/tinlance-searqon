@@ -97,8 +97,8 @@ function confidenceFor(fact) {
 
 export function extractBrandClaims(answerText, registry) {
   verifyBrandTruthRegistry(registry);
-  if (typeof answerText !== "string" || !answerText.trim() || [...answerText].length > MAX_ANSWER_CHARS || /[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]/.test(answerText)) throw new TypeError("answerText must be non-empty text of at most " + MAX_ANSWER_CHARS + " characters");
-  const answer = answerText.normalize("NFKC").replace(/\\r\\n?/g, "\\n").trim();
+  if (typeof answerText !== "string" || !answerText.trim() || [...answerText].length > MAX_ANSWER_CHARS || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(answerText)) throw new TypeError("answerText must be non-empty text of at most " + MAX_ANSWER_CHARS + " characters");
+  const answer = answerText.normalize("NFKC").replace(/\r\n?/g, "\n").trim();
   const terms = [registry.brand.name, ...registry.brand.aliases]
     .sort((a, b) => b.length - a.length || a.localeCompare(b, "en"));
   const sentences = answer.split(/(?<=[.!?])\s+|\n+/u).map(value => value.trim()).filter(Boolean);
