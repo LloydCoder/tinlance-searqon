@@ -69,6 +69,7 @@ test("workspace projects and persisted assessments enforce tenant and role bound
     assert.equal(assessment.status, "succeeded");
     assert.ok(assessment.evidenceId);
     assert.equal(assessment.report.schemaVersion, "1.0.0");
+    assert.equal(assessment.report.evidence.source, "https://example.com/docs");
     assert.equal((await service.listAssessments(userA, project.id)).length, 1);
 
     const failingService = createWorkspaceService({ database, analyze() { throw new Error("synthetic analyzer failure"); } });
