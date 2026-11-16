@@ -12,6 +12,13 @@ const JOURNEY_STAGES = new Set(["awareness", "consideration", "decision", "reten
 function digest(value) {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
+function stableStringify(value) {
+  if (Array.isArray(value)) return "[" + value.map(stableStringify).join(",") + "]";
+  if (value && typeof value === "object") {
+    return "{" + Object.keys(value).sort().map(key => JSON.stringify(key) + ":" + stableStringify(value[key])).join(",") + "}";
+  }
+  return JSON.stringify(value);
+}
 function identifier(prefix, value) {
   return prefix + digest(value).slice(0, 20);
 }
@@ -125,13 +132,19 @@ export function createBrandTruthRegistry(input) {
     updatedAt,
     facts: Object.freeze(facts)
   };
-  return Object.freeze({ ...body, contentDigest: digest(JSON.stringify(body)) });
+  return Object.freeze({ ...body, contentDigest: digest(stableStringify(body)) });
 }
 
 function assertRegistry(registry) {
   if (!registry || registry.type !== "brand_truth_registry" || registry.schemaVersion !== "1.0.0" || !/^btr_[a-f0-9]{20}$/.test(registry.registryId ?? "")) {
     throw new TypeError("A normalized version 1.0.0 brand truth registry is required");
   }
+  const { contentDigest, ...body } = registry;
+  if (typeof contentDigest !== "string" || digest(stableStringify(body)) !== contentDigest) {
+    throw new TypeError("Brand Truth Registry content digest failed integrity verification");
+  }
+  const expectedId = identifier("btr_", JSON.stringify([registry.brand?.name?.toLocaleLowerCase("en"), registry.brand?.primaryDomain]));
+  if (expectedId !== registry.registryId) throw new TypeError("Brand Truth Registry identity does not match its brand and domain");
 }
 
 export function createPromptCohort(input) {
@@ -214,12 +227,35 @@ function validateProvider(provider, planCreatedAt) {
   return Object.freeze({ name, observationClass: provider.observationClass, collectionMode: expectedMode, adapterId, policyReview, estimatedCostPerSampleUsd, maxSamples: provider.maxSamples });
 }
 
+function assertCohort(cohort) {
+  if (!cohort || cohort.type !== "geo_prompt_cohort" || cohort.schemaVersion !== "1.0.0" ||
+      !/^cohort_[a-f0-9]{20}$/.test(cohort.cohortId ?? "") ||
+      !/^btr_[a-f0-9]{20}$/.test(cohort.registryId ?? "") ||
+      !Array.isArray(cohort.prompts) || cohort.prompts.length < 1 || cohort.prompts.length > MAX_PROMPTS) {
+    throw new TypeError("A normalized version 1.0.0 GEO prompt cohort is required");
+  }
+  const locale = normalizeLocale(cohort.locale);
+  const promptIds = [];
+  for (const prompt of cohort.prompts) {
+    if (!prompt || typeof prompt !== "object" || prompt.locale !== locale ||
+        !/^prompt_[a-f0-9]{20}$/.test(prompt.promptId ?? "") ||
+        !JOURNEY_STAGES.has(prompt.journeyStage)) {
+      throw new TypeError("GEO prompt cohort contains an invalid prompt");
+    }
+    const normalizedPrompt = requiredText(prompt.prompt, "prompt", 4000).toLocaleLowerCase(locale).replace(/\\s+/g, " ");
+    const expectedPromptId = identifier("prompt_", JSON.stringify([normalizedPrompt, prompt.intent, prompt.journeyStage, locale]));
+    if (expectedPromptId !== prompt.promptId) throw new TypeError("GEO prompt cohort prompt identity failed integrity verification");
+    promptIds.push(prompt.promptId);
+  }
+  if (new Set(promptIds).size !== promptIds.length) throw new TypeError("GEO prompt cohort contains duplicate prompt identifiers");
+  const expectedCohortId = identifier("cohort_", JSON.stringify([cohort.registryId, locale, cohort.market, promptIds]));
+  if (expectedCohortId !== cohort.cohortId) throw new TypeError("GEO prompt cohort identity failed integrity verification");
+}
+ 
 export function buildGeoSamplingPlan(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new TypeError("Sampling plan input is required");
   const cohort = input.cohort;
-  if (!cohort || cohort.type !== "geo_prompt_cohort" || cohort.schemaVersion !== "1.0.0" || !Array.isArray(cohort.prompts) || !cohort.prompts.length) {
-    throw new TypeError("A normalized version 1.0.0 GEO prompt cohort is required");
-  }
+  assertCohort(cohort);
   const sampleCount = input.sampleCount;
   if (!Number.isSafeInteger(sampleCount) || sampleCount < 1 || sampleCount > MAX_SAMPLE_COUNT) {
     throw new RangeError("sampleCount must be an integer between 1 and " + MAX_SAMPLE_COUNT);
