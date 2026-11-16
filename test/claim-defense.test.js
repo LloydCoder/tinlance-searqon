@@ -53,7 +53,7 @@ test("registry-consistent claims are distinguished from independently verified f
   const report = evaluateBrandClaims({ registry, claims, observedAt });
   assert.equal(report.results[0].assessment, "registry_consistent");
   assert.equal(report.results[0].factStatus, "corroborated");
-  assert.equal(report.results[0].confidence, "high");
+  assert.equal(report.results[0].provenanceTier, "high");
   assert.equal(report.results[0].citationAssessment, "missing_citation");
   assert.equal(report.summary.registryConsistent, 1);
 });
@@ -85,7 +85,7 @@ test("unsupported claims are not silently rewritten or treated as facts", () => 
     claims: [{ text: "Searqon is the world's most accurate platform.", attribute: "product.accuracy", value: "world's most accurate" }]
   });
   assert.equal(report.results[0].assessment, "unverified");
-  assert.equal(report.results[0].confidence, "none");
+  assert.equal(report.results[0].provenanceTier, "none");
   assert.equal(report.correctionManifest.items[0].proposedCorrection, null);
 });
 
