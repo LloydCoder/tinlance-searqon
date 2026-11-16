@@ -327,3 +327,58 @@ test("marketing stylesheet follows the supplied flat-color and amber signal rule
     assert.match(stylesheet, /--serif:var\(--sans\)/);
   });
 });
+
+
+test("project APIs require a session and enforce same-origin writes", async () => {
+  let origin;
+  let calls = 0;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async getProfile(token) {
+      if (token !== "S".repeat(43)) return null;
+      return { user: { id: "51000000-0000-4000-8000-000000000001" }, organizations: [] };
+    }
+  };
+  const workspaceService = {
+    async listProjects(userId, organizationId) { calls++; return [{ id: "project-1", organizationId }]; },
+    async createProject(userId, input) { calls++; return { id: "project-1", ...input }; },
+    async getProject(userId, projectId) { calls++; return projectId === "project-1" ? { id: projectId } : null; },
+    async listAssessments() { calls++; return []; },
+    async createAssessment(userId, projectId, input) { calls++; return { id: "assessment-1", projectId, status: "succeeded", report: { summary: { findingCount: 0 } }, ...input }; }
+  };
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const unauthorized = await fetch(base + "/api/v1/projects?organizationId=52000000-0000-4000-8000-000000000001");
+    assert.equal(unauthorized.status, 401);
+
+    const cookie = "searqon_session=" + "S".repeat(43);
+    const crossOrigin = await fetch(base + "/api/v1/projects", {
+      method: "POST",
+      headers: { cookie, origin: "https://attacker.example", "content-type": "application/json" },
+      body: JSON.stringify({ organizationId: "52000000-0000-4000-8000-000000000001", name: "Example", targetUrl: "https://example.com" })
+    });
+    assert.equal(crossOrigin.status, 403);
+    assert.equal(calls, 0);
+
+    const created = await fetch(base + "/api/v1/projects", {
+      method: "POST",
+      headers: { cookie, origin, "content-type": "application/json" },
+      body: JSON.stringify({ organizationId: "52000000-0000-4000-8000-000000000001", name: "Example", targetUrl: "https://example.com" })
+    });
+    assert.equal(created.status, 201);
+    assert.equal((await created.json()).project.name, "Example");
+
+    const listed = await fetch(base + "/api/v1/projects?organizationId=52000000-0000-4000-8000-000000000001", { headers: { cookie } });
+    assert.equal(listed.status, 200);
+    assert.equal((await listed.json()).projects.length, 1);
+
+    const assessment = await fetch(base + "/api/v1/projects/project-1/assessments", {
+      method: "POST",
+      headers: { cookie, origin, "content-type": "application/json" },
+      body: JSON.stringify({ contentType: "text/html", content: "<html></html>" })
+    });
+    assert.equal(assessment.status, 201);
+    assert.equal((await assessment.json()).assessment.status, "succeeded");
+    assert.equal(calls, 3);
+  }, { authService, workspaceService });
+});
