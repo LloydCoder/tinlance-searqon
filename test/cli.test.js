@@ -148,20 +148,26 @@ test("published GEO example fixtures execute end-to-end", async () => {
 test("CLI audits supplied answer claims against a Brand Truth Registry", async () => {
   const dir = await mkdtemp(join(tmpdir(), "searqon-claims-"));
   try {
+    const registryInputFile = join(dir, "registry-input.json");
+    const registryFile = join(dir, "registry.json");
     const inputFile = join(dir, "claims-input.json");
     const outputFile = join(dir, "claims-report.json");
+    await writeFile(registryInputFile, JSON.stringify({
+      brandName: "Searqon",
+      primaryDomain: "searqon.com",
+      assertedBy: "founder",
+      createdAt: "2026-11-16T12:00:00.000Z",
+      facts: [{ attribute: "product.category", value: "AI-search intelligence platform", statement: "Searqon is an AI-search intelligence platform.", status: "owner_asserted" }]
+    }));
+    let result = spawnSync(process.execPath, [cli.pathname, "geo", "registry", registryInputFile, "--out", registryFile], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const registry = JSON.parse(await readFile(registryFile, "utf8"));
     await writeFile(inputFile, JSON.stringify({
-      registry: {
-        brandName: "Searqon",
-        primaryDomain: "searqon.com",
-        assertedBy: "founder",
-        createdAt: "2026-11-16T12:00:00.000Z",
-        facts: [{ attribute: "product.category", value: "AI-search intelligence platform", statement: "Searqon is an AI-search intelligence platform.", status: "owner_asserted" }]
-      },
+      registry,
       answerText: "Searqon is an AI-search intelligence platform.",
       observedAt: "2026-11-16T13:00:00.000Z"
     }));
-    const result = spawnSync(process.execPath, [cli.pathname, "claims", "audit", inputFile, "--out", outputFile], { encoding: "utf8" });
+    result = spawnSync(process.execPath, [cli.pathname, "claims", "audit", inputFile, "--out", outputFile], { encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
     const report = JSON.parse(await readFile(outputFile, "utf8"));
     assert.equal(report.type, "claim_defense_report");
