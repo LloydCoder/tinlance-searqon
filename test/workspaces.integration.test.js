@@ -42,7 +42,7 @@ test("workspace projects and persisted assessments enforce tenant and role bound
     );
 
     const project = await service.createProject(userA, {
-      organizationId: orgA, name: "Primary website", targetUrl: "https://example.com/docs"
+      organizationId: orgA, name: "Primary website", targetUrl: "https://example.com/docs?token=private#section"
     });
     assert.equal(project.name, "Primary website");
     assert.equal(project.targetUrl, "https://example.com/docs");
