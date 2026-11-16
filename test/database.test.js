@@ -35,8 +35,14 @@ test("database factory configures bounded pool and requires TLS for non-loopback
   assert.equal(options.max, 10);
   assert.equal(options.connectionTimeoutMillis, 5000);
   assert.equal(options.idleTimeoutMillis, 30000);
+  assert.equal(options.statement_timeout, 15000);
+  assert.equal(options.query_timeout, 20000);
+  assert.equal(options.lock_timeout, 5000);
+  assert.equal(options.application_name, "searqon-api");
+  assert.equal(options.keepAlive, true);
   assert.deepEqual(options.ssl, { rejectUnauthorized: true });
-  assert.equal(db.pool, db.pool);
+  assert.equal(typeof db.healthCheck, "function");
+  assert.equal(typeof db.close, "function");
 });
 
 test("database factory permits plaintext only for loopback development hosts", () => {
@@ -110,4 +116,21 @@ test("user transaction destroys a connection when commit fails", async () => {
   );
   assert.equal(client.calls.some(call => call.sql === "ROLLBACK"), true);
   assert.equal(client.calls.at(-1).release, true);
+});
+
+test("database factory reports only a safe pool error code", () => {
+  let listener;
+  let reported;
+  class FakePool {
+    constructor() {}
+    on(event, callback) { if (event === "error") listener = callback; }
+    async end() {}
+  }
+  createDatabase({
+    connectionString: "postgresql://app:secret@db.example.test:5432/searqon",
+    PoolImpl: FakePool,
+    onPoolError: value => { reported = value; }
+  });
+  listener({ code: "ECONNRESET", message: "password=must-not-be-forwarded" });
+  assert.deepEqual(reported, { code: "ECONNRESET" });
 });
