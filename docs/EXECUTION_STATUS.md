@@ -234,3 +234,12 @@ This register separates implemented repository capabilities from customer, secur
 - The quality fixture is synthetic regression data only. No real-world false-positive/recall claim is made.
 - Phase 9 remains IN_PROGRESS. Live provider collection, consumer-interface automation, citation appearance/replacement/order, durable alert state, persistent replay dedupe, encrypted destination management, outbound delivery, durable retry/outbox, scheduling, monitoring and customer-labelled validation remain.
 - The merge does not change the overall product maturity: Searqon remains early alpha and is not production-ready.
+
+
+## 2026-11-16 — Roadmap Phase 10 Agent Artifact Compiler increment
+
+- PR #98 merged to main as `b02688382d81113970783169e4483711ab03ece6`.
+- Exact-head verification passed: Node.js 22/24 tests and package validation, PostgreSQL 16 tenant/auth/workspace integration, CodeQL and full-history Gitleaks.
+- Added deterministic local compilation for caller-supplied Markdown and OpenAPI 3.1/3.2 sources; source/evidence digests; passive analyzer quality findings; opt-in llms.txt; bounded deterministic diff proposals; versioned output schema and CLI.
+- The compiler performs no repository/network acquisition, source-file writes, patch application, GitHub branch/PR creation, merge or publishing.
+- Phase 10 remains IN_PROGRESS pending explicit repository/revision scope, statement-level source maps, richer OpenAPI/link/schema validation, prompt-injection/adversarial fixtures, disposable-worktree patch verification and a least-privilege GitHub PR adapter with human approval/no auto-merge.
