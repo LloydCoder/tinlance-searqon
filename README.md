@@ -170,6 +170,10 @@ The CLI prints usage when invoked without a valid command. Run `node src/cli.js`
 
 The repository now includes an early local web interface and same-origin assessment API. Run `npm run dev:web` and open `http://127.0.0.1:4173`. The interface uses the existing deterministic analyzer for supplied HTML, Markdown and OpenAPI JSON. Dashboard figures are illustrative only. This is not a hosted, authenticated or multi-tenant service; see [the web application boundary](docs/WEB_APP.md).
 
+## Web application and hosted platform
+
+The repository contains the Searqon landing page and local assessment API. Run `npm run dev:web` and open `http://127.0.0.1:4173`. The PostgreSQL platform schema and tenant-isolation design are documented in [the database foundation](docs/PLATFORM_DATABASE.md). The complete product—including future hosted SaaS capabilities—remains in this repository; see [ADR-0002](docs/adr/0002-single-repository-product.md). The current web server is a local development slice, not a hosted multi-tenant service.
+
 ## Documentation
 
 | Guide | Purpose |

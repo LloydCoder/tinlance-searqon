@@ -14,6 +14,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  database-security:
+    name: PostgreSQL tenant isolation and audit controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: searqon-ci-only
+          POSTGRES_DB: searqon
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d searqon"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: searqon-ci-only
+      DATABASE_URL: postgresql://postgres:searqon-ci-only@127.0.0.1:5432/searqon
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Apply platform schema
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file db/migrations/0001_platform_core.sql
+      - name: Verify row-level tenant isolation and append-only audit
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file db/tests/tenant-isolation.sql
+
   test:
     name: Tests and package validation (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
