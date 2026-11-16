@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { analyzeDocument } from "../../src/analyzer.js";
@@ -133,22 +133,36 @@ async function serveStatic(pathname, response, headOnly = false) {
     sendJson(response, 400, { error: { code: "bad_path", message: "Invalid URL path." } });
     return;
   }
-  const relative = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
-  const filePath = resolve(ROOT, relative);
-  if (filePath !== ROOT && !filePath.startsWith(ROOT + sep)) {
+
+  const relative = decoded === "/" ? "index.html" : decoded.replace(/^\\/+/, "");
+  let candidate = resolve(ROOT, relative);
+  if (candidate !== ROOT && !candidate.startsWith(ROOT + sep)) {
     sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
     return;
   }
+
   try {
-    const info = await stat(filePath);
+    let info = await stat(candidate);
+    if (info.isDirectory()) {
+      candidate = resolve(candidate, "index.html");
+      info = await stat(candidate);
+    }
     if (!info.isFile()) throw new Error("not a file");
-    const extension = extname(filePath).toLowerCase();
+
+    const rootRealPath = await realpath(ROOT);
+    const fileRealPath = await realpath(candidate);
+    if (fileRealPath !== rootRealPath && !fileRealPath.startsWith(rootRealPath + sep)) {
+      sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
+      return;
+    }
+
+    const extension = extname(fileRealPath).toLowerCase();
     const contentType = MIME_TYPES[extension];
     if (!contentType) {
       sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
       return;
     }
-    const body = await readFile(filePath);
+    const body = await readFile(fileRealPath);
     response.writeHead(200, {
       "content-type": contentType,
       "content-length": body.length,
