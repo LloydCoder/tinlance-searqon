@@ -151,6 +151,8 @@ function buildLlmsArtifact(options, sources) {
   return lines.join("\n") + "\n";
 }
 
+function omittedDiff(path) { return `--- a/${path}\n+++ b/${path}\n@@ diff omitted: compilation diff budget exceeded @@\n`; }
+
 function buildChanges(artifacts, previousArtifacts) {
   let diffBudget = MAX_DIFF_FILES;
   const previous = new Map();
@@ -170,7 +172,7 @@ function buildChanges(artifacts, previousArtifacts) {
   for (const artifact of artifacts) {
     currentPaths.add(artifact.path);
     if (!previous.has(artifact.path)) {
-      changes.push(Object.freeze({ path: artifact.path, status: "added", beforeSha256: null, afterSha256: artifact.sha256, unifiedDiff: diffBudget-- > 0 ? diffLines(artifact.path, "", artifact.content) : "--- a/" + artifact.path + "\\n+++ b/" + artifact.path + "\\n@@ diff omitted: compilation diff budget exceeded @@\\n", applied: false }));
+      changes.push(Object.freeze({ path: artifact.path, status: "added", beforeSha256: null, afterSha256: artifact.sha256, unifiedDiff: diffBudget-- > 0 ? diffLines(artifact.path, "", artifact.content) : omittedDiff(artifact.path), applied: false }));
       continue;
     }
     const before = previous.get(artifact.path);
@@ -183,7 +185,7 @@ function buildChanges(artifacts, previousArtifacts) {
   }
   for (const [path, before] of previous) {
     if (!currentPaths.has(path)) {
-      changes.push(Object.freeze({ path, status: "removed", beforeSha256: sha256(before), afterSha256: null, unifiedDiff: diffBudget-- > 0 ? diffLines(path, before, "") : "--- a/" + path + "\\n+++ b/" + path + "\\n@@ diff omitted: compilation diff budget exceeded @@\\n", applied: false }));
+      changes.push(Object.freeze({ path, status: "removed", beforeSha256: sha256(before), afterSha256: null, unifiedDiff: diffBudget-- > 0 ? diffLines(path, before, "") : omittedDiff(path), applied: false }));
     }
   }
   return changes.sort((a, b) => a.path.localeCompare(b.path));
