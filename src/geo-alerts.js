@@ -194,6 +194,7 @@ export function buildGeoAlerts(input) {
     const key = boundedIdentifier(item.dedupeKey, "previousAlerts.dedupeKey", 64);
     const notifiedAt = canonicalTimestamp(item.lastNotifiedAt, "previousAlerts.lastNotifiedAt");
     const prior = previous.get(key);
+    if (notifiedAt > evaluatedAt) throw new RangeError("previousAlerts timestamps cannot be in the future");
     if (!prior || notifiedAt > prior) previous.set(key, notifiedAt);
   }
   const baselineMap = new Map();
@@ -460,7 +461,11 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
       if (seen.has(item.evidence.id)) throw new TypeError("duplicate evidence identifier in " + label);
       seen.add(item.evidence.id);
       boundedIdentifier(item.provider.name, label + ".provider.name");
+      if (item.provider.model !== undefined && item.provider.model !== null) boundedIdentifier(item.provider.model, label + ".provider.model");
+      if (item.provider.region !== undefined && item.provider.region !== null) boundedIdentifier(item.provider.region, label + ".provider.region");
+      if (item.provider.locale !== undefined && item.provider.locale !== null) boundedIdentifier(item.provider.locale, label + ".provider.locale", 32);
       boundedIdentifier(item.brand, label + ".brand");
+      if (item.targetDomain !== null && item.targetDomain !== undefined) boundedIdentifier(item.targetDomain, label + ".targetDomain", 253);
       const sampledAt = canonicalTimestamp(item.sampledAt, label + ".sampledAt");
       if (!Array.isArray(item.citations) || item.citations.length > 100) throw new TypeError(label + " citations are invalid");
       const domains = new Set();
