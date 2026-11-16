@@ -111,12 +111,16 @@ export function verifyEvidenceRedactionJournalCheckpoint(checkpoint, entries, ch
   }
 
   if (Array.isArray(entries) && publicKey && Number.isSafeInteger(checkpoint?.entryCount) && checkpoint.entryCount >= 0 && entries.length >= checkpoint.entryCount) {
-    const manifestPublicKey = publicEd25519Key(manifestPublicKeyInput);
-    const journalVerification = verifyEvidenceRedactionJournal(entries, manifestPublicKey);
-    if (!journalVerification.valid) errors.push("journal_integrity_verification_failed");
-    const prefix = entries.slice(0, checkpoint.entryCount);
-    const actualHead = prefix.at(-1)?.entryHash ?? null;
-    if (actualHead !== checkpoint.headHash) errors.push("checkpoint_head_mismatch");
+    try {
+      const manifestPublicKey = publicEd25519Key(manifestPublicKeyInput);
+      const journalVerification = verifyEvidenceRedactionJournal(entries, manifestPublicKey);
+      if (!journalVerification.valid) errors.push("journal_integrity_verification_failed");
+      const prefix = entries.slice(0, checkpoint.entryCount);
+      const actualHead = prefix.at(-1)?.entryHash ?? null;
+      if (actualHead !== checkpoint.headHash) errors.push("checkpoint_head_mismatch");
+    } catch {
+      errors.push("invalid_manifest_public_key");
+    }
   }
 
   return Object.freeze({ valid: errors.length === 0, errors: Object.freeze(errors) });
