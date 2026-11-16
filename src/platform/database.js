@@ -91,6 +91,7 @@ export async function withUserTransaction(pool, userId, work) {
   try {
     await client.query("BEGIN");
     transactionStarted = true;
+    await client.query("SET LOCAL ROLE searqon_app");
     await client.query("SELECT set_config('searqon.user_id', $1, true)", [userId]);
     const result = await work(client);
     await client.query("COMMIT");
