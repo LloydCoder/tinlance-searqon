@@ -16,6 +16,7 @@
 | `src/geo.js` | `analyzeGeoObservation(input)`, `aggregateGeoObservations(items, options)`, `GEO_OBSERVATION_CLASSES` | Supplied observation processing only. No provider querying, consumer-interface scraping, scheduler or history service. |
 | `src/report-html.js` | `renderHtmlReport(report)`, `escapeHtml(value)` | Deterministic local HTML rendering; no hosted report service. |
 | `src/contract-migrations.js` | `ContractMigrationRegistry` | Explicit synchronous JSON transformations between registered versions; rejects unknown or ambiguous paths. Does not validate schemas, persist migrations or claim losslessness. |
+| `src/evidence-retention.js` | `evaluateEvidenceRetention(records, options)`, `EVIDENCE_RETENTION_POLICY_VERSION` | Deterministic, metadata-only expiry evaluation. It does not delete, redact or mutate ledger data. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
