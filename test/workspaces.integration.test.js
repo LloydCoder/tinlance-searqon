@@ -50,11 +50,11 @@ test("workspace projects and persisted assessments enforce tenant and role bound
     assert.equal((await service.listProjects(userA, orgA)).length, 1);
     assert.equal((await service.listProjects(userB, orgB)).length, 0);
     await assert.rejects(
-      service.createProject(userA, { organizationId: orgB, name: "Cross tenant", targetUrl: "https://attacker.example" }),
+      service.createProject(userA, { organizationId: orgB, name: "Cross tenant", targetUrl: "https://attacker.com" }),
       error => error instanceof WorkspaceError && error.code === "project_not_found"
     );
     await assert.rejects(
-      service.createProject(viewer, { organizationId: orgA, name: "Viewer project", targetUrl: "https://viewer.example" }),
+      service.createProject(viewer, { organizationId: orgA, name: "Viewer project", targetUrl: "https://viewer.com" }),
       error => error instanceof WorkspaceError && error.statusCode === 403
     );
     await assert.rejects(
