@@ -181,3 +181,14 @@ test("prompt cohorts reject a tampered Brand Truth Registry digest", () => {
     prompts: [{ prompt: "Best tools?" }]
   }), /digest|integrity/i);
 });
+
+
+test("sampling plans reject prompt cohort identity tampering", () => {
+  const altered = structuredClone(cohort());
+  altered.brand.primaryDomain = "other.example.org";
+  assert.throws(() => buildGeoSamplingPlan({
+    cohort: altered, sampleCount: 1, costCapUsd: 1,
+    createdAt: "2026-11-16T12:00:00.000Z",
+    providers: [{ name: "Manual", observationClass: "consumer_observation", collectionMode: "manual_capture", policyReview: reviewed, estimatedCostPerSampleUsd: 0, maxSamples: 2 }]
+  }), /identity|domain/i);
+});
