@@ -52,6 +52,10 @@ jobs:
         run: npm run db:migrate
       - name: Verify row-level tenant isolation and append-only audit
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file db/tests/tenant-isolation.sql
+      - name: Create restricted runtime login for authentication integration
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE searqon_runtime LOGIN PASSWORD 'runtime-test-only' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "GRANT searqon_app TO searqon_runtime"
       - name: Verify Node.js tenant transactions against PostgreSQL
         run: node --test test/database.integration.test.js
         env:
@@ -60,6 +64,7 @@ jobs:
         run: node --test test/auth.integration.test.js
         env:
           SEARQON_TEST_DATABASE: "1"
+          SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
 
   test:
     name: Tests and package validation (Node ${{ matrix.node-version }})
