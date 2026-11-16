@@ -36,14 +36,20 @@ async function loadWorkspace() {
 const signOut = document.querySelector("#sign-out");
 signOut?.addEventListener("click", async () => {
   signOut.disabled = true;
+  signOut.textContent = "Signing out…";
   try {
-    await fetch("/api/v1/auth/logout", {
+    const response = await fetch("/api/v1/auth/logout", {
       method: "POST",
       credentials: "same-origin",
-      headers: {}
+      cache: "no-store"
     });
-  } finally {
+    if (!response.ok) throw new Error("The session could not be revoked. Please retry.");
     window.location.replace("/auth/login/");
+  } catch (error) {
+    signOut.disabled = false;
+    signOut.textContent = "Sign out";
+    status.textContent = error instanceof Error ? error.message : "Sign-out could not be confirmed. Please retry.";
+    status.className = "workspace-status";
   }
 });
 
