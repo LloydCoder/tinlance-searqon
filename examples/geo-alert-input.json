@@ -1,0 +1,44 @@
+{
+  "baseline": [
+    {
+      "observationClass": "model_api",
+      "provider": {
+        "name": "Example Provider",
+        "model": "model-version",
+        "region": "us",
+        "locale": "en-US"
+      },
+      "brand": "Example Brand",
+      "targetDomain": "example.com",
+      "samplePeriod": null,
+      "sampleSize": 100,
+      "mentionCount": 80,
+      "brandCitationCount": 70
+    }
+  ],
+  "current": [
+    {
+      "observationClass": "model_api",
+      "provider": {
+        "name": "Example Provider",
+        "model": "model-version",
+        "region": "us",
+        "locale": "en-US"
+      },
+      "brand": "Example Brand",
+      "targetDomain": "example.com",
+      "samplePeriod": null,
+      "sampleSize": 100,
+      "mentionCount": 40,
+      "brandCitationCount": 20
+    }
+  ],
+  "baselineId": "baseline-2026-11-16T12",
+  "currentId": "current-2026-11-16T13",
+  "baselineAt": "2026-11-16T12:00:00.000Z",
+  "currentAt": "2026-11-16T13:00:00.000Z",
+  "evaluatedAt": "2026-11-16T13:01:00.000Z",
+  "minSampleSize": 30,
+  "minAbsoluteChange": 0.1,
+  "cooldownSeconds": 3600
+}
