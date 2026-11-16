@@ -9,7 +9,7 @@ const LOCK_NAMESPACE = 1397049169;
 const LOCK_ID = 1;
 
 export async function runMigrations({
-  connectionString = process.env.DATABASE_URL,
+  connectionString = process.env.MIGRATION_DATABASE_URL ?? process.env.DATABASE_URL,
   migrationsDirectory = MIGRATIONS_DIRECTORY,
   createDatabaseImpl = createDatabase
 } = {}) {
