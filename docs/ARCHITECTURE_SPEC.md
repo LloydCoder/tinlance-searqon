@@ -72,6 +72,8 @@ Current v1 evidence observation classes are crawl, first_party, consumer_observa
 
 Each observation records source identity, acquisition method, capture time, provider/surface, model/product/version where available, region, locale, prompt cohort, sampling configuration, methodology/parser versions, evidence references and limitations. A content digest alone is not proof of authenticity, immutability or trusted time.
 
+Evidence lifecycle is explicit and separate from ledger integrity. `evaluateEvidenceRetention` computes metadata-only expiry eligibility from a caller-supplied retention interval and UTC evaluation time; it does not purge. Ed25519-signed redaction manifests can suppress approved evidence IDs from generated exports after verification. Requester and approver identifiers must differ, but the library does not authenticate identities or bind approvers to keys; the calling application owns that authorization mapping. Export suppression does not remove the original record from the append-only JSONL ledger, filesystem snapshots or backups. Physical deletion, cryptographic erasure, legal holds, backup expiry, storage sanitization and restore validation remain separate controls. Never rewrite a hash-chained ledger in place and call it a deletion; any future compaction must define a new chain root, signed custody evidence, old-copy disposition and independently verified sanitization. Follow NIST SP 800-88 Rev. 2 for media-sanitization program design.
+
 Findings carry stable ID, dimension, rule/methodology version, severity, status, evidence IDs, scope, confidence, limitations, recommendation and verification method. Distinguish observed facts, extracted claims, model-assisted interpretations, derived statistics and estimates.
 
 Recommendation lifecycle: proposed → validated → approved → applied → verified, or rejected/rolled_back. Approval binds actor, target, scope, diff hash and expiry. Searqon may prepare a patch/PR but never auto-merge or deploy.
@@ -83,6 +85,7 @@ Recommendation lifecycle: proposed → validated → approved → applied → ve
 - Discovery never implies authorization. Active tests require explicit scope and time-bounded authorization.
 - Sandbox workers are disposable and isolated from host filesystem, control-plane secrets and other tenants.
 - Secrets are short-lived, least-privilege, redacted and never stored in evidence.
+- Retention evaluation is not deletion; signed export suppression is not physical erasure. Key custody, identity binding, legal holds, backup lifecycle and storage sanitization must be independently designed and verified.
 - Webhooks are signed, replay-protected, idempotent and auditable.
 - Repository automation is branch-scoped and diff-hash-bound; auto-merge is prohibited.
 - Hosted multi-tenancy requires tenant isolation tests at every storage and job boundary.
@@ -104,3 +107,4 @@ Accepted direction: modular TypeScript-first architecture; evidence-ledger metho
 - MCP target revision: 2026-07-28. Its security guidance treats tool descriptions as untrusted and requires user consent; authorization guidance requires resource/audience binding and token validation: https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs/specification/2026-07-28
 - Robots Exclusion Protocol: RFC 9309 defines crawler access guidance; it is not an authorization or access-control mechanism: https://www.rfc-editor.org/rfc/rfc9309.html
 - llms.txt: the llmstxt.org document is a community proposal. Searqon treats it as an optional artifact and makes no guarantee that engines consume it: https://llmstxt.org/
+- NIST SP 800-88 Rev. 2: media sanitization program guidance, including cryptographic erase considerations: https://csrc.nist.gov/pubs/sp/800/88/r2/final
