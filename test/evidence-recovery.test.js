@@ -22,24 +22,6 @@ function ledgerFixture() {
   return { record, entries: [entry] };
 }
 
-function redactionFixture(record, keys) {
-  const manifest = createEvidenceRedactionManifest({
-    evidenceIds: [record.id],
-    requestId: "RECOVERY-001",
-    reasonCode: "customer_request",
-    requestedBy: "requester-1",
-    approvedBy: "approver-1",
-    createdAt: "2026-11-16T00:02:00.000Z"
-  }, keys.manifest.privateKey);
-  return [{
-    schemaVersion: "1.0.0",
-    sequence: 1,
-    previousHash: null,
-    manifest,
-    entryHash: "placeholder"
-  }];
-}
-
 // Construct the journal entry using the public store API, so the fixture
 // exercises the same canonical hash/signature rules as persisted journals.
 async function createJournalEntry(record, keys) {
@@ -77,6 +59,7 @@ async function validBundle() {
       createdAt: "2026-11-16T00:03:00.000Z"
     }),
     ledgerCheckpointPublicKey: ledgerKeys.publicKey,
+    ledgerCheckpointPrivateKey: ledgerKeys.privateKey,
     redactionEntries,
     redactionCheckpoint: createEvidenceRedactionJournalCheckpoint(redactionEntries, checkpointKeys.privateKey, {
       createdAt: "2026-11-16T00:04:00.000Z",
@@ -125,7 +108,12 @@ test("recovery verifier rejects duplicate evidence identifiers in a restored led
   });
   const entries = [...bundle.ledgerEntries, second];
   assert.notEqual(duplicate.entryHash, second.entryHash);
-  assert.equal(verifyEvidenceRecoveryBundle({ ...bundle, ledgerEntries: entries }).valid, false);
+  const checkpoint = createEvidenceLedgerCheckpoint(entries, bundle.ledgerCheckpointPrivateKey, {
+    createdAt: "2026-11-16T00:06:00.000Z"
+  });
+  const result = verifyEvidenceRecoveryBundle({ ...bundle, ledgerEntries: entries, ledgerCheckpoint: checkpoint });
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.includes("duplicate_evidence_identifier"));
 });
 
 test("recovery verifier rejects malformed bundle input without throwing", () => {
