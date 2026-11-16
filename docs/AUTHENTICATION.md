@@ -44,6 +44,7 @@ Production delivery uses the Resend HTTP API through the native Node.js fetch im
 - `PUBLIC_APP_ORIGIN`: exact HTTPS origin of the application.
 - `AUTH_RATE_LIMIT_SECRET`: at least 32 bytes of high-entropy secret material.
 - `DATABASE_URL`: runtime PostgreSQL login that is a member of `searqon_app`.
+- `MIGRATION_DATABASE_URL`: separate migration identity URL; the migration runner falls back to `DATABASE_URL` only when this variable is absent.
 
 Resend requests include an idempotency key derived from the database token ID. Provider response bodies, API keys and magic-link tokens are not logged. Email delivery is disabled by default. In local development only, set `SEARQON_EMAIL_MODE=console` to print a one-time link to the developer console; never enable this mode in production.
 
