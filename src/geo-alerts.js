@@ -4,8 +4,8 @@ import { verifyEvidenceRecord } from "./evidence.js";
 
 const OBSERVATION_CLASSES = new Set(["consumer_observation", "model_api"]);
 const METRICS = Object.freeze([
-  Object.freeze({ key: "mention", label: "Brand mentions", countKey: "mentionCount", rateKey: "mentionRate", intervalKey: "mentionRate95" }),
-  Object.freeze({ key: "brand_citation", label: "Brand citations", countKey: "brandCitationCount", rateKey: "brandCitationRate", intervalKey: "brandCitationRate95" })
+  Object.freeze({ metricKey: "mention", label: "Brand mentions", countKey: "mentionCount", rateKey: "mentionRate", intervalKey: "mentionRate95" }),
+  Object.freeze({ metricKey: "brand_citation", label: "Brand citations", countKey: "brandCitationCount", rateKey: "brandCitationRate", intervalKey: "brandCitationRate95" })
 ]);
 const MAX_COHORTS = 2_000;
 const MAX_ALERTS = 500;
@@ -101,7 +101,7 @@ function compareMetric(cohort, metric, baseline, current, policy, evaluatedAt) {
   const currentInterval = wilsonInterval(afterCount, current.sampleSize);
   const intervalsOverlap = baseInterval.lower <= currentInterval.upper && currentInterval.lower <= baseInterval.upper;
   const evaluation = {
-    metric: metric.key,
+    metric: metric.metricKey,
     label: metric.label,
     status: "no_significant_change",
     baseline: { sampleSize: baseline.sampleSize, count: beforeCount, rate: Number(beforeRate.toFixed(4)), interval95: baseInterval },
@@ -127,12 +127,12 @@ function compareMetric(cohort, metric, baseline, current, policy, evaluatedAt) {
     targetDomain: cohort.targetDomain,
     samplePeriod: cohort.samplePeriod
   };
-  const dedupeKey = digest(JSON.stringify({ dimensions, metric: metric.key, direction }));
+  const dedupeKey = digest(JSON.stringify({ dimensions, metric: metric.metricKey, direction }));
   const alertId = "geoalert_" + digest(JSON.stringify({ dedupeKey, baselineId: policy.baselineId, currentId: policy.currentId })).slice(0, 24);
   const alert = Object.freeze({
     alertId,
     dedupeKey,
-    type: metric.key === "mention" ? "mention_change" : "brand_citation_change",
+    type: metric.metricKey === "mention" ? "mention_change" : "brand_citation_change",
     metric: metric.key,
     label: metric.label,
     direction,
