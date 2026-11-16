@@ -382,3 +382,29 @@ test("project APIs require a session and enforce same-origin writes", async () =
     assert.equal(calls, 3);
   }, { authService, workspaceService });
 });
+
+
+test("authenticated production assessment writes reject cross-origin requests", async () => {
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  let origin;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async getProfile() { return { user: { id: "51000000-0000-4000-8000-000000000001" }, organizations: [] }; }
+  };
+  try {
+    await withServer(async base => {
+      origin = new URL(base).origin;
+      const response = await fetch(base + "/api/v1/assessments", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "https://attacker.example" },
+        body: JSON.stringify({ source: "example", contentType: "text/html", content: "<html></html>" })
+      });
+      assert.equal(response.status, 403);
+      assert.equal((await response.json()).error.code, "origin_rejected");
+    }, { authService });
+  } finally {
+    if (previous === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous;
+  }
+});
