@@ -73,10 +73,7 @@ test("workspace projects and persisted assessments enforce tenant and role bound
     assert.equal(await service.getProject(userB, project.id), null);
     assert.equal((await service.listAssessments(userB, project.id)).length, 0);
   } finally {
-    await owner.query("DELETE FROM searqon.projects WHERE organization_id = ANY($1::uuid[])", [[orgA,orgB]]);
-    await owner.query("DELETE FROM searqon.memberships WHERE organization_id = ANY($1::uuid[])", [[orgA,orgB]]);
-    await owner.query("DELETE FROM searqon.organizations WHERE id = ANY($1::uuid[])", [[orgA,orgB]]);
-    await owner.query("DELETE FROM searqon.app_users WHERE id = ANY($1::uuid[])", [[userA,userB,viewer]]);
+    // The disposable CI database is ephemeral. Audit events are append-only, so fixtures remain until the database is discarded.
     await database.pool.end();
     await owner.end();
   }
