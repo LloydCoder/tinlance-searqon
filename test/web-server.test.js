@@ -93,3 +93,13 @@ test("serves the landing page and honors HEAD without returning a response body"
     assert.equal(await head.text(), "");
   });
 });
+
+test("landing page follows the brand kit prohibition on gradients and magnifier icons", async () => {
+  await withServer(async base => {
+    const response = await fetch(base + "/");
+    const page = await response.text();
+    assert.equal(page.includes("<linearGradient"), false);
+    assert.equal(page.includes('circle cx="10.8"'), false);
+    assert.match(page, /Signal Amber/);
+  });
+});
