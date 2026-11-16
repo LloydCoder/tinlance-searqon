@@ -272,7 +272,8 @@
           "items": {
             "type": "string",
             "pattern": "^evidence_[a-f0-9]{20}$"
-          }
+          },
+          "minItems": 1
         },
         "evidenceCount": {
           "type": "integer",
@@ -478,7 +479,8 @@
               "items": {
                 "type": "string",
                 "pattern": "^evidence_[a-f0-9]{20}$"
-              }
+              },
+              "minItems": 1
             },
             "currentEvidenceIds": {
               "type": "array",
@@ -487,7 +489,8 @@
               "items": {
                 "type": "string",
                 "pattern": "^evidence_[a-f0-9]{20}$"
-              }
+              },
+              "minItems": 1
             },
             "baselineEvidenceCount": {
               "type": "integer",
