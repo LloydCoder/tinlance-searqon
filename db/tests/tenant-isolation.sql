@@ -134,13 +134,22 @@ BEGIN
     WHERE organization_id = v_organization_id AND actor_user_id = v_user_id AND event_type = 'auth.session.revoked'
   ) THEN RAISE EXCEPTION 'session revocation was not audited'; END IF;
 
-  FOR v_attempt IN 1..3 LOOP
+  FOR v_attempt IN 1..5 LOOP
     IF NOT searqon.consume_auth_email_rate_limit(decode(repeat('f', 64), 'hex')) THEN
       RAISE EXCEPTION 'rate limiter rejected an allowed request';
     END IF;
   END LOOP;
   IF searqon.consume_auth_email_rate_limit(decode(repeat('f', 64), 'hex')) THEN
-    RAISE EXCEPTION 'rate limiter allowed a request beyond the configured threshold';
+    RAISE EXCEPTION 'email rate limiter allowed a request beyond the configured threshold';
+  END IF;
+
+  FOR v_attempt IN 1..10 LOOP
+    IF NOT searqon.consume_auth_ip_rate_limit(decode(repeat('9', 64), 'hex')) THEN
+      RAISE EXCEPTION 'IP rate limiter rejected an allowed request';
+    END IF;
+  END LOOP;
+  IF searqon.consume_auth_ip_rate_limit(decode(repeat('9', 64), 'hex')) THEN
+    RAISE EXCEPTION 'IP rate limiter allowed a request beyond the configured threshold';
   END IF;
 
   IF has_table_privilege('searqon_app', 'searqon.auth_tokens', 'SELECT')
