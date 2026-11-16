@@ -54,6 +54,8 @@ jobs:
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file db/tests/tenant-isolation.sql
       - name: Verify Node.js tenant transactions against PostgreSQL
         run: node --test test/database.integration.test.js
+      - name: Verify passwordless authentication against PostgreSQL
+        run: node --test test/auth.integration.test.js
 
   test:
     name: Tests and package validation (Node ${{ matrix.node-version }})
