@@ -75,6 +75,10 @@ BEGIN
     SELECT 1 FROM searqon.memberships
     WHERE user_id = v_user_id AND organization_id = v_organization_id AND role = 'owner'
   ) THEN RAISE EXCEPTION 'new account was not assigned workspace owner membership'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM searqon.audit_events
+    WHERE organization_id = v_organization_id AND actor_user_id = v_user_id AND event_type = 'workspace.created'
+  ) THEN RAISE EXCEPTION 'workspace creation was not audited'; END IF;
 
   SELECT user_id, token_id INTO v_session_user, v_login_token
   FROM searqon.issue_magic_link(
@@ -82,6 +86,11 @@ BEGIN
   );
   IF v_session_user <> v_user_id OR v_login_token IS NULL THEN
     RAISE EXCEPTION 'magic link was not issued for the existing account';
+  END IF;
+  IF (SELECT count(*) FROM searqon.audit_events
+      WHERE organization_id = v_organization_id AND actor_user_id = v_user_id
+        AND event_type = 'auth.magic_link.issued') <> 2 THEN
+    RAISE EXCEPTION 'magic-link issuance events were not audited';
   END IF;
 
   -- Issuing a replacement invalidates the earlier unconsumed registration link.
@@ -103,6 +112,10 @@ BEGIN
     SELECT 1 FROM searqon.lookup_session(decode(repeat('c', 64), 'hex'))
     WHERE user_id = v_user_id
   ) THEN RAISE EXCEPTION 'new session could not be looked up'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM searqon.audit_events
+    WHERE organization_id = v_organization_id AND actor_user_id = v_user_id AND event_type = 'auth.session.created'
+  ) THEN RAISE EXCEPTION 'session creation was not audited'; END IF;
 
   IF EXISTS (
     SELECT 1 FROM searqon.consume_magic_link_and_create_session(
@@ -116,6 +129,10 @@ BEGIN
   IF EXISTS (SELECT 1 FROM searqon.lookup_session(decode(repeat('c', 64), 'hex'))) THEN
     RAISE EXCEPTION 'revoked session remained valid';
   END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM searqon.audit_events
+    WHERE organization_id = v_organization_id AND actor_user_id = v_user_id AND event_type = 'auth.session.revoked'
+  ) THEN RAISE EXCEPTION 'session revocation was not audited'; END IF;
 
   FOR v_attempt IN 1..3 LOOP
     IF NOT searqon.consume_auth_rate_limit(decode(repeat('f', 64), 'hex'), 3, 900) THEN
