@@ -16,7 +16,7 @@
 - `memberships`: user-to-workspace relationship and role.
 - `projects`: organization-scoped target properties.
 - `assessments`: organization/project-scoped assessment lifecycle and JSON report.
-- `sessions`: token digest, expiry, last-seen and revocation metadata.
+- `sessions`: token digest, 30-minute inactivity timeout via `last_seen_at`, 24-hour absolute expiry and revocation metadata.
 - `auth_tokens`: one-time magic-link token digests and consumption state.
 - `auth_rate_limits`: HMAC-keyed distributed abuse-control windows; raw email/IP values are not stored.
 - `schema_migrations`: ordered migration names and SHA-256 checksums.
