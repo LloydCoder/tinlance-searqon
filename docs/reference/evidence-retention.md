@@ -5,12 +5,28 @@ Searqon provides a deterministic retention evaluator for evidence metadata. It c
 ## API
 
 ```js
+import { generateKeyPairSync } from "node:crypto";
 import { evaluateEvidenceRetention } from "./src/evidence-retention.js";
 import { createEvidenceLegalHoldEvent } from "./src/evidence-legal-holds.js";
 
+const keys = generateKeyPairSync("ed25519");
+const hold = createEvidenceLegalHoldEvent({
+  holdId: "HOLD-2026-001",
+  sequence: 1,
+  action: "place",
+  evidenceIds: [records[0].id],
+  requestId: "HOLD-REQUEST-001",
+  reasonCode: "litigation",
+  requestedBy: "requester-01",
+  approvedBy: "approver-02",
+  createdAt: "2026-11-16T00:00:00.000Z"
+}, keys.privateKey);
+
 const decision = evaluateEvidenceRetention(records, {
   retentionDays: 90,
-  now: "2026-11-16T00:00:00.000Z"
+  now: "2026-11-16T00:00:00.000Z",
+  legalHoldEvents: [hold],
+  legalHoldPublicKey: keys.publicKey
 });
 ```
 
