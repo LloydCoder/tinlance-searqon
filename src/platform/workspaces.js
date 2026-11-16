@@ -30,7 +30,10 @@ function validateProjectInput(input) {
   let target;
   try { target = validateTargetUrl(input.targetUrl); }
   catch { throw new WorkspaceError(400, "invalid_target_url", "Use a valid public HTTP or HTTPS target without credentials, local addresses or reserved hosts."); }
-  return { organizationId, name, targetUrl: target.href };
+  const canonicalTarget = new URL(target.href);
+  canonicalTarget.search = "";
+  canonicalTarget.hash = "";
+  return { organizationId, name, targetUrl: canonicalTarget.href };
 }
 
 function validateAssessmentInput(input) {
