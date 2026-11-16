@@ -25,6 +25,8 @@ Every module emits versioned schema-valid outputs; records source/evidence IDs, 
 10. Any future ledger compaction must produce a new chain root and signed custody evidence, and must document the disposition and sanitization of prior copies.
 11. Signed redaction manifests are persisted in a separate bounded, fsync'd hash-linked local journal; reopening verifies all manifest signatures and chain links.
 12. Journal integrity limitations (recomputed-chain attacks, suffix truncation, full rewrite, no cross-process lock and no WORM guarantee) are disclosed; independent head checkpoint custody remains required.
+13. Detached Ed25519 checkpoints bind journal prefix count and head hash; verification accepts later valid appends but rejects truncation or changes to the checkpointed prefix.
+14. Checkpoint and trusted public key are stored outside the journal trust domain; caller-supplied createdAt is never represented as a trusted timestamp.
 
 
 ## A. Hallucination & Citation Defense
