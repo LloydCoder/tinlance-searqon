@@ -200,6 +200,19 @@
       "notes": "Deterministic comparisons of matching GEO aggregate cohorts using minimum sample and effect thresholds plus non-overlapping Wilson 95% intervals; not real-time provider monitoring."
     },
     {
+      "name": "geo-citation-alert-quality-report",
+      "file": "geo-citation-alert-quality-report.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-citation-alert-quality-report.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-citation-alert-quality-evaluator",
+        "cli"
+      ],
+      "notes": "Precision/recall/false-positive metrics over caller-supplied labelled domain-disappearance cases. Synthetic fixtures are not market validation."
+    },
+    {
       "name": "geo-citation-change-report",
       "file": "geo-citation-change-report.schema.json",
       "schemaId": "https://searqon.com/schemas/geo-citation-change-report.schema.json",
