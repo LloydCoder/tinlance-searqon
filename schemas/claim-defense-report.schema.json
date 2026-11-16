@@ -48,6 +48,7 @@
         "registryConsistent",
         "potentialContradictions",
         "unverified",
+        "entityUnresolved",
         "disputed",
         "stale",
         "citationIssues"
@@ -78,6 +79,10 @@
           "minimum": 0
         },
         "citationIssues": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entityUnresolved": {
           "type": "integer",
           "minimum": 0
         }
@@ -180,7 +185,8 @@
               "potential_contradiction",
               "unverified",
               "disputed",
-              "stale"
+              "stale",
+              "entity_unresolved"
             ]
           },
           "freshness": {
