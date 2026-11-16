@@ -283,7 +283,7 @@ export function buildGeoSamplingPlan(input) {
   const totalTasks = samplesPerProvider * providers.length;
   if (totalTasks > MAX_PLAN_TASKS) throw new RangeError("sampling plan exceeds the maximum task count of " + MAX_PLAN_TASKS);
   const estimatedCostUsd = Number((providers.reduce((sum, provider) => sum + samplesPerProvider * provider.estimatedCostPerSampleUsd, 0)).toFixed(6));
-  if (estimatedCostUsd > costCapUsd) throw new RangeError("sampling plan estimated cost exceeds costCapUsd");
+  if (estimatedCostUsd > costCapUsd) throw new RangeError("sampling plan estimated cost exceeds the configured USD budget cap (costCapUsd)");
   const tasks = [];
   for (const provider of providers) {
     for (const prompt of cohort.prompts) {
