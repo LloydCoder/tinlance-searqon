@@ -23,7 +23,14 @@ function assertJsonValue(value, seen = new WeakSet()) {
   seen.add(value);
 
   if (Array.isArray(value)) {
-    for (const item of value) assertJsonValue(item, seen);
+    const keys = Reflect.ownKeys(value).filter(key => key !== "length");
+    if (keys.length !== value.length || keys.some((key, index) => key !== String(index))) {
+      throw new TypeError("value must be JSON-compatible");
+    }
+    for (let index = 0; index < value.length; index += 1) {
+      if (!Object.hasOwn(value, index)) throw new TypeError("value must be JSON-compatible");
+      assertJsonValue(value[index], seen);
+    }
     seen.delete(value);
     return;
   }
@@ -109,6 +116,7 @@ export class ContractMigrationRegistry {
     if (paths.length === 0) throw new Error("No migration path is registered for the requested contract versions");
     if (paths.length > 1) throw new Error("Ambiguous migration path; register a single explicit version route");
 
+    const carriesSchemaVersion = Object.hasOwn(source, "schemaVersion");
     let current = source;
     for (const edge of paths[0]) {
       const result = edge.migrate(deepFreeze(cloneJson(current)));
@@ -116,6 +124,9 @@ export class ContractMigrationRegistry {
       const next = cloneJson(result);
       if (!next || Array.isArray(next) || typeof next !== "object") {
         throw new TypeError("migration must return a JSON-compatible object");
+      }
+      if (carriesSchemaVersion && !Object.hasOwn(next, "schemaVersion")) {
+        throw new Error("migration must preserve schemaVersion on versioned records");
       }
       if (Object.hasOwn(next, "schemaVersion") && next.schemaVersion !== edge.toVersion) {
         throw new Error("migration output schemaVersion must match its registered target version");
