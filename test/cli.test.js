@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { analyzeGeoObservation } from "../src/geo.js";
 
 const cli = new URL("../src/cli.js", import.meta.url);
 
@@ -186,5 +187,29 @@ test("published claim defense fixture produces contradiction and attribution fin
     assert.equal(report.summary.potentialContradictions, 1);
     assert.equal(report.results[0].citationAssessment, "attribution_swap");
     assert.equal(report.correctionManifest.autoPublish, false);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("CLI emits deterministic GEO citation change reports from supplied cohorts", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-"));
+  try {
+    const make = (index, citations, sampledAt) => analyzeGeoObservation({
+      prompt: "Which platform? " + index,
+      answer: "Searqon is a platform.",
+      brand: "Searqon",
+      targetDomain: "searqon.com",
+      citations,
+      provider: { name: "Example Search", observationClass: "consumer_observation", region: "US", locale: "en-US" },
+      sampledAt
+    });
+    const baseline = Array.from({ length: 25 }, (_, i) => make(i, ["https://searqon.com/docs"], "2026-11-10T12:00:00.000Z"));
+    const current = Array.from({ length: 25 }, (_, i) => make(i + 25, ["https://competitor.example/guide"], "2026-11-16T12:00:00.000Z"));
+    const input = join(dir, "citation-change.json");
+    await writeFile(input, JSON.stringify({ baseline, current, observedAt: "2026-11-16T13:00:00.000Z" }));
+    const result = spawnSync(process.execPath, [cli.pathname, "geo", "alerts", input], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.type, "geo_citation_change_report");
+    assert.equal(report.events.length, 2);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
