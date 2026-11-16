@@ -60,10 +60,15 @@ test("passwordless auth completes registration, token replacement, session looku
     const userRows = await database.pool.query("SELECT id FROM searqon.app_users WHERE email = $1", [email]);
     const userIds = userRows.rows.map(row => row.id);
     if (userIds.length) {
-      await database.pool.query(
-        "DELETE FROM searqon.organizations WHERE id IN (SELECT organization_id FROM searqon.memberships WHERE user_id = ANY($1::uuid[]))",
+      const organizationRows = await database.pool.query(
+        "SELECT organization_id FROM searqon.memberships WHERE user_id = ANY($1::uuid[])",
         [userIds]
       );
+      await database.pool.query("DELETE FROM searqon.memberships WHERE user_id = ANY($1::uuid[])", [userIds]);
+      const organizationIds = organizationRows.rows.map(row => row.organization_id);
+      if (organizationIds.length) {
+        await database.pool.query("DELETE FROM searqon.organizations WHERE id = ANY($1::uuid[])", [organizationIds]);
+      }
       await database.pool.query("DELETE FROM searqon.app_users WHERE id = ANY($1::uuid[])", [userIds]);
     }
     const rateLimitHashes = [
