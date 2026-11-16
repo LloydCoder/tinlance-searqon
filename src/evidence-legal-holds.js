@@ -180,9 +180,11 @@ export class EvidenceLegalHoldApproverRegistry {
     return keyId;
   }
 
-  revoke(keyId) {
+  revoke(keyId, { revokedAt = new Date().toISOString() } = {}) {
     const entry = this.#keys.get(keyId);
     if (!entry) return false;
+    if (!canonicalTimestamp(revokedAt)) throw new TypeError("revokedAt must be a canonical ISO 8601 UTC timestamp");
+    entry.revokedAt = revokedAt;
     entry.active = false;
     return true;
   }
@@ -199,7 +201,7 @@ export class EvidenceLegalHoldApproverRegistry {
     if (entry.actorId !== event.approvedBy) {
       return Object.freeze({ valid: false, errors: Object.freeze(["approver_identity_mismatch"]) });
     }
-    if (!entry.active) {
+    if (!entry.active && event.createdAt >= entry.revokedAt) {
       return Object.freeze({ valid: false, errors: Object.freeze(["approver_key_revoked"]) });
     }
     return verifyEvidenceLegalHoldEvent(event, entry.publicKey);
@@ -210,7 +212,8 @@ export class EvidenceLegalHoldApproverRegistry {
       .map(([keyId, entry]) => Object.freeze({
         actorId: entry.actorId,
         keyId,
-        active: entry.active
+        active: entry.active,
+        ...(entry.revokedAt ? { revokedAt: entry.revokedAt } : {})
       }))
       .sort((a, b) => a.actorId.localeCompare(b.actorId) || a.keyId.localeCompare(b.keyId)));
   }

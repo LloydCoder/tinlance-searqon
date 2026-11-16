@@ -21,7 +21,9 @@
 | `src/evidence-redaction-store.js` | `openEvidenceRedactionStore(path, publicKey)`, `verifyEvidenceRedactionJournal(...)`, `verifyEvidenceRedactionJournalEntry(...)` | Local fsync'd hash-linked JSONL journal for signed manifests; single-process writer admission, not WORM or cross-process locking. |
 | `src/evidence-redaction-checkpoint.js` | `createEvidenceRedactionJournalCheckpoint(...)`, `verifyEvidenceRedactionJournalCheckpoint(...)` | Detached Ed25519 checkpoint of a journal prefix; external checkpoint and public-key custody remain caller responsibilities. |
 | `src/evidence-recovery.js` | `verifyEvidenceRecoveryBundle(bundle)` | Offline pre-restore integrity gate for an evidence ledger and redaction journal, both with independently trusted checkpoints; no file restore, replication or sanitization. |
-| `src/evidence-legal-holds.js` | `createEvidenceLegalHoldEvent(...)`, `verifyEvidenceLegalHoldEvent(...)`, `deriveActiveEvidenceHolds(...)`, `EvidenceLegalHoldApproverRegistry` | Signed, ordered legal-hold events with optional actor-to-key binding, explicit key revocation and key rotation; durable event storage remains caller-managed. |
+| `src/evidence-legal-holds.js` | `createEvidenceLegalHoldEvent(...)`, `verifyEvidenceLegalHoldEvent(...)`, `deriveActiveEvidenceHolds(...)`, `EvidenceLegalHoldApproverRegistry` | Signed, ordered legal-hold events with optional actor-to-key binding, explicit key revocation and key rotation. |
+| `src/evidence-legal-hold-store.js` | `openEvidenceLegalHoldStore(...)`, `verifyEvidenceLegalHoldJournal(...)`, `verifyEvidenceLegalHoldJournalEntry(...)` | Bounded fsync'd hash-linked JSONL hold journal; single-process writer admission and caller-managed registry custody. |
+| `src/evidence-legal-hold-checkpoint.js` | `createEvidenceLegalHoldJournalCheckpoint(...)`, `verifyEvidenceLegalHoldJournalCheckpoint(...)` | Detached Ed25519 checkpoint of a journal prefix; independent checkpoint/public-key custody remains caller responsibility. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
@@ -39,7 +41,7 @@ CLI output is JSON (or HTML for `report`); `--out` creates a new file and refuse
 - The current store is a single-process local-file implementation with bounded file/entry sizes and owner-only file permissions where supported.
 - It is not encrypted, WORM, remotely replicated, multi-process safe, tenant-isolated or backed up automatically.
 - Signed checkpoints do not create trusted timestamps. Store checkpoint artifacts and trusted public keys outside the ledger's trust domain.
-- Retention evaluation, signed logical redaction and signed legal-hold state events exist, but physical deletion/sanitization, durable hold journaling, access control, tenant isolation and backup/restore are not implemented as a complete lifecycle.
+- Retention evaluation, signed logical redaction and signed legal-hold events/journaling/checkpoints exist, but physical deletion/sanitization, access control, tenant isolation and backup/restore are not implemented as a complete lifecycle.
 
 ## Version selection and migration
 
@@ -52,6 +54,6 @@ No public Searqon API accepts a model response, tool description, discovered end
 
 ## Recovery verification gate
 
-`verifyEvidenceRecoveryBundle(bundle)` validates the evidence ledger hash chain and detached ledger checkpoint, the signed redaction journal and detached journal checkpoint, duplicate evidence IDs, and redaction references against the restored ledger. It fails closed when either checkpoint or a trusted verification key is missing or invalid. The result contains only integrity status, counts, error codes and sorted suppressed evidence IDs.
+`verifyEvidenceRecoveryBundle(bundle)` validates the evidence ledger hash chain and detached ledger checkpoint, the signed redaction journal and detached journal checkpoint, duplicate evidence IDs, and redaction references against the restored ledger. When legal-hold entries are included, it also verifies the signed hold journal and detached checkpoint, reconstructs active holds and rejects hold references absent from the restored evidence ledger. It fails closed when either checkpoint or a trusted verification key is missing or invalid. The result contains only integrity status, counts, error codes and sorted suppressed evidence IDs.
 
 This function is an offline pre-restore validation gate. It does not copy files, restore backups, sanitize media, expire backup copies, authenticate key owners, or establish that a backup is complete relative to an external system. Store both checkpoints and their trusted public keys independently from the backup being verified.

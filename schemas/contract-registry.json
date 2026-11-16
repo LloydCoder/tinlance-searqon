@@ -62,6 +62,30 @@
       "notes": "Signed place/release event for a fixed evidence scope. Signatures verify against a caller-trusted Ed25519 key or actor-bound approver registry; requester authentication, legal authority and durable journal/key-registry custody remain external."
     },
     {
+      "name": "evidence-legal-hold-journal-checkpoint",
+      "file": "evidence-legal-hold-journal-checkpoint.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/evidence-legal-hold-journal-checkpoint/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "evidence-legal-hold-journal-verifier"
+      ],
+      "notes": "Detached Ed25519 checkpoint of a journal prefix; store checkpoint and trusted checkpoint public key outside the journal trust domain."
+    },
+    {
+      "name": "evidence-legal-hold-journal-entry",
+      "file": "evidence-legal-hold-journal-entry.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/evidence-legal-hold-journal-entry/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "evidence-legal-hold-store"
+      ],
+      "notes": "Hash-linked envelope around a signed legal-hold event; local persistence remains single-process and non-WORM."
+    },
+    {
       "name": "evidence-record",
       "file": "evidence-record.schema.json",
       "schemaId": "https://searqon.tinlance.com/schemas/evidence-record/1.0.0",

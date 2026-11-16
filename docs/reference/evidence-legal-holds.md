@@ -48,7 +48,7 @@ const decision = evaluateEvidenceRetention(records, {
 
 - A bare public-key verification proves control of the corresponding private key, not the human identity or legal authority named in the event. The optional registry binds the signer to the approvedBy actor identifier, but the application must still authenticate that actor and authorize the legal decision.
 - The reducer accepts either one trusted public key or the optional in-memory approver registry. The registry is not durable or distributed; callers must persist its actor/key assignments and revocations in a separately protected control plane.
-- Events are supplied by the caller. This module does not provide durable journal storage, cross-process ordering, external checkpoint custody, legal case management or automatic backup retention.
+- Durable local journal storage and detached checkpoints are available through [the legal-hold journal](evidence-legal-hold-journal.md). The store remains single-process; the caller must preserve the registry and checkpoint artifacts independently. It does not provide legal case management or automatic backup retention.
 - Hold events never delete or mutate evidence. The retention evaluator remains a decision function and does not execute a purge.
 - The data controller remains responsible for deciding whether a hold is legally required, its scope, release authority and applicable retention policy.
 
