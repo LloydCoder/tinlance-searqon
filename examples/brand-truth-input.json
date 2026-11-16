@@ -1,0 +1,16 @@
+{
+  "brandName": "Searqon Example",
+  "primaryDomain": "searqon-example.com",
+  "aliases": ["Searqon Example Intelligence"],
+  "assertedBy": "example-owner",
+  "createdAt": "2026-11-16T12:00:00.000Z",
+  "facts": [
+    {
+      "attribute": "product.category",
+      "value": "AI-search intelligence platform",
+      "statement": "Searqon Example is an AI-search intelligence platform.",
+      "status": "owner_asserted",
+      "sourceUrls": ["https://searqon-example.com/about"]
+    }
+  ]
+}
