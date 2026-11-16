@@ -12,7 +12,7 @@ Requirements: Node.js 22 or later.
 npm run dev:web
 ```
 
-Open `http://127.0.0.1:4173`. To bind to another interface for a controlled local environment, set `HOST` explicitly. The default bind address is loopback.
+Open `http://127.0.0.1:4173`. For a production process manager, use `npm run start:web` after setting `NODE_ENV=production`, the public host binding and the required runtime secrets. To bind to another interface for a controlled local environment, set `HOST` explicitly. The default bind address is loopback.
 
 ## Current routes
 
