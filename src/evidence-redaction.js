@@ -106,7 +106,9 @@ export function createEvidenceRedactionManifest(input, privateKeyInput) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new TypeError("redaction request must be an object");
   const { evidenceIds, requestId, reasonCode, requestedBy, approvedBy, createdAt } = input;
   if (!Array.isArray(evidenceIds) || evidenceIds.length < 1 || evidenceIds.length > MAX_REDACTION_EVIDENCE_IDS) throw new TypeError("evidenceIds must contain between 1 and 10000 identifiers");
-  if (evidenceIds.some(id => typeof id !== "string" || !EVIDENCE_ID_PATTERN.test(id))) {
+  const evidenceIdKeys = Reflect.ownKeys(evidenceIds).filter(key => key !== "length");
+  if (evidenceIdKeys.length !== evidenceIds.length || evidenceIdKeys.some((key, index) => key !== String(index)) ||
+      evidenceIds.some(id => typeof id !== "string" || !EVIDENCE_ID_PATTERN.test(id))) {
     throw new TypeError("invalid evidence identifier");
   }
   if (new Set(evidenceIds).size !== evidenceIds.length) throw new TypeError("evidence identifiers must be unique");
