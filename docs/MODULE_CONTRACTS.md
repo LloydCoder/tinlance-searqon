@@ -8,6 +8,23 @@ Current published schema identities and version selection are governed by [the c
 
 Every module emits versioned schema-valid outputs; records source/evidence IDs, observation class, timestamps, methodology version, scope and limitations; separates observed facts from inference; explains confidence; bounds input/output/time/concurrency/retries/cost; supports disabled/no-op mode; applies data minimization, retention, deletion and redaction; and has unit, integration, adversarial and regression tests.
 
+## Evidence lifecycle and retention contract
+
+**Current implementation:** the local toolkit exposes a deterministic retention-expiry evaluator and a signed redaction-manifest/export-filter API. The evaluator returns metadata-only purge eligibility; the filter suppresses evidence from generated views only. Neither physically deletes or sanitizes ledger data.
+
+**Acceptance:**
+1. Retention evaluation requires an explicit policy interval and evaluation timestamp; it never uses an implicit system clock in deterministic decision tests.
+2. Invalid evidence records, duplicate IDs, malformed timestamps and out-of-range policies are rejected.
+3. Retention outputs contain only evidence IDs and lifecycle timestamps, not source labels, URLs, content or hashes.
+4. Redaction manifests use a versioned strict schema, fixed reason codes, sorted unique evidence IDs and Ed25519 signatures.
+5. Requester and approver identifiers are distinct; the caller must authenticate identities and bind approver keys to authorization policy.
+6. Export filtering verifies every manifest and fails closed on invalid signatures, duplicate request IDs or invalid evidence records.
+7. Source records and ledger entries are never mutated by retention evaluation or export filtering.
+8. Logical suppression is not represented as physical deletion, cryptographic erasure or media sanitization.
+9. Physical deletion requires separate storage-specific sanitization, backup expiry, legal-hold handling and verification; no such capability is currently claimed.
+10. Any future ledger compaction must produce a new chain root and signed custody evidence, and must document the disposition and sanitization of prior copies.
+
+
 ## A. Hallucination & Citation Defense
 
 **Input:** customer-approved canonical entity ID, aliases, approved facts, authoritative source references, validity interval, review timestamp and owner; prompt cohort; permitted observations.
