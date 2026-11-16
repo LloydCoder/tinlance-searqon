@@ -199,6 +199,17 @@ BEGIN
   END IF;
 END
 $$;
+-- Normalize an existing role as well as a newly-created role. A pre-existing
+-- role must never retain login, ownership, superuser or RLS-bypass attributes.
+ALTER ROLE searqon_app NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+
+REVOKE ALL ON SCHEMA searqon FROM PUBLIC;
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA searqon FROM PUBLIC, searqon_app;
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA searqon FROM PUBLIC, searqon_app;
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA searqon FROM PUBLIC, searqon_app;
+REVOKE ALL ON FUNCTION searqon.current_user_id() FROM PUBLIC;
+REVOKE ALL ON FUNCTION searqon.reject_audit_event_mutation() FROM PUBLIC;
+
 GRANT USAGE ON SCHEMA searqon TO searqon_app;
 GRANT EXECUTE ON FUNCTION searqon.current_user_id() TO searqon_app;
 GRANT SELECT ON searqon.app_users, searqon.organizations, searqon.memberships TO searqon_app;
