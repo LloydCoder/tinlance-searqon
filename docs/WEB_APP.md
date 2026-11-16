@@ -26,6 +26,9 @@ Open `http://127.0.0.1:4173`. For a production process manager, use `npm run sta
 | `/api/v1/auth/me` | GET | Resolve the current session and workspace memberships |
 | `/api/v1/auth/logout` | POST | Revoke the current session and clear the cookie |
 | `/api/v1/assessments` | POST | Analyze caller-supplied HTML, Markdown or OpenAPI JSON; requires authentication in production |
+| `/api/v1/projects` | GET, POST | Authenticated organization-scoped project list and creation |
+| `/api/v1/projects/:id` | GET | Authenticated project detail |
+| `/api/v1/projects/:id/assessments` | GET, POST | Persisted project assessment history and synchronous assessment execution |
 | Other `/api/*` | Any | Structured 404 response |
 
 Project and assessment routes require a valid passwordless session. Project creation and assessment writes require an exact same-origin `Origin` header. Organization membership is derived from the authenticated session and enforced again by PostgreSQL row-level security; request-supplied organization IDs are selectors, not authorization. `owner`, `admin` and `analyst` roles may create projects and assessments; `viewer` is read-only. Project target URLs pass the existing public HTTP(S) URL policy before persistence. This endpoint does not fetch the target URL.
