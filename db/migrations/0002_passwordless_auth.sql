@@ -347,4 +347,3 @@ GRANT EXECUTE ON FUNCTION searqon.issue_magic_link(text, bytea, timestamptz) TO 
 GRANT EXECUTE ON FUNCTION searqon.consume_magic_link_and_create_session(bytea, bytea, timestamptz) TO searqon_app;
 GRANT EXECUTE ON FUNCTION searqon.lookup_session(bytea) TO searqon_app;
 GRANT EXECUTE ON FUNCTION searqon.revoke_session(bytea) TO searqon_app;
-GRANT EXECUTE ON FUNCTION searqon.consume_auth_rate_limit(bytea, integer, integer) TO searqon_app;
