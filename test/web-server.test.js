@@ -299,3 +299,21 @@ test("production session cookies use the __Host prefix and Secure attribute", as
     else process.env.NODE_ENV = previous;
   }
 });
+
+test("serves the supplied Searqon favicon and keeps authentication pages out of search indexes", async () => {
+  await withServer(async base => {
+    const favicon = await fetch(base + "/favicon.svg");
+    assert.equal(favicon.status, 200);
+    const svg = await favicon.text();
+    assert.match(svg, /#12203A/);
+    assert.match(svg, /#F6F3EC/);
+    assert.match(svg, /#E8A33D/);
+
+    for (const path of ["/auth/register/", "/auth/login/", "/auth/verify/"]) {
+      const page = await fetch(base + path).then(response => response.text());
+      assert.match(page, /name="robots" content="noindex, nofollow"/);
+    }
+    const verify = await fetch(base + "/auth/verify/").then(response => response.text());
+    assert.match(verify, /name="referrer" content="no-referrer"/);
+  });
+});
