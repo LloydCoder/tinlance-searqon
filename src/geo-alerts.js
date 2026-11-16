@@ -80,6 +80,11 @@ function validateAggregateRow(row, field) {
   });
 }
 
+function dimensionsFromKey(key) {
+  const [observationClass, providerName, model, region, locale, brand, targetDomain, samplePeriod] = JSON.parse(key);
+  return Object.freeze({ observationClass, provider: Object.freeze({ name: providerName, model, region, locale }), brand, targetDomain, samplePeriod });
+}
+
 function cohortKey(row) {
   return JSON.stringify([
     row.observationClass, row.provider.name, row.provider.model, row.provider.region,
@@ -222,11 +227,11 @@ export function buildGeoAlerts(input) {
     const before = baselineMap.get(key);
     const after = currentMap.get(key);
     if (!before) {
-      evaluations.push(Object.freeze({ status: "new_cohort", dimensions: JSON.parse(key) }));
+      evaluations.push(Object.freeze({ status: "new_cohort", dimensions: dimensionsFromKey(key) }));
       continue;
     }
     if (!after) {
-      evaluations.push(Object.freeze({ status: "cohort_missing", dimensions: JSON.parse(key) }));
+      evaluations.push(Object.freeze({ status: "cohort_missing", dimensions: dimensionsFromKey(key) }));
       continue;
     }
     comparedCohorts.add(key);
