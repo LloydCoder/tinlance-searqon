@@ -63,3 +63,8 @@ A green CI run is necessary for applicable code changes, but is not sufficient f
 4. Implement a small, testable, passive scanner slice.
 5. Prove evidence provenance and safe acquisition before adding scale.
 6. Add GEO providers only after method, terms, repeatability, and unit costs are validated.
+
+
+## Current architecture extension
+
+The approved four painkiller modules and their acceptance criteria are specified in [ARCHITECTURE_SPEC.md](ARCHITECTURE_SPEC.md) and [MODULE_CONTRACTS.md](MODULE_CONTRACTS.md). The consolidated dependency-aware plan is [ROADMAP_16_PHASE.md](ROADMAP_16_PHASE.md). The existing 16-phase plan above remains historical context; use ROADMAP_16_PHASE.md as the forward execution baseline. The four new modules are approved design scope, not implemented functionality.

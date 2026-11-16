@@ -38,3 +38,7 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - Examples use repository fixtures and synthetic GEO observations.
 - Security-sensitive procedures identify authorization requirements.
 - A documented feature is not considered accepted or production-ready solely because code exists.
+
+- [Architecture specification](ARCHITECTURE_SPEC.md)
+- [Module contracts and acceptance criteria](MODULE_CONTRACTS.md)
+- [16-phase completion roadmap](ROADMAP_16_PHASE.md)

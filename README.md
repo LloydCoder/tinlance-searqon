@@ -37,6 +37,10 @@ flowchart TD
   H --> K[Separate GEO result]
 ```
 
+## Product direction
+
+Searqon's approved roadmap expands the four-discipline foundation (SEO, AEO, GEO and AgEO) with evidence-backed brand-claim defense, citation-change alerts, machine-readable artifact generation and isolated agent-journey simulation. These are planned modules, not current alpha capabilities. See the [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md) and [16-phase roadmap](docs/ROADMAP_16_PHASE.md).
+
 ## Why Searqon
 
 Searqon keeps different kinds of discoverability evidence separate instead of hiding them behind one unexplained score.
