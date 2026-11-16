@@ -29,6 +29,10 @@ The input contains `baseline` and `current` arrays produced by `aggregateGeoObse
 
 The non-overlapping-Wilson rule is a conservative deterministic screening heuristic, not a full two-proportion hypothesis test. It does not correct for multiple comparisons. Treat results as operational signals for human review, not causal proof or a guarantee of AI search behavior.
 
+## Labelled quality evaluation
+
+Use `node src/cli.js geo quality-evaluate ./examples/geo-citation-alert-quality-input.json` to evaluate detector output against caller-labelled candidate domains. The report calculates true/false positives and negatives, precision, recall, specificity, false-positive rate and F1. The included fixture is synthetic and exists to verify methodology and regression behavior; it is not customer evidence, market validation or a production false-positive benchmark. Before launch, collect a sufficiently sized, independently reviewed, representative labelled set across providers, locales, prompt classes and time windows.
+
 ## Signed webhook events
 
 `createSignedAlertEvent` signs the exact serialized body with HMAC-SHA256 over `timestamp + "." + rawBody`. Deliver the returned body and headers unchanged. Receivers should verify the signature and timestamp against the raw request bytes, then persist the event ID in a durable idempotency store before processing. The library verifier binds the event ID to the envelope but is intentionally stateless; it does not by itself prevent replay.
@@ -48,6 +52,8 @@ node src/cli.js geo citation-changes ./examples/geo-citation-change-input.json
 ```
 
 This command normalizes each supplied baseline/current observation locally, then detects statistically screened disappearance of previously cited domains within one exact comparable cohort. Provider, model, region, locale, brand, target domain and observation class must match. It links both baseline and current evidence IDs. New citation appearances are retained as context in the underlying snapshots but are not yet emitted as separate alert types.
+
+Reports disclose observation lag and a configurable freshness threshold; stale data is labelled rather than silently treated as real-time.
 
 ## Current limitations
 
