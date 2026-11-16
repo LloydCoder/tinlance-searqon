@@ -112,3 +112,12 @@ test("empty redaction manifest list preserves all valid evidence records", () =>
   assert.deepEqual(result.suppressedEvidenceIds, []);
   assert.deepEqual(result.counts, { input: 1, visible: 1, suppressed: 0 });
 });
+
+test("bounds redaction manifest size and rejects sparse evidence identifier arrays", () => {
+  const keys = generateKeyPairSync("ed25519");
+  const record = evidence("bounded");
+  const sparse = [];
+  sparse.length = 1;
+  assert.throws(() => createEvidenceRedactionManifest({ ...request([record.id]), evidenceIds: sparse }, keys.privateKey), /invalid evidence identifier/);
+  assert.throws(() => createEvidenceRedactionManifest({ ...request([record.id]), evidenceIds: Array(10001).fill(record.id) }, keys.privateKey), /between 1 and 10000/);
+});
