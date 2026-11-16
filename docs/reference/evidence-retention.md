@@ -32,7 +32,7 @@ const decision = evaluateEvidenceRetention(records, {
 
 The caller must supply the evaluation time. The evaluator accepts canonical UTC ISO 8601 timestamps, requires a positive integer retention interval (maximum 36,500 days), rejects duplicate evidence IDs, and calculates expiry as collectedAt plus the configured number of 24-hour days. A record is eligible when its expiry instant is less than or equal to the supplied evaluation time.
 
-The result includes policy version, evaluation time, retention interval, sorted metadata-only eligible/retained lists, a `held` subset and counts. Active legal holds are verified against a caller-supplied Ed25519 public key and are never marked purge-eligible. It does not return source labels, URLs, hashes or payloads.
+The result includes policy version, evaluation time, retention interval, sorted metadata-only eligible/retained lists, a `held` subset and counts. Active legal holds are verified against a caller-supplied Ed25519 public key or `legalHoldApproverRegistry` and are never marked purge-eligible. The two verification options are mutually exclusive. It does not return source labels, URLs, hashes or payloads.
 
 ## Critical limitations
 
