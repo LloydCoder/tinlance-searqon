@@ -108,7 +108,7 @@ export function analyzeGeoObservation(input) {
   });
 }
 
-function wilsonInterval(successes, total) {
+export function wilsonInterval(successes, total) {
   if (total === 0) return null;
   const z = 1.96;
   const p = successes / total;
