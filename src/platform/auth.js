@@ -92,13 +92,13 @@ export function createAuthService({
   async function enforceRateLimits(email, ipAddress) {
     const ip = typeof ipAddress === "string" && ipAddress.length <= 128 ? ipAddress : "unknown";
     const limits = [
-      { hash: rateLimitHash("ip:" + ip), maximum: 10 },
-      { hash: rateLimitHash("email:" + email), maximum: 5 }
+      { hash: rateLimitHash("ip:" + ip), functionName: "consume_auth_ip_rate_limit" },
+      { hash: rateLimitHash("email:" + email), functionName: "consume_auth_email_rate_limit" }
     ];
     for (const item of limits) {
       const result = await database.pool.query(
-        "SELECT searqon.consume_auth_rate_limit($1, $2, $3) AS allowed",
-        [item.hash, item.maximum, 900]
+        "SELECT searqon." + item.functionName + "($1) AS allowed",
+        [item.hash]
       );
       if (result.rows?.[0]?.allowed !== true) {
         throw new AuthError(429, "rate_limited", "Too many sign-in attempts. Try again later.");
