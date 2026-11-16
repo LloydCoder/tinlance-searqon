@@ -161,3 +161,20 @@ test("invalid session secrets do not reach the database", async () => {
   assert.deepEqual(await auth.logout("invalid"), { revoked: false });
   assert.equal(database.calls.some(call => call.sql?.includes("lookup_session")), false);
 });
+
+test("registration fails closed before database writes when email delivery is disabled", async () => {
+  const database = fakeDatabase();
+  const auth = createAuthService({
+    database,
+    emailSender: { available: false, async sendMagicLink() { throw new Error("must not be called"); } },
+    nodeEnv: "test",
+    publicOrigin: "http://127.0.0.1:4173",
+    rateLimitSecret: "this-secret-is-at-least-thirty-two-bytes"
+  });
+  await assert.rejects(
+    auth.register({ email: "user@example.test", displayName: "User", organizationName: "Workspace" }, "127.0.0.1"),
+    error => error instanceof AuthError && error.statusCode === 503
+  );
+  assert.equal(database.calls.some(call => call.sql?.includes("register_account")), false);
+  assert.equal(database.calls.some(call => call.sql?.includes("issue_magic_link")), false);
+});
