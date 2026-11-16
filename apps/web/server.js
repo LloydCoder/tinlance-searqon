@@ -297,11 +297,10 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const projectRoute = url.pathname.match(/^\\/api\\/v1\\/projects\\/([^/]+)(?:\\/(assessments))?$/);
+    const projectRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)(?:\/(assessments))?$/);
     if (projectRoute) {
       const projectId = projectRoute[1];
       const isAssessmentsRoute = Boolean(projectRoute[2]);
-      const expectedMethod = isAssessmentsRoute ? (request.method === "POST" ? "POST" : "GET") : "GET";
       if ((!isAssessmentsRoute && request.method !== "GET") || (isAssessmentsRoute && request.method !== "GET" && request.method !== "POST")) {
         response.setHeader("allow", isAssessmentsRoute ? "GET, POST" : "GET");
         sendJson(response, 405, { error: { code: "method_not_allowed", message: isAssessmentsRoute ? "Use GET or POST." : "Use GET." } });
