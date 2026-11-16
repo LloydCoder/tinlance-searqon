@@ -9,6 +9,7 @@
     "type",
     "cohortId",
     "registryId",
+    "registryContentDigest",
     "brand",
     "locale",
     "market",
@@ -110,6 +111,10 @@
           }
         }
       }
+    },
+    "registryContentDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     }
   }
 }
