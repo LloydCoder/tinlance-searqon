@@ -19,7 +19,8 @@
 | `src/evidence-retention.js` | `evaluateEvidenceRetention(records, options)`, `EVIDENCE_RETENTION_POLICY_VERSION` | Deterministic, metadata-only expiry evaluation. It does not delete, redact or mutate ledger data. |
 | `src/evidence-redaction.js` | `createEvidenceRedactionManifest(...)`, `verifyEvidenceRedactionManifest(...)`, `filterEvidenceByRedaction(...)` | Ed25519-signed approval and logical export suppression. Does not physically delete or sanitize source storage. |
 | `src/evidence-redaction-store.js` | `openEvidenceRedactionStore(path, publicKey)`, `verifyEvidenceRedactionJournal(...)`, `verifyEvidenceRedactionJournalEntry(...)` | Local fsync'd hash-linked JSONL journal for signed manifests; single-process writer admission, not WORM or cross-process locking. |
-| `src/evidence-redaction-checkpoint.js` | `createEvidenceRedactionJournalCheckpoint(...)`, `verifyEvidenceRedactionJournalCheckpoint(...)` | Detached Ed25519 checkpoint of a journal prefix; external checkpoint and public-key custody remain caller responsibilities. |\n| `src/evidence-recovery.js` | `verifyEvidenceRecoveryBundle(bundle)` | Offline pre-restore integrity gate for an evidence ledger and redaction journal, both with independently trusted checkpoints; no file restore, replication or sanitization. |
+| `src/evidence-redaction-checkpoint.js` | `createEvidenceRedactionJournalCheckpoint(...)`, `verifyEvidenceRedactionJournalCheckpoint(...)` | Detached Ed25519 checkpoint of a journal prefix; external checkpoint and public-key custody remain caller responsibilities. |
+| `src/evidence-recovery.js` | `verifyEvidenceRecoveryBundle(bundle)` | Offline pre-restore integrity gate for an evidence ledger and redaction journal, both with independently trusted checkpoints; no file restore, replication or sanitization. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
@@ -46,4 +47,10 @@ The registry is authoritative for the exact schema identity and contract version
 ## Security boundary
 
 No public Searqon API accepts a model response, tool description, discovered endpoint or schema enum as authorization. Remote scanning requires caller authorization attestation. The passive MCP scanner consumes caller-supplied normalized data and does not connect to an MCP server or invoke tools. TAS remains the authority for agent identity, policy and execution.
-\n\n## Recovery verification gate\n\n`verifyEvidenceRecoveryBundle(bundle)` validates the evidence ledger hash chain and detached ledger checkpoint, the signed redaction journal and detached journal checkpoint, duplicate evidence IDs, and redaction references against the restored ledger. It fails closed when either checkpoint or a trusted verification key is missing or invalid. The result contains only integrity status, counts, error codes and sorted suppressed evidence IDs.\n\nThis function is an offline pre-restore validation gate. It does not copy files, restore backups, sanitize media, expire backup copies, authenticate key owners, or establish that a backup is complete relative to an external system. Store both checkpoints and their trusted public keys independently from the backup being verified.\n
+
+
+## Recovery verification gate
+
+`verifyEvidenceRecoveryBundle(bundle)` validates the evidence ledger hash chain and detached ledger checkpoint, the signed redaction journal and detached journal checkpoint, duplicate evidence IDs, and redaction references against the restored ledger. It fails closed when either checkpoint or a trusted verification key is missing or invalid. The result contains only integrity status, counts, error codes and sorted suppressed evidence IDs.
+
+This function is an offline pre-restore validation gate. It does not copy files, restore backups, sanitize media, expire backup copies, authenticate key owners, or establish that a backup is complete relative to an external system. Store both checkpoints and their trusted public keys independently from the backup being verified.
