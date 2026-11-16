@@ -1,0 +1,180 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { wilsonInterval } from "../src/geo.js";
+import {
+  buildGeoAlerts,
+  createSignedAlertEvent,
+  verifySignedAlertEvent,
+  createDeliveryReceipt,
+  toSlackWebhookPayload,
+  toTeamsWorkflowPayload,
+  toPagerDutyEvent
+} from "../src/geo-alerts.js";
+
+const baselineAt = "2026-11-16T12:00:00.000Z";
+const currentAt = "2026-11-16T13:00:00.000Z";
+const evaluatedAt = "2026-11-16T13:01:00.000Z";
+
+function row({ mentionCount = 80, brandCitationCount = 70, sampleSize = 100, providerName = "OpenAI", model = "gpt-4.1", region = "us", locale = "en-US", observationClass = "model_api", brand = "Searqon", targetDomain = "searqon.com" } = {}) {
+  return {
+    observationClass,
+    provider: { name: providerName, model, region, locale },
+    brand,
+    targetDomain,
+    samplePeriod: null,
+    sampleSize,
+    mentionCount,
+    mentionOccurrences: mentionCount,
+    brandCitationCount,
+    citationCount: brandCitationCount,
+    mentionRate: Number((mentionCount / sampleSize).toFixed(4)),
+    mentionRate95: wilsonInterval(mentionCount, sampleSize),
+    brandCitationRate: Number((brandCitationCount / sampleSize).toFixed(4)),
+    brandCitationRate95: wilsonInterval(brandCitationCount, sampleSize)
+  };
+}
+
+function input(overrides = {}) {
+  return {
+    baseline: [row()],
+    current: [row({ mentionCount: 40, brandCitationCount: 20 })],
+    baselineId: "baseline-2026-11-16T12",
+    currentId: "current-2026-11-16T13",
+    baselineAt,
+    currentAt,
+    evaluatedAt,
+    ...overrides
+  };
+}
+
+test("alerts detect significant mention and citation declines only for comparable cohorts", () => {
+  const result = buildGeoAlerts(input());
+  assert.equal(result.alerts.length, 2);
+  assert.equal(result.summary.alerts, 2);
+  assert.ok(result.alerts.every(alert => alert.direction === "decline"));
+  assert.ok(result.alerts.every(alert => alert.severity === "high"));
+  assert.ok(result.alerts.every(alert => alert.baseline.sampleSize === 100 && alert.current.sampleSize === 100));
+  assert.equal(result.observationLagSeconds, 60);
+  assert.ok(result.alerts.every(alert => alert.dimensions.observationClass === "model_api"));
+});
+
+test("small samples and overlapping Wilson intervals do not produce alerts", () => {
+  const small = buildGeoAlerts(input({
+    baseline: [row({ sampleSize: 4, mentionCount: 4, brandCitationCount: 3 })],
+    current: [row({ sampleSize: 4, mentionCount: 1, brandCitationCount: 1 })],
+    minSampleSize: 5
+  }));
+  assert.equal(small.alerts.length, 0);
+  assert.ok(small.evaluations.every(item => item.status === "insufficient_evidence"));
+
+  const overlap = buildGeoAlerts(input({
+    baseline: [row({ mentionCount: 70, brandCitationCount: 60 })],
+    current: [row({ mentionCount: 65, brandCitationCount: 58 })]
+  }));
+  assert.equal(overlap.alerts.length, 0);
+  assert.ok(overlap.evaluations.every(item => item.status === "no_significant_change"));
+});
+
+test("cohort mismatches are reported as new/missing cohorts, never compared", () => {
+  const result = buildGeoAlerts(input({
+    current: [row({ mentionCount: 10, brandCitationCount: 5, model: "different-model" })]
+  }));
+  assert.equal(result.alerts.length, 0);
+  assert.ok(result.evaluations.some(item => item.status === "new_cohort"));
+  assert.ok(result.evaluations.some(item => item.status === "cohort_missing"));
+});
+
+test("alert evaluation rejects duplicate cohorts and invalid chronological inputs", () => {
+  assert.throws(() => buildGeoAlerts(input({ baseline: [row(), row()] })), /duplicate/i);
+  assert.throws(() => buildGeoAlerts(input({ currentAt: baselineAt })), /later/i);
+  assert.throws(() => buildGeoAlerts(input({ minAbsoluteChange: 0 })), /minAbsoluteChange/i);
+});
+
+test("dedupe keys and cooldown suppress repeated notifications without hiding evaluations", () => {
+  const first = buildGeoAlerts(input());
+  const previousAlerts = first.alerts.map(alert => ({ dedupeKey: alert.dedupeKey, lastNotifiedAt: currentAt }));
+  const repeated = buildGeoAlerts(input({ evaluatedAt: "2026-11-16T13:02:00.000Z", previousAlerts, cooldownSeconds: 3600 }));
+  assert.equal(repeated.alerts.length, 0);
+  assert.equal(repeated.suppressedAlerts.length, 2);
+  assert.ok(repeated.suppressedAlerts.every(alert => alert.suppressionReason === "cooldown"));
+  assert.equal(repeated.evaluations.length, 2);
+});
+
+test("signed alert webhooks verify HMAC, reject tampering and enforce timestamp tolerance", () => {
+  const alert = buildGeoAlerts(input()).alerts[0];
+  const secret = "test-signing-secret-with-at-least-32-bytes";
+  const timestampSeconds = 1_800_000_000;
+  const signed = createSignedAlertEvent(alert, secret, timestampSeconds);
+  const verified = verifySignedAlertEvent({
+    rawBody: signed.body,
+    secret,
+    timestamp: signed.headers["x-searqon-timestamp"],
+    signature: signed.headers["x-searqon-signature"],
+    eventId: signed.headers["x-searqon-event-id"],
+    nowSeconds: timestampSeconds
+  });
+  assert.equal(verified.data.alertId, alert.alertId);
+  assert.throws(() => verifySignedAlertEvent({
+    rawBody: signed.body + " ",
+    secret,
+    timestamp: signed.headers["x-searqon-timestamp"],
+    signature: signed.headers["x-searqon-signature"],
+    nowSeconds: timestampSeconds
+  }), /signature/i);
+  assert.throws(() => verifySignedAlertEvent({
+    rawBody: signed.body,
+    secret,
+    timestamp: signed.headers["x-searqon-timestamp"],
+    signature: signed.headers["x-searqon-signature"],
+    nowSeconds: timestampSeconds + 301
+  }), /timestamp/i);
+  assert.throws(() => createSignedAlertEvent(alert, "short", timestampSeconds), /32/i);
+});
+
+test("delivery receipts record success and bounded retry schedules without secrets", () => {
+  const alert = buildGeoAlerts(input()).alerts[0];
+  const failed = createDeliveryReceipt({
+    alert,
+    destination: "slack-workspace-01",
+    attempt: 2,
+    attemptedAt: evaluatedAt,
+    outcome: "retryable_failure",
+    httpStatus: 429,
+    retryAfterSeconds: 120
+  });
+  assert.equal(failed.status, "retryable_failure");
+  assert.equal(failed.nextAttemptAt, "2026-11-16T13:03:00.000Z");
+  assert.equal(JSON.stringify(failed).includes("secret"), false);
+
+  const delivered = createDeliveryReceipt({
+    alert,
+    destination: "pagerduty-service-01",
+    attempt: 1,
+    attemptedAt: evaluatedAt,
+    outcome: "delivered",
+    httpStatus: 202,
+    providerReceiptId: "pd-receipt-01"
+  });
+  assert.equal(delivered.status, "delivered");
+  assert.equal(delivered.providerReceiptId, "pd-receipt-01");
+  assert.equal(delivered.nextAttemptAt, null);
+});
+
+test("Slack, Teams Workflows and PagerDuty payload builders produce bounded provider formats", () => {
+  const alert = buildGeoAlerts(input()).alerts[0];
+  const slack = toSlackWebhookPayload(alert);
+  assert.equal(typeof slack.text, "string");
+  assert.ok(Array.isArray(slack.blocks));
+  assert.equal(Object.hasOwn(slack, "webhookUrl"), false);
+
+  const teams = toTeamsWorkflowPayload(alert);
+  assert.equal(teams.type, "message");
+  assert.equal(teams.attachments[0].content.type, "AdaptiveCard");
+
+  const pagerDuty = toPagerDutyEvent(alert, { routingKey: "a".repeat(32), source: "searqon.geo" });
+  assert.equal(pagerDuty.event_action, "trigger");
+  assert.equal(pagerDuty.dedup_key, alert.dedupeKey);
+  assert.equal(pagerDuty.routing_key, "a".repeat(32));
+  assert.equal(pagerDuty.payload.severity, "critical");
+  assert.throws(() => toPagerDutyEvent(alert, { routingKey: "short", source: "searqon.geo" }), /routingKey/i);
+});
