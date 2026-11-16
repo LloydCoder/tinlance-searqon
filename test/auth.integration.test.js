@@ -11,6 +11,7 @@ test("passwordless auth completes registration, token replacement, session looku
   const email = "auth-integration-" + randomUUID() + "@example.test";
   const ip = "198.51.100.19";
   const sent = [];
+  const rateLimitSecret = "searqon-postgres-integration-secret-32-bytes";
   const auth = createAuthService({
     database,
     emailSender: {
@@ -21,7 +22,6 @@ test("passwordless auth completes registration, token replacement, session looku
     publicOrigin: "http://127.0.0.1:4173",
     rateLimitSecret
   });
-  const rateLimitSecret = "searqon-postgres-integration-secret-32-bytes";
 
   try {
     assert.deepEqual(await auth.register({
