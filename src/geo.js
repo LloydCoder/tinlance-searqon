@@ -1,7 +1,8 @@
 import { createEvidenceRecord, verifyEvidenceRecord } from "./evidence.js";
 
 const GEO_METHOD_VERSION = "geo-2026-11-14.1";
-const OBSERVATION_CLASSES = new Set(["consumer_observation","model_api"]);
+export const GEO_OBSERVATION_CLASSES = Object.freeze(["consumer_observation","model_api"]);
+const OBSERVATION_CLASSES = new Set(GEO_OBSERVATION_CLASSES);
 const MAX_PROMPT_CHARS = 32_000;
 const MAX_ANSWER_CHARS = 1_000_000;
 const MAX_CITATIONS = 100;

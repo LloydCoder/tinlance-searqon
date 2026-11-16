@@ -126,3 +126,11 @@ This register separates implemented repository capabilities from customer, secur
 - Updated forward architecture to include Brand Hallucination & Citation Defense, Competitor Citation-Change Alerts, Agent Artifact Compiler, and Simulated Agent Sandbox.
 - Reconciled protocol targets to OpenAPI 3.2.1 and MCP 2026-07-28; llms.txt remains an optional community proposal, not a guaranteed discovery/ranking mechanism.
 - No feature implementation is claimed by this documentation change. Phase status remains governed by existing code, CI evidence, forensic audit and explicit acceptance records.
+
+
+## 2026-11-16 — Phase 3 domain contract reconciliation (in progress)
+
+- PR #72 adds regression tests comparing runtime observation-class constants with the evidence, assessment and GEO JSON Schema enums.
+- Runtime modules now export frozen canonical observation-class arrays; internal validators consume those arrays.
+- ADR-0001 records v1 compatibility decisions: `agent_simulation` is reserved for a future versioned run contract; claim verdicts are separate from finding lifecycle; mutation approval is separate from execution mode; future confidence bands do not overwrite legacy assessment confidence.
+- Phase status remains IN_PROGRESS until PR #72 exact-head CI (Node.js 22/24), CodeQL and full-history secret scan pass, followed by forensic review and merge.

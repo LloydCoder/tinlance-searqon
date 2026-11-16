@@ -66,7 +66,7 @@ Read-only operations only by default. Mutations require separate operation-level
 
 ## Shared evidence and measurement rules
 
-Observation classes: crawl, first_party, consumer_observation, model_api, agent_simulation, derived and estimate. Never pool consumer-surface observations and direct model API responses as equivalent measurements.
+Current v1 evidence observation classes are crawl, first_party, consumer_observation, model_api, derived and estimate. The v1 GEO observation contract is intentionally limited to consumer_observation and model_api. agent_simulation is reserved for a separately versioned future simulation-run contract and is not accepted by current v1 evidence or GEO records. Never pool consumer-surface observations and direct model API responses as equivalent measurements. See [ADR-0001: Domain Observation, Finding, Action and Confidence Contracts](adr/0001-domain-contracts.md) for compatibility rules.
 
 Each observation records source identity, acquisition method, capture time, provider/surface, model/product/version where available, region, locale, prompt cohort, sampling configuration, methodology/parser versions, evidence references and limitations. A content digest alone is not proof of authenticity, immutability or trusted time.
 
@@ -94,7 +94,7 @@ Standards policy: Support OpenAPI 3.2.1 (and the 3.2 feature line) with explicit
 
 ## Decision record
 
-Accepted direction: modular TypeScript-first architecture; evidence-ledger methodology; four distinct engines; optional ecosystem integrations; narrow passive AgEO scanner first; the four painkiller modules are approved architectural extensions but remain unimplemented until their phase gates pass.
+Accepted direction: modular TypeScript-first architecture; evidence-ledger methodology; four distinct engines; optional ecosystem integrations; narrow passive AgEO scanner first; the four painkiller modules are approved architectural extensions but remain unimplemented until their phase gates pass. Existing v1 observation enums are frozen; future claim verdict, action lifecycle, confidence-band and simulation-run contracts follow [ADR-0001](adr/0001-domain-contracts.md).
 
 ## External specification references
 
