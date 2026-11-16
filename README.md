@@ -132,7 +132,7 @@ node src/cli.js geo cohort ./examples/geo-cohort-input.json --out ./geo-cohort.j
 node src/cli.js geo plan ./examples/geo-sampling-input.json --out ./geo-sampling-plan.json
 ```
 
-The sampling plan is preflight only: consumer observations require manual capture, model observations require an approved official API adapter, and all tasks are subject to policy review and a hard USD cost cap. See [Create a governed GEO sampling plan](docs/how-to/create-geo-sampling-plan.md). measurements.
+The sampling plan is preflight only: consumer observations require manual capture, model observations require an approved official API adapter, and all tasks are subject to policy review and a hard USD cost cap. See [Create a governed GEO sampling plan](docs/how-to/create-geo-sampling-plan.md).
 
 ### Generate a standalone HTML report
 
