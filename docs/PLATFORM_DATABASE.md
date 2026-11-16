@@ -23,12 +23,12 @@ The assessment table has a composite foreign key to `projects(organization_id, i
 
 ## Row-level security
 
-All tenant-owned tables use enabled and forced PostgreSQL RLS. The non-login `searqon_app` role is non-superuser, non-owner, non-createrole, non-createdb and `NOBYPASSRLS`. It cannot provision users or modify organization memberships. Membership administration and identity provisioning require separately scoped server-side workflows, which are not yet implemented.
+All tenant-owned tables have PostgreSQL RLS enabled. Projects, assessments and audit events also use FORCE RLS. User, organization, membership and session tables do not FORCE RLS so narrowly scoped SECURITY DEFINER authentication functions owned by the migration/table owner can provision accounts and resolve sessions; the request-serving role is not the owner and remains subject to RLS. The non-login `searqon_app` role is non-superuser, non-owner, non-createrole, non-createdb and `NOBYPASSRLS`. It cannot directly provision users, modify memberships or read authentication tokens/rate-limit rows.
 
 For each authenticated request, the future API must:
 1. Authenticate the user independently of request-supplied organization IDs.
 2. Begin a database transaction.
-3. Set `searqon.user_id` with a parameterized `set_config(..., true)` call inside that transaction.
+3. `SET LOCAL ROLE searqon_app` and set `searqon.user_id` with a parameterized `set_config(..., true)` call inside that transaction.
 4. Execute all tenant-scoped queries through the restricted runtime role.
 5. Commit or roll back; transaction-local context must not leak through the connection pool.
 
@@ -42,15 +42,15 @@ Audit events can be selected and appended by an authorized workspace member. A d
 
 ## Explicitly not implemented
 
-- Login, passwordless verification, OAuth/OIDC, MFA, account recovery or session issuance.
-- Invitation and membership provisioning.
-- API/worker runtime database connection and migrations runner.
+- OAuth/OIDC, passkeys, MFA, recovery codes, enterprise SSO and session-management UI.
+- Invitation and additional membership administration.
+- Project/assessment runtime persistence and worker database integration.
 - Project and assessment CRUD endpoints.
 - Queue, scheduler, quotas, billing, provider adapters or live monitoring.
 - Encryption/key management, backup/restore automation, data residency or physical deletion workflows.
 - Production DB roles, network policies, secrets, backups, SLOs or deployment.
 
-The schema is a foundation contract; it is not yet wired into the running HTTP API.
+The passwordless authentication service uses the database adapter and checksum-verified migration runner. Project/assessment persistence and worker execution are not yet wired into the running HTTP API.
 
 
 ## Node.js database adapter
