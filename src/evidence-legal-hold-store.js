@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createPublicKey } from "node:crypto";
 import { constants } from "node:fs";
 import { mkdir, open, realpath, stat } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
@@ -17,6 +17,14 @@ const activePaths = new Set();
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function validateVerifier(verifier) {
+  if (verifier instanceof EvidenceLegalHoldApproverRegistry) return;
+  const key = verifier && typeof verifier === "object" && verifier.type === "public"
+    ? verifier
+    : createPublicKey(verifier);
+  if (key.asymmetricKeyType !== "ed25519") throw new TypeError("A trusted Ed25519 public key or approver registry is required");
 }
 
 function verifyEvent(event, verifier) {
@@ -229,10 +237,7 @@ class EvidenceLegalHoldStore {
 
 export async function openEvidenceLegalHoldStore(filePath, verifier) {
   if (typeof filePath !== "string" || !filePath.trim()) throw new TypeError("filePath must be a non-empty path");
-  if (!(verifier instanceof EvidenceLegalHoldApproverRegistry)) {
-    const emptyVerification = verifyEvidenceLegalHoldJournal([], verifier);
-    if (!emptyVerification.valid) throw new TypeError("A trusted legal-hold verifier is required");
-  }
+  validateVerifier(verifier);
   const requestedPath = resolve(filePath);
   await mkdir(dirname(requestedPath), { recursive: true, mode: 0o700 });
   const canonicalDirectory = await realpath(dirname(requestedPath));
