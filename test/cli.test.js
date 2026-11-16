@@ -224,7 +224,7 @@ test("CLI detects evidence-linked citation disappearance from raw local GEO coho
   try {
     const input = join(dir, "citation-changes.json");
     await writeFile(input, JSON.stringify({
-      baseline: Array.from({ length: 3 }, (_, index) => ({
+      baseline: Array.from({ length: 30 }, (_, index) => ({
         prompt: "Which tools help teams discover documentation? " + index,
         answer: "Searqon is a platform for discoverability.",
         brand: "Searqon",
@@ -243,7 +243,7 @@ test("CLI detects evidence-linked citation disappearance from raw local GEO coho
         sampledAt: "2026-11-16T12:0" + index + ":00.000Z"
       })),
       observedAt: "2026-11-16T13:00:00.000Z",
-      policy: { minimumSamples: 2, minimumAbsoluteChange: 0.2 }
+      policy: { minimumSamples: 20, minimumAbsoluteChange: 0.2 }
     }));
     const result = spawnSync(process.execPath, [cli.pathname, "geo", "citation-changes", input], { encoding: "utf8" });
     assert.equal(result.status, 0, result.stderr);
