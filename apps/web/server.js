@@ -87,7 +87,7 @@ function validateAssessmentInput(input) {
   return { source: source.trim(), contentType: input.contentType, content: input.content };
 }
 
-async function serveStatic(pathname, response) {
+async function serveStatic(pathname, response, headOnly = false) {
   let decoded;
   try {
     decoded = decodeURIComponent(pathname);
@@ -116,7 +116,7 @@ async function serveStatic(pathname, response) {
       "content-length": body.length,
       "cache-control": extension === ".html" ? "no-cache" : "public, max-age=300"
     });
-    response.end(body);
+    response.end(headOnly ? undefined : body);
   } catch {
     sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
   }
@@ -175,7 +175,7 @@ export function createAppServer() {
       sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or HEAD." } });
       return;
     }
-    await serveStatic(url.pathname, response);
+    await serveStatic(url.pathname, response, request.method === "HEAD");
   });
 }
 
