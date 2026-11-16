@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 test("documented programmatic API exports remain available", async () => {
-  const [analyzer, remote, evidence, ledger, store, checkpoint, geo, report, retention, migrations] = await Promise.all([
+  const [analyzer, remote, evidence, ledger, store, checkpoint, geo, report, retention, migrations, redaction] = await Promise.all([
     import("../src/analyzer.js"),
     import("../src/remote-scan.js"),
     import("../src/evidence.js"),
@@ -12,7 +12,8 @@ test("documented programmatic API exports remain available", async () => {
     import("../src/geo.js"),
     import("../src/report-html.js"),
     import("../src/evidence-retention.js"),
-    import("../src/contract-migrations.js")
+    import("../src/contract-migrations.js"),
+    import("../src/evidence-redaction.js")
   ]);
 
   for (const [module, names] of [
@@ -25,7 +26,8 @@ test("documented programmatic API exports remain available", async () => {
     [geo, ["analyzeGeoObservation", "aggregateGeoObservations", "GEO_OBSERVATION_CLASSES"]],
     [report, ["renderHtmlReport", "escapeHtml"]],
     [retention, ["evaluateEvidenceRetention", "EVIDENCE_RETENTION_POLICY_VERSION"]],
-    [migrations, ["ContractMigrationRegistry"]]
+    [migrations, ["ContractMigrationRegistry"]],
+    [redaction, ["createEvidenceRedactionManifest", "verifyEvidenceRedactionManifest", "filterEvidenceByRedaction", "EVIDENCE_REDACTION_MANIFEST_SCHEMA_VERSION", "EVIDENCE_REDACTION_REASON_CODES"]]
   ]) {
     for (const name of names) assert.ok(Object.hasOwn(module, name), "missing documented export " + name);
   }
