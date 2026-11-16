@@ -115,6 +115,7 @@ export function extractBrandClaims(answerText, registry) {
       text: sentence,
       matchedBrandTerm
     }));
+    if (claims.length > MAX_CLAIMS) throw new RangeError("answerText produced more than " + MAX_CLAIMS + " brand claims");
   }
   return Object.freeze(claims);
 }
@@ -128,8 +129,8 @@ export function evaluateBrandClaims(input) {
   if (!Number.isSafeInteger(maxAgeDays) || maxAgeDays < 1 || maxAgeDays > 3650) throw new RangeError("maxAgeDays must be an integer from 1 to 3650");
   const competitorDomains = normalizeCompetitorDomains(input.competitorDomains);
   const claims = input.claims ?? (input.answerText ? extractBrandClaims(input.answerText, registry) : null);
-  if (!Array.isArray(claims) || claims.length < 1 || claims.length > MAX_CLAIMS) {
-    throw new RangeError("claims must contain between 1 and " + MAX_CLAIMS + " items");
+  if (!Array.isArray(claims) || claims.length > MAX_CLAIMS) {
+    throw new RangeError("claims must contain between 0 and " + MAX_CLAIMS + " items");
   }
   const results = claims.map((claim, index) => {
     if (!claim || typeof claim !== "object" || Array.isArray(claim)) throw new TypeError("claims[" + index + "] must be an object");
