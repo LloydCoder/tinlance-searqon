@@ -80,3 +80,66 @@ test("CLI requires a value for every redirect-origin authorization option", () =
   assert.equal(result.status,1);
   assert.match(result.stderr,/--allow-redirect-origin requires an origin/);
 });
+
+
+test("CLI creates a Brand Truth Registry, prompt cohort and bounded GEO sampling plan", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-geo-"));
+  try {
+    const registryInput = join(dir, "registry-input.json");
+    const registryFile = join(dir, "registry.json");
+    const cohortInput = join(dir, "cohort-input.json");
+    const cohortFile = join(dir, "cohort.json");
+    const planInput = join(dir, "plan-input.json");
+    const planFile = join(dir, "plan.json");
+    await writeFile(registryInput, JSON.stringify({
+      brandName: "Searqon", primaryDomain: "searqon.com", assertedBy: "founder",
+      createdAt: "2026-11-16T12:00:00.000Z",
+      facts: [{ attribute: "product.category", value: "AI-search intelligence", statement: "Searqon is an AI-search intelligence platform.", status: "owner_asserted" }]
+    }));
+    let result = spawnSync(process.execPath, [cli.pathname, "geo", "registry", registryInput, "--out", registryFile], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const registry = JSON.parse(await readFile(registryFile, "utf8"));
+    assert.equal(registry.type, "brand_truth_registry");
+
+    await writeFile(cohortInput, JSON.stringify({
+      registry, locale: "en-CA", market: "CA", createdAt: "2026-11-16T12:00:00.000Z",
+      prompts: [{ prompt: "Best AI search tools?", intent: "commercial", journeyStage: "consideration" }]
+    }));
+    result = spawnSync(process.execPath, [cli.pathname, "geo", "cohort", cohortInput, "--out", cohortFile], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const cohort = JSON.parse(await readFile(cohortFile, "utf8"));
+    assert.equal(cohort.type, "geo_prompt_cohort");
+
+    await writeFile(planInput, JSON.stringify({
+      cohort, sampleCount: 1, costCapUsd: 0.25, createdAt: "2026-11-16T12:00:00.000Z",
+      providers: [{ name: "Consumer manual capture", observationClass: "consumer_observation", collectionMode: "manual_capture", policyReview: { status: "approved", reviewedAt: "2026-11-16T11:00:00.000Z", reviewerId: "reviewer", sourceUrl: "https://provider.example.com/terms" }, estimatedCostPerSampleUsd: 0.1, maxSamples: 1 }]
+    }));
+    result = spawnSync(process.execPath, [cli.pathname, "geo", "plan", planInput, "--out", planFile], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const plan = JSON.parse(await readFile(planFile, "utf8"));
+    assert.equal(plan.type, "geo_sampling_plan");
+    assert.equal(plan.tasks.length, 1);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+
+test("published GEO example fixtures execute end-to-end", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-geo-examples-"));
+  try {
+    const registryPath = join(dir, "registry.json");
+    const cohortPath = join(dir, "cohort.json");
+    const planPath = join(dir, "plan.json");
+    let result = spawnSync(process.execPath, [cli.pathname, "geo", "registry", "examples/brand-truth-input.json", "--out", registryPath], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const registry = JSON.parse(await readFile(registryPath, "utf8"));
+    result = spawnSync(process.execPath, [cli.pathname, "geo", "cohort", "examples/geo-cohort-input.json", "--out", cohortPath], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const cohort = JSON.parse(await readFile(cohortPath, "utf8"));
+    assert.equal(cohort.registryContentDigest, registry.contentDigest);
+    result = spawnSync(process.execPath, [cli.pathname, "geo", "plan", "examples/geo-sampling-input.json", "--out", planPath], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const plan = JSON.parse(await readFile(planPath, "utf8"));
+    assert.equal(plan.registryContentDigest, registry.contentDigest);
+    assert.equal(plan.tasks.length, 2);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

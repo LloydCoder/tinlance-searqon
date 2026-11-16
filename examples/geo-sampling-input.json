@@ -1,0 +1,50 @@
+{
+  "cohort": {
+    "schemaVersion": "1.0.0",
+    "type": "geo_prompt_cohort",
+    "cohortId": "cohort_3279dec0861e565e217c",
+    "registryId": "btr_91200e0862f532fdc806",
+    "brand": {
+      "name": "Searqon Example",
+      "primaryDomain": "searqon-example.com"
+    },
+    "locale": "en-CA",
+    "market": "CA",
+    "createdAt": "2026-11-16T12:00:00.000Z",
+    "prompts": [
+      {
+        "promptId": "prompt_3bdda75b41de3069fce1",
+        "prompt": "How can a company improve its visibility in AI-generated answers?",
+        "intent": "informational",
+        "journeyStage": "awareness",
+        "locale": "en-CA"
+      },
+      {
+        "promptId": "prompt_da22c9759d3f662c8328",
+        "prompt": "Which AI search visibility tools support B2B SaaS teams?",
+        "intent": "commercial",
+        "journeyStage": "consideration",
+        "locale": "en-CA"
+      }
+    ],
+    "registryContentDigest": "73de03f8ca400ad82129c347fdda9b1fd9f0e9edf0355b32ad548ac8399c7227"
+  },
+  "sampleCount": 1,
+  "costCapUsd": 0.5,
+  "createdAt": "2026-11-16T12:00:00.000Z",
+  "providers": [
+    {
+      "name": "Consumer answer interface",
+      "observationClass": "consumer_observation",
+      "collectionMode": "manual_capture",
+      "policyReview": {
+        "status": "approved",
+        "reviewedAt": "2026-11-16T11:00:00.000Z",
+        "reviewerId": "example-policy-reviewer",
+        "sourceUrl": "https://provider.example.com/terms"
+      },
+      "estimatedCostPerSampleUsd": 0,
+      "maxSamples": 2
+    }
+  ]
+}

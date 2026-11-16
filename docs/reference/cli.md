@@ -66,3 +66,13 @@ Omit `--out` to write HTML to stdout. File output refuses to overwrite an existi
 ## Configuration
 
 There is no repository-level configuration file or required environment variable at this stage. The current options are command-line flags and API-level parameters documented in the relevant module and schema contracts.
+
+
+## GEO registry and sampling commands
+
+- `searqon geo registry <registry-input.json> [--out <json-file>]` normalizes a Brand Truth Registry.
+- `searqon geo cohort <cohort-input.json> [--out <json-file>]` creates a deterministic locale/market prompt cohort from a normalized registry.
+- `searqon geo plan <sampling-input.json> [--out <json-file>]` builds a policy-reviewed, sample-capped and cost-bounded plan; it does not execute collection.
+- `searqon geo analyze` and `searqon geo aggregate` continue to analyze supplied observations only.
+
+See [Create a governed GEO sampling plan](../how-to/create-geo-sampling-plan.md) for input contracts and safety boundaries.

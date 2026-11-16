@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { basename, extname, resolve } from "node:path";
 import { analyzeDocument } from "./analyzer.js";
 import { analyzeGeoObservation, aggregateGeoObservations } from "./geo.js";
+import { createBrandTruthRegistry, createPromptCohort, buildGeoSamplingPlan } from "./geo-registry.js";
 import { scanPublicUrl } from "./remote-scan.js";
 import { renderHtmlReport } from "./report-html.js";
 
@@ -12,6 +13,9 @@ const usage = [
   "  searqon scan-url <public-url> --confirm-authorized-target [--allow-redirect-origin <origin>]... [--user-agent <token>] [--out <json-file>]",
   "  searqon geo analyze <observation.json> [--out <json-file>]",
   "  searqon geo aggregate <observations.json> [--out <json-file>]",
+  "  searqon geo registry <registry-input.json> [--out <json-file>]",
+  "  searqon geo cohort <cohort-input.json> [--out <json-file>]",
+  "  searqon geo plan <sampling-input.json> [--out <json-file>]",
   "  searqon report <assessment.json> [--out <html-file>]"
 ].join("\n");
 
@@ -67,12 +71,18 @@ async function runScanUrl(args) {
 
 async function runGeo(args) {
   const command=args[1], fileArg=args[2];
-  if (!["analyze","aggregate"].includes(command) || !fileArg) throw new Error(usage);
+  if (!["analyze","aggregate","registry","cohort","plan"].includes(command) || !fileArg) throw new Error(usage);
   const file=resolve(fileArg);
   if (extname(file).toLowerCase()!==".json") throw new Error("GEO commands accept local .json files only");
   const input=await readJson(file);
-  const result=command==="analyze" ? analyzeGeoObservation(input) : aggregateGeoObservations(input);
-  await emitResult(result,args);
+  const handlers = {
+    analyze: analyzeGeoObservation,
+    aggregate: aggregateGeoObservations,
+    registry: createBrandTruthRegistry,
+    cohort: createPromptCohort,
+    plan: buildGeoSamplingPlan
+  };
+  await emitResult(handlers[command](input),args);
 }
 
 async function runReport(args) {

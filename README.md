@@ -39,7 +39,7 @@ flowchart TD
 
 ## Product direction
 
-Searqon's approved roadmap expands the four-discipline foundation (SEO, AEO, GEO and AgEO) with evidence-backed brand-claim defense, citation-change alerts, machine-readable artifact generation and isolated agent-journey simulation. These are planned modules, not current alpha capabilities. See the [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md) and [16-phase roadmap](docs/ROADMAP_16_PHASE.md).
+Searqon's four-discipline foundation (SEO, AEO, GEO and AgEO) is being extended with an owner-attested Brand Truth Registry, deterministic locale/market prompt cohorts and policy-reviewed, cost-bounded GEO sampling plans. Evidence-backed brand-claim defense, citation-change alerts, machine-readable artifact generation and isolated agent-journey simulation remain planned modules. See the [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md) and [16-phase roadmap](docs/ROADMAP_16_PHASE.md).
 
 ## Why Searqon
 
@@ -49,14 +49,14 @@ Searqon keeps different kinds of discoverability evidence separate instead of hi
 |---|---|---|
 | SEO | Technical discovery, indexability and page signals | Partial local and single-page diagnostics |
 | AEO | Answer structure, clarity and source-oriented content signals | Partial diagnostics |
-| GEO | Mentions and citations in generative-system observations | Analyzes caller-supplied observations; no live collection |
+| GEO | Mentions and citations in generative-system observations | Supplied-observation analysis plus brand registry, prompt cohorts and governed sampling preflight; no live collection |
 | AgEO | Documentation and interface readiness for software agents | Partial API, OpenAPI and passive MCP snapshot diagnostics |
 
 Searqon is not a search-rank tracker, a general-purpose crawler, an MCP execution runtime or a hosted monitoring service. It does not guarantee rankings, citations, recommendations or agent adoption. AgEO is Searqon's proposed product discipline, not a universal industry standard.
 
 ## Quick Start
 
-Requirements: Node.js 22 or later. No runtime package dependencies are currently required.
+Requirements: Node.js 22 or later. The core local CLI uses Node.js built-ins. The web/API and authenticated workspace require the pinned PostgreSQL driver and a configured PostgreSQL database.
 
 ```bash
 git clone https://github.com/LloydCoder/tinlance-searqon.git
@@ -122,7 +122,17 @@ node src/cli.js geo analyze ./examples/geo-observation.json
 node src/cli.js geo aggregate ./examples/geo-observations.json
 ```
 
-These commands do not query AI providers, scrape consumer interfaces or fetch citation URLs. The bundled observations are synthetic fixtures, not live measurements.
+These commands do not query AI providers, scrape consumer interfaces or fetch citation URLs. The bundled observations are synthetic fixtures, not live provider data.
+
+Create a Brand Truth Registry, prompt cohort and governed sampling plan:
+
+```bash
+node src/cli.js geo registry ./examples/brand-truth-input.json --out ./brand-truth-registry.json
+node src/cli.js geo cohort ./examples/geo-cohort-input.json --out ./geo-cohort.json
+node src/cli.js geo plan ./examples/geo-sampling-input.json --out ./geo-sampling-plan.json
+```
+
+The sampling plan is preflight only: consumer observations require manual capture, model observations require an approved official API adapter, and all tasks are subject to policy review and a hard USD cost cap. See [Create a governed GEO sampling plan](docs/how-to/create-geo-sampling-plan.md).
 
 ### Generate a standalone HTML report
 
