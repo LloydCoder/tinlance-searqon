@@ -322,9 +322,9 @@ RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = pg_catalog, searqon
-AS $
+AS $$
   SELECT searqon.consume_auth_rate_limit(p_key_hash, 5, 900)
-$;
+$$;
 
 CREATE OR REPLACE FUNCTION searqon.consume_auth_ip_rate_limit(p_key_hash bytea)
 RETURNS boolean
