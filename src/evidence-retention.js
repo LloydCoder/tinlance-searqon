@@ -1,0 +1,84 @@
+export const EVIDENCE_RETENTION_POLICY_VERSION = "1.0.0";
+const MAX_RETENTION_DAYS = 36_500;
+const DAY_MS = 86_400_000;
+
+function isCanonicalUtcTimestamp(value) {
+  if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return false;
+  try {
+    return new Date(value).toISOString() === value;
+  } catch {
+    return false;
+  }
+}
+
+function deepFreeze(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+/**
+ * Evaluate retention eligibility without deleting, modifying, or exporting
+ * source records. Purge execution and storage sanitization are separate duties.
+ */
+export function evaluateEvidenceRetention(records, { retentionDays, now } = {}) {
+  if (!Array.isArray(records)) throw new TypeError("records must be an array");
+  if (!Number.isSafeInteger(retentionDays) || retentionDays < 1 || retentionDays > MAX_RETENTION_DAYS) {
+    throw new TypeError("retentionDays must be a positive safe integer no greater than 36500");
+  }
+  if (!isCanonicalUtcTimestamp(now)) {
+    throw new TypeError("now must be a canonical ISO 8601 UTC timestamp");
+  }
+
+  const nowMs = Date.parse(now);
+  const seenIds = new Set();
+  const eligibleForPurge = [];
+  const retained = [];
+
+  for (const record of records) {
+    if (!record || typeof record !== "object" || Array.isArray(record)) {
+      throw new TypeError("each evidence record must be an object");
+    }
+    if (typeof record.id !== "string" || !record.id.trim()) {
+      throw new TypeError("each evidence record must have a non-empty evidence id");
+    }
+    if (seenIds.has(record.id)) throw new Error("duplicate evidence identifier: " + record.id);
+    seenIds.add(record.id);
+    if (!isCanonicalUtcTimestamp(record.collectedAt)) {
+      throw new TypeError("each evidence record collectedAt must be a canonical ISO 8601 UTC timestamp");
+    }
+
+    const expiryMs = Date.parse(record.collectedAt) + retentionDays * DAY_MS;
+    const expiryDate = new Date(expiryMs);
+    if (!Number.isFinite(expiryMs) || Number.isNaN(expiryDate.getTime())) {
+      throw new RangeError("evidence expiry timestamp is outside the supported ISO timestamp range");
+    }
+
+    const item = Object.freeze({
+      evidenceId: record.id,
+      collectedAt: record.collectedAt,
+      expiresAt: expiryDate.toISOString()
+    });
+    if (expiryMs <= nowMs) eligibleForPurge.push(item);
+    else retained.push(item);
+  }
+
+  const sortById = (a, b) => a.evidenceId.localeCompare(b.evidenceId);
+  eligibleForPurge.sort(sortById);
+  retained.sort(sortById);
+
+  return deepFreeze({
+    policyVersion: EVIDENCE_RETENTION_POLICY_VERSION,
+    evaluatedAt: now,
+    retentionDays,
+    eligibleForPurge,
+    retained,
+    counts: {
+      evaluated: records.length,
+      eligibleForPurge: eligibleForPurge.length,
+      retained: retained.length
+    }
+  });
+}
