@@ -33,6 +33,7 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Evidence legal-hold journal entry schema](../schemas/evidence-legal-hold-journal-entry.schema.json)
 - [Evidence legal-hold journal checkpoint schema](../schemas/evidence-legal-hold-journal-checkpoint.schema.json)
 - [GEO observation schema](../schemas/geo-observation.schema.json)
+- [GEO aggregate row schema](../schemas/geo-aggregate-row.schema.json)
 - [GEO alert report schema](../schemas/geo-alert-report.schema.json)
 - [GEO citation change report schema](../schemas/geo-citation-change-report.schema.json)
 - [GEO citation alert quality report schema](../schemas/geo-citation-alert-quality-report.schema.json)
