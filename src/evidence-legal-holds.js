@@ -161,6 +161,61 @@ export function verifyEvidenceLegalHoldEvent(event, publicKeyInput) {
   return Object.freeze({ valid: errors.length === 0, errors: Object.freeze(errors) });
 }
 
+
+export class EvidenceLegalHoldApproverRegistry {
+  #keys = new Map();
+
+  register({ actorId, publicKey: publicKeyInput } = {}) {
+    if (typeof actorId !== "string" || !ID_PATTERN.test(actorId)) {
+      throw new TypeError("actorId must be a valid approver identifier");
+    }
+    const publicKey = publicEd25519Key(publicKeyInput);
+    const keyId = keyIdentifier(publicKey);
+    const existing = this.#keys.get(keyId);
+    if (existing) {
+      if (existing.actorId !== actorId) throw new Error("approver key is already registered to a different actor");
+      throw new Error("approver key is already registered");
+    }
+    this.#keys.set(keyId, { actorId, publicKey, active: true });
+    return keyId;
+  }
+
+  revoke(keyId) {
+    const entry = this.#keys.get(keyId);
+    if (!entry) return false;
+    entry.active = false;
+    return true;
+  }
+
+  verifyEvent(event) {
+    const shapeErrors = validateEventShape(event);
+    if (shapeErrors.length) {
+      return Object.freeze({ valid: false, errors: Object.freeze(shapeErrors) });
+    }
+    const entry = this.#keys.get(event.keyId);
+    if (!entry) {
+      return Object.freeze({ valid: false, errors: Object.freeze(["unregistered_approver_key"]) });
+    }
+    if (entry.actorId !== event.approvedBy) {
+      return Object.freeze({ valid: false, errors: Object.freeze(["approver_identity_mismatch"]) });
+    }
+    if (!entry.active) {
+      return Object.freeze({ valid: false, errors: Object.freeze(["approver_key_revoked"]) });
+    }
+    return verifyEvidenceLegalHoldEvent(event, entry.publicKey);
+  }
+
+  list() {
+    return Object.freeze([...this.#keys.entries()]
+      .map(([keyId, entry]) => Object.freeze({
+        actorId: entry.actorId,
+        keyId,
+        active: entry.active
+      }))
+      .sort((a, b) => a.actorId.localeCompare(b.actorId) || a.keyId.localeCompare(b.keyId)));
+  }
+}
+
 /**
  * Reconstruct current hold state from a trusted, ordered event sequence.
  * Events are signed but actor authorization still depends on caller-managed
@@ -179,7 +234,9 @@ export function deriveActiveEvidenceHolds(events, publicKeyInput) {
   const holds = new Map();
   for (let index = 0; index < events.length; index += 1) {
     const event = events[index];
-    const verification = verifyEvidenceLegalHoldEvent(event, publicKeyInput);
+    const verification = publicKeyInput instanceof EvidenceLegalHoldApproverRegistry
+      ? publicKeyInput.verifyEvent(event)
+      : verifyEvidenceLegalHoldEvent(event, publicKeyInput);
     if (!verification.valid) throw new TypeError("invalid legal-hold event at index " + index + ": " + verification.errors.join(", "));
     if (requestIds.has(event.requestId)) throw new Error("duplicate legal-hold request identifier");
     requestIds.add(event.requestId);
