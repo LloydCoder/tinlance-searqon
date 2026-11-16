@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createAppServer } from "../apps/web/server.js";
 
-async function withServer(run) {
-  const server = createAppServer();
+async function withServer(run, options = {}) {
+  const server = createAppServer(options);
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -103,4 +103,123 @@ test("landing page follows the brand kit prohibition on gradients and magnifier 
     assert.equal(page.includes('circle cx="10.8"'), false);
     assert.match(stylesheet, /#E8A33D/);
   });
+});
+
+test("auth routes fail closed when no database-backed auth service is configured", async () => {
+  await withServer(async base => {
+    const response = await fetch(base + "/api/v1/auth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: new URL(base).origin },
+      body: JSON.stringify({ email: "user@example.test", displayName: "User", organizationName: "Workspace" })
+    });
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).error.code, "auth_unavailable");
+  });
+});
+
+test("auth API enforces same-origin requests and bounded JSON bodies", async () => {
+  let calls = 0;
+  let origin;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async register() { calls += 1; return { accepted: true }; },
+    async requestMagicLink() { calls += 1; return { accepted: true }; },
+    async verify() { calls += 1; return { sessionToken: "A".repeat(43), expiresAt: new Date(Date.now() + 86400000) }; },
+    async getProfile() { return { user: { id: "user" }, organizations: [] }; },
+    async logout() { return { revoked: true }; }
+  };
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const crossOrigin = await fetch(base + "/api/v1/auth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://attacker.example" },
+      body: JSON.stringify({ email: "user@example.test", displayName: "User", organizationName: "Workspace" })
+    });
+    assert.equal(crossOrigin.status, 403);
+    assert.equal(calls, 0);
+
+    const oversized = await fetch(base + "/api/v1/auth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin },
+      body: JSON.stringify({ email: "user@example.test", displayName: "x".repeat(17000), organizationName: "Workspace" })
+    });
+    assert.equal(oversized.status, 413);
+    assert.equal(calls, 0);
+
+    const registered = await fetch(base + "/api/v1/auth/register", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin },
+      body: JSON.stringify({ email: "user@example.test", displayName: "User", organizationName: "Workspace" })
+    });
+    assert.equal(registered.status, 202);
+    assert.equal(calls, 1);
+  }, { authService });
+});
+
+test("magic-link verification sets an HttpOnly session cookie and profile/logout use it", async () => {
+  let origin;
+  let observedToken;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async register() { return { accepted: true }; },
+    async requestMagicLink() { return { accepted: true }; },
+    async verify(token) {
+      observedToken = token;
+      return { sessionToken: "B".repeat(43), expiresAt: new Date(Date.now() + 86400000) };
+    },
+    async getProfile(token) {
+      assert.equal(token, "B".repeat(43));
+      return { user: { id: "user-1", email: "user@example.test" }, organizations: [] };
+    },
+    async logout(token) {
+      assert.equal(token, "B".repeat(43));
+      return { revoked: true };
+    }
+  };
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const verified = await fetch(base + "/api/v1/auth/verify", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin },
+      body: JSON.stringify({ token: "C".repeat(43) })
+    });
+    assert.equal(verified.status, 200);
+    assert.equal(observedToken, "C".repeat(43));
+    const cookie = verified.headers.get("set-cookie");
+    assert.match(cookie, /^searqon_session=B{43}; Path=\/; HttpOnly; SameSite=Lax; Max-Age=/);
+
+    const profile = await fetch(base + "/api/v1/auth/me", { headers: { cookie } });
+    assert.equal(profile.status, 200);
+    assert.equal((await profile.json()).user.id, "user-1");
+
+    const logout = await fetch(base + "/api/v1/auth/logout", {
+      method: "POST",
+      headers: { origin, cookie }
+    });
+    assert.equal(logout.status, 200);
+    assert.match(logout.headers.get("set-cookie"), /Max-Age=0/);
+  }, { authService });
+});
+
+test("auth API rejects unsupported methods and missing request origins", async () => {
+  let origin;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async register() { throw new Error("must not be called"); },
+    async requestMagicLink() {},
+    async verify() {},
+    async getProfile() {},
+    async logout() {}
+  };
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const method = await fetch(base + "/api/v1/auth/register");
+    assert.equal(method.status, 405);
+    const missingOrigin = await fetch(base + "/api/v1/auth/magic-link", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "user@example.test" })
+    });
+    assert.equal(missingOrigin.status, 403);
+  }, { authService });
 });
