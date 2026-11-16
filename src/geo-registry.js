@@ -74,6 +74,7 @@ export function createBrandTruthRegistry(input) {
   const assertedBy = requiredText(input.assertedBy, "assertedBy", 128);
   const createdAt = canonicalTimestamp(input.createdAt, "createdAt");
   const updatedAt = canonicalTimestamp(input.updatedAt ?? createdAt, "updatedAt");
+  if (Date.parse(updatedAt) < Date.parse(createdAt)) throw new TypeError("updatedAt cannot be earlier than createdAt");
   const aliases = normalizeAliases(input.aliases, brandName);
   const rawFacts = input.facts ?? [];
   if (!Array.isArray(rawFacts) || rawFacts.length > MAX_FACTS) throw new RangeError("facts must be an array of at most " + MAX_FACTS + " items");
@@ -90,8 +91,13 @@ export function createBrandTruthRegistry(input) {
     if (!FACT_STATUSES.has(status)) throw new TypeError("fact.status is unsupported");
     const sourceUrls = [...new Set((fact.sourceUrls ?? []).map(normalizeSourceUrl))].sort();
     if (sourceUrls.length > 20) throw new RangeError("A fact may have at most 20 source URLs");
+    const assertedByForFact = requiredText(fact.assertedBy ?? assertedBy, "fact.assertedBy", 128);
+    const assertedAt = canonicalTimestamp(fact.assertedAt ?? createdAt, "fact.assertedAt");
+    if (Date.parse(assertedAt) > Date.parse(updatedAt)) throw new TypeError("fact.assertedAt cannot be later than registry updatedAt");
     const reviewedBy = fact.reviewedBy ? requiredText(fact.reviewedBy, "fact.reviewedBy", 128) : null;
     const reviewedAt = fact.reviewedAt ? canonicalTimestamp(fact.reviewedAt, "fact.reviewedAt") : null;
+    if (Boolean(reviewedBy) !== Boolean(reviewedAt)) throw new TypeError("fact reviewedBy and reviewedAt must be provided together");
+    if (reviewedAt && Date.parse(reviewedAt) < Date.parse(assertedAt)) throw new TypeError("fact.reviewedAt cannot be earlier than assertedAt");
     if (["corroborated", "disputed"].includes(status) && (!reviewedBy || !reviewedAt || sourceUrls.length === 0)) {
       throw new TypeError("corroborated or disputed facts require reviewedBy, reviewedAt and at least one source URL");
     }
@@ -102,8 +108,8 @@ export function createBrandTruthRegistry(input) {
       statement,
       status,
       sourceUrls: Object.freeze(sourceUrls),
-      assertedBy: requiredText(fact.assertedBy ?? assertedBy, "fact.assertedBy", 128),
-      assertedAt: canonicalTimestamp(fact.assertedAt ?? createdAt, "fact.assertedAt"),
+      assertedBy: assertedByForFact,
+      assertedAt,
       reviewedBy,
       reviewedAt
     });
@@ -173,8 +179,9 @@ export function createPromptCohort(input) {
   });
 }
 
-function validateProvider(provider) {
+function validateProvider(provider, planCreatedAt) {
   if (!provider || typeof provider !== "object" || Array.isArray(provider)) throw new TypeError("provider must be an object");
+  if (Object.keys(provider).some(key => /(?:api.?key|secret|token|credential|authorization)/i.test(key))) throw new TypeError("provider credentials and secrets must never be embedded in a sampling plan");
   const name = requiredText(provider.name, "provider.name", 128);
   if (!OBSERVATION_CLASSES.has(provider.observationClass)) throw new TypeError("provider.observationClass is unsupported");
   const expectedMode = provider.observationClass === "consumer_observation" ? "manual_capture" : "official_api";
@@ -185,14 +192,16 @@ function validateProvider(provider) {
   }
   const policy = provider.policyReview;
   if (!policy || policy.status !== "approved") throw new TypeError("provider requires an approved policyReview");
+  const reviewedAt = canonicalTimestamp(policy.reviewedAt, "policyReview.reviewedAt");
+  if (Date.parse(reviewedAt) > Date.parse(planCreatedAt)) throw new TypeError("policyReview must be approved before the sampling plan is created");
   const policyReview = Object.freeze({
     status: "approved",
-    reviewedAt: canonicalTimestamp(policy.reviewedAt, "policyReview.reviewedAt"),
+    reviewedAt,
     reviewerId: requiredText(policy.reviewerId, "policyReview.reviewerId", 128),
     sourceUrl: normalizeSourceUrl(policy.sourceUrl)
   });
-  const estimatedCostPerSampleUsd = provider.estimatedCostPerSampleUsd ?? 0;
-  if (!Number.isFinite(estimatedCostPerSampleUsd) || estimatedCostPerSampleUsd < 0 || estimatedCostPerSampleUsd > 1000) {
+  const estimatedCostPerSampleUsd = provider.estimatedCostPerSampleUsd;
+  if (typeof estimatedCostPerSampleUsd !== "number" || !Number.isFinite(estimatedCostPerSampleUsd) || estimatedCostPerSampleUsd < 0 || estimatedCostPerSampleUsd > 1000) {
     throw new TypeError("estimatedCostPerSampleUsd must be between 0 and 1000");
   }
   if (!Number.isSafeInteger(provider.maxSamples) || provider.maxSamples < 1 || provider.maxSamples > MAX_PLAN_TASKS) {
@@ -201,6 +210,7 @@ function validateProvider(provider) {
   const adapterId = provider.observationClass === "model_api"
     ? requiredText(provider.adapterId, "provider.adapterId", 128)
     : null;
+  if (provider.observationClass === "consumer_observation" && provider.adapterId !== undefined && provider.adapterId !== null) throw new TypeError("consumer_observation must use manual capture and cannot declare an automated adapter");
   return Object.freeze({ name, observationClass: provider.observationClass, collectionMode: expectedMode, adapterId, policyReview, estimatedCostPerSampleUsd, maxSamples: provider.maxSamples });
 }
 
@@ -220,7 +230,7 @@ export function buildGeoSamplingPlan(input) {
     throw new RangeError("providers must contain between 1 and " + MAX_PROVIDERS + " items");
   }
   const createdAt = canonicalTimestamp(input.createdAt, "createdAt");
-  const providers = input.providers.map(validateProvider).sort((a, b) => a.name.localeCompare(b.name));
+  const providers = input.providers.map(provider => validateProvider(provider, createdAt)).sort((a, b) => a.name.localeCompare(b.name));
   if (new Set(providers.map(item => item.name.toLocaleLowerCase("en"))).size !== providers.length) throw new TypeError("provider names must be unique");
   const samplesPerProvider = cohort.prompts.length * sampleCount;
   for (const provider of providers) {
