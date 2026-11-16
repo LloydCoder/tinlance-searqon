@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.com/schemas/brand-truth-registry.schema.json",
+  "title": "Searqon Brand Truth Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "type",
+    "registryId",
+    "brand",
+    "assertedBy",
+    "createdAt",
+    "updatedAt",
+    "facts",
+    "contentDigest"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "type": {
+      "const": "brand_truth_registry"
+    },
+    "registryId": {
+      "type": "string",
+      "pattern": "^btr_[a-f0-9]{20}$"
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "primaryDomain",
+        "aliases"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "primaryDomain": {
+          "type": "string",
+          "maxLength": 253
+        },
+        "aliases": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      }
+    },
+    "assertedBy": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "facts": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "factId",
+          "attribute",
+          "value",
+          "statement",
+          "status",
+          "sourceUrls",
+          "assertedBy",
+          "assertedAt",
+          "reviewedBy",
+          "reviewedAt"
+        ],
+        "properties": {
+          "factId": {
+            "type": "string",
+            "pattern": "^fact_[a-f0-9]{20}$"
+          },
+          "attribute": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{1,95}$"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "status": {
+            "enum": [
+              "owner_asserted",
+              "corroborated",
+              "disputed",
+              "retired"
+            ]
+          },
+          "sourceUrls": {
+            "type": "array",
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://"
+            }
+          },
+          "assertedBy": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "assertedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "reviewedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "contentDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
