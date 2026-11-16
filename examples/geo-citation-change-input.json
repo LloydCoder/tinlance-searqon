@@ -1,7 +1,7 @@
 {
   "baseline": [
     {
-      "prompt": "Which tools help teams discover product documentation? cohort 0",
+      "prompt": "Which tools help teams discover documentation? baseline 0",
       "answer": "Searqon is a platform for discoverability.",
       "brand": "Searqon",
       "targetDomain": "searqon.com",
@@ -17,7 +17,7 @@
       "sampledAt": "2026-11-10T12:00:00.000Z"
     },
     {
-      "prompt": "Which tools help teams discover product documentation? cohort 1",
+      "prompt": "Which tools help teams discover documentation? baseline 1",
       "answer": "Searqon is a platform for discoverability.",
       "brand": "Searqon",
       "targetDomain": "searqon.com",
@@ -30,10 +30,10 @@
         "region": "US",
         "locale": "en-US"
       },
-      "sampledAt": "2026-11-10T12:01:00.000Z"
+      "sampledAt": "2026-11-10T12:00:00.000Z"
     },
     {
-      "prompt": "Which tools help teams discover product documentation? cohort 2",
+      "prompt": "Which tools help teams discover documentation? baseline 2",
       "answer": "Searqon is a platform for discoverability.",
       "brand": "Searqon",
       "targetDomain": "searqon.com",
@@ -46,12 +46,444 @@
         "region": "US",
         "locale": "en-US"
       },
-      "sampledAt": "2026-11-10T12:02:00.000Z"
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 3",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 4",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 5",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 6",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 7",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 8",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 9",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 10",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 11",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 12",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 13",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 14",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 15",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 16",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 17",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 18",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 19",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 20",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 21",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 22",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 23",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 24",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 25",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 26",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 27",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 28",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? baseline 29",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://searqon.com/docs"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-10T12:00:00.000Z"
     }
   ],
   "current": [
     {
-      "prompt": "Which tools help teams discover product documentation? cohort 0",
+      "prompt": "Which tools help teams discover documentation? current 0",
       "answer": "Searqon is a platform for discoverability.",
       "brand": "Searqon",
       "targetDomain": "searqon.com",
@@ -67,7 +499,7 @@
       "sampledAt": "2026-11-16T12:00:00.000Z"
     },
     {
-      "prompt": "Which tools help teams discover product documentation? cohort 1",
+      "prompt": "Which tools help teams discover documentation? current 1",
       "answer": "Searqon is a platform for discoverability.",
       "brand": "Searqon",
       "targetDomain": "searqon.com",
@@ -80,10 +512,10 @@
         "region": "US",
         "locale": "en-US"
       },
-      "sampledAt": "2026-11-16T12:01:00.000Z"
+      "sampledAt": "2026-11-16T12:00:00.000Z"
     },
     {
-      "prompt": "Which tools help teams discover product documentation? cohort 2",
+      "prompt": "Which tools help teams discover documentation? current 2",
       "answer": "Searqon is a platform for discoverability.",
       "brand": "Searqon",
       "targetDomain": "searqon.com",
@@ -96,12 +528,445 @@
         "region": "US",
         "locale": "en-US"
       },
-      "sampledAt": "2026-11-16T12:02:00.000Z"
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 3",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 4",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 5",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 6",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 7",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 8",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 9",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 10",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 11",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 12",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 13",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 14",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 15",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 16",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 17",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 18",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 19",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 20",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 21",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 22",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 23",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 24",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 25",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 26",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 27",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 28",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
+    },
+    {
+      "prompt": "Which tools help teams discover documentation? current 29",
+      "answer": "Searqon is a platform for discoverability.",
+      "brand": "Searqon",
+      "targetDomain": "searqon.com",
+      "citations": [
+        "https://competitor.example/guide"
+      ],
+      "provider": {
+        "name": "Example Search",
+        "observationClass": "consumer_observation",
+        "region": "US",
+        "locale": "en-US"
+      },
+      "sampledAt": "2026-11-16T12:00:00.000Z"
     }
   ],
   "observedAt": "2026-11-16T13:00:00.000Z",
   "policy": {
-    "minimumSamples": 2,
-    "minimumAbsoluteChange": 0.2
+    "minimumSamples": 20,
+    "minimumAbsoluteChange": 0.2,
+    "maxObservationAgeSeconds": 86400
   }
 }
