@@ -98,6 +98,10 @@ BEGIN
     RAISE EXCEPTION 'invalid magic link token parameters' USING ERRCODE = '22023';
   END IF;
 
+  IF p_email IS NULL OR char_length(btrim(p_email)) NOT BETWEEN 3 AND 320 THEN
+    RAISE EXCEPTION 'invalid magic link email' USING ERRCODE = '22023';
+  END IF;
+
   SELECT u.id INTO v_user_id
   FROM searqon.app_users AS u
   WHERE u.email = lower(btrim(p_email))
@@ -106,6 +110,12 @@ BEGIN
   IF v_user_id IS NULL THEN
     RETURN;
   END IF;
+
+  UPDATE searqon.auth_tokens AS old_token
+  SET consumed_at = COALESCE(old_token.consumed_at, now())
+  WHERE old_token.user_id = v_user_id
+    AND old_token.purpose = 'magic_login'
+    AND old_token.consumed_at IS NULL;
 
   INSERT INTO searqon.auth_tokens (user_id, token_hash, purpose, expires_at)
   VALUES (v_user_id, p_token_hash, 'magic_login', p_token_expires_at)
