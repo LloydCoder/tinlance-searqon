@@ -143,3 +143,10 @@ test("diff proposals distinguish empty, added, unchanged and removed artifacts",
   const removed = compileAgentArtifacts({ sources: [{ sourceId: "keep", path: "docs/Keep.md", kind: "markdown", content: "# Keep\n" }], previousArtifacts: [{ path: "docs/Gone.md", content: "# Gone\n" }] });
   assert.equal(removed.changes.find(change => change.path === "docs/Gone.md").status, "removed");
 });
+
+test("bounds aggregate previous artifact bytes before diff computation", () => {
+  assert.throws(() => compileAgentArtifacts({
+    sources: [{ sourceId: "small", path: "docs/small.md", kind: "markdown", content: "small" }],
+    previousArtifacts: [{ path: "docs/large.md", content: "x".repeat(2_097_153) }]
+  }), /Combined previous artifact content exceeds the 2 MiB compiler limit/);
+});
