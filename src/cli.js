@@ -94,7 +94,8 @@ async function runGeo(args) {
     aggregate: aggregateGeoObservations,
     registry: createBrandTruthRegistry,
     cohort: createPromptCohort,
-    plan: buildGeoSamplingPlan
+    plan: buildGeoSamplingPlan,
+    alerts: detectCitationChanges
   };
   await emitResult(handlers[command](input),args);
 }
