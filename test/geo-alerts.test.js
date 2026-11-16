@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { analyzeGeoObservation, wilsonInterval } from "../src/geo.js";
 import {
   detectCitationChanges,
@@ -320,7 +321,6 @@ test("signed webhook envelope creation time must match the signed timestamp head
   const altered = JSON.parse(signed.body);
   altered.createdAt = "2026-11-16T13:00:00.000Z";
   const rawBody = JSON.stringify(altered);
-  const { createHmac } = await import("node:crypto");
   const signature = "v1=" + createHmac("sha256", "test-signing-secret-with-at-least-32-bytes")
     .update(signed.headers["x-searqon-timestamp"] + "." + rawBody)
     .digest("hex");
