@@ -3,7 +3,14 @@ import assert from "node:assert/strict";
 import { createDatabase, withUserTransaction } from "../src/platform/database.js";
 
 const databaseUrl = process.env.DATABASE_URL;
-const enabled = Boolean(databaseUrl);
+let isDisposableDatabase = false;
+if (databaseUrl && process.env.SEARQON_TEST_DATABASE === "1") {
+  try {
+    const databaseName = decodeURIComponent(new URL(databaseUrl).pathname.slice(1));
+    isDisposableDatabase = /(?:^|[_-])(test|ci)(?:$|[_-])/i.test(databaseName);
+  } catch {}
+}
+const enabled = isDisposableDatabase;
 
 test("PostgreSQL pool applies transaction-local tenant identity and RLS on real connections", { skip: !enabled }, async () => {
   const db = createDatabase({ connectionString: databaseUrl, maxConnections: 1 });
