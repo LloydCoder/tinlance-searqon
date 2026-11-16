@@ -176,7 +176,7 @@ async function serveStatic(pathname, response, headOnly = false) {
 
 export function createAppServer({ database = null, authService = null } = {}) {
   const auth = authService ?? (database ? createAuthService({ database, emailSender: createEmailSender() }) : null);
-  return createServer(async (request, response) => {
+  const server = createServer(async (request, response) => {
     applySecurityHeaders(response);
     let url;
     try {
@@ -337,6 +337,12 @@ export function createAppServer({ database = null, authService = null } = {}) {
     }
     await serveStatic(url.pathname, response, request.method === "HEAD");
   });
+  server.headersTimeout = 10_000;
+  server.requestTimeout = 30_000;
+  server.keepAliveTimeout = 5_000;
+  server.maxRequestsPerSocket = 1_000;
+  server.maxHeadersCount = 100;
+  return server;
 }
 
 const invokedPath = process.argv[1] ? resolve(process.argv[1]) : "";
@@ -361,9 +367,18 @@ if (invokedPath && pathToFileURL(invokedPath).href === import.meta.url) {
       server.listen(port, host, () => {
         process.stdout.write("Searqon web listening on http://" + host + ":" + port + "\n");
       });
-      const shutdown = () => server.close(() => {
-        database?.close().finally(() => process.exit(0));
-      });
+      let shuttingDown = false;
+      const shutdown = () => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+        server.close(() => {
+          if (!database) {
+            process.exit(0);
+            return;
+          }
+          database.close().then(() => process.exit(0)).catch(() => process.exit(1));
+        });
+      };
       process.once("SIGTERM", shutdown);
       process.once("SIGINT", shutdown);
     }
