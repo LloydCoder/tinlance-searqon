@@ -2,7 +2,7 @@
 
 ## Architectural posture
 
-Start as a modular TypeScript-first codebase with explicit domain contracts. Introduce services, queues, databases, browser workers, and provider dependencies only when a measured requirement justifies them. The initial public repository must run locally without cloud credentials or paid APIs.
+Build Searqon as **one repository and one product codebase**. All product surfaces and runtime components—including the open-source toolkit, marketing site, authenticated application, API, workers, persistence adapters, integrations, billing, and operations—belong in this repository. Use a modular TypeScript-first monorepo with explicit package and domain contracts; do not create a separate Searqon Cloud repository. Keep deployment units independently deployable from this repository where operationally justified, without splitting source ownership. Local development and the open-source toolkit must continue to work without cloud credentials or paid APIs.
 
 ## Ownership boundaries
 
@@ -22,7 +22,7 @@ These boundaries are product contracts, not merely deployment choices.
 5. **GEO observation adapters:** provider-specific collection with explicit separation between consumer-facing observations and model API calls.
 6. **Recommendation and verification:** actionable remediation and repeatable reassessment.
 7. **Interfaces:** CLI and machine-readable output first; API and web application when user validation supports them.
-8. **Hosted control plane (later):** tenant isolation, roles, billing, quotas, scheduling, audit trails, and managed retention.
+8. **Application and control plane:** in this same repository, implement tenant isolation, roles, billing, quotas, scheduling, audit trails, managed retention, and customer-facing workspace capabilities. These are internal modules and deployable workloads, not a separate product repository.
 
 ## Observation classes
 
@@ -76,3 +76,29 @@ Rust is not a default rewrite target. Consider it only after profiling identifie
 ## Evolution rules
 
 Use versioned interfaces and migration notes. Avoid premature microservices. Do not make Searqon dependent on Tinlyt, TAS, a single LLM provider, or AWS. Cross-product integrations require explicit contracts, threat models, and acceptance tests.
+
+
+## Single-repository product structure
+
+The repository is the source of truth for the complete Searqon product. Organize it as a modular monorepo with independently testable packages and deployable applications:
+
+- `apps/web`: public marketing website and authenticated customer application.
+- `apps/api`: versioned HTTP API, authentication/session boundary, workspace and project endpoints.
+- `apps/worker`: scheduled and asynchronous assessment execution; isolated browser work only behind explicit policies.
+- `apps/cli`: existing local and CI command-line interface.
+- `packages/domain`: canonical domain entities, identifiers, contracts and invariants.
+- `packages/assessment`: SEO, AEO, GEO and Agent-readiness assessment engines.
+- `packages/evidence`: evidence ledger, provenance, integrity, retention and redaction contracts.
+- `packages/acquisition`: bounded acquisition and provider adapters.
+- `packages/recommendations`: explainable prioritization, remediation and verification.
+- `packages/auth`: identity integration, sessions, RBAC and organization membership.
+- `packages/persistence`: database schema, migrations, repositories and tenant-scoped data access.
+- `packages/integrations`: approved search, analytics, AI-answer observation and external integrations.
+- `packages/billing`: plans, entitlements, metering and billing-provider adapters.
+- `packages/ui`: shared accessible design system and product components.
+- `infra`: deployment definitions, environment templates, monitoring and operational runbooks.
+- `docs`: ADRs, threat models, API contracts, product decisions and phase acceptance evidence.
+
+This is the target structure, not a claim that every listed package already exists. Introduce each package when its first real consumer is implemented. Avoid placeholder packages and duplicate domain logic. Internal package boundaries must be enforced through imports, tests and ownership rules. Keep tenant authorization in API, worker and persistence boundaries; a shared repository does not weaken isolation requirements.
+
+The public/local mode and hosted mode are two supported operating modes of the same product codebase. Public modules may remain Apache-2.0 where appropriate; secrets, customer data, credentials and deployment environments are never committed. Any future licensing boundary is a release/legal decision, not a reason to split the repository.
