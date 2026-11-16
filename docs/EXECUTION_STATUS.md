@@ -1,7 +1,7 @@
 # Searqon Implementation Status
 
 **Last reconciled:** 2026-11-16  
-**Base commit for this status revision:** `4e7a8677d7a37d557e8bdf4b748e1f0790cae653`  
+**Base commit for this status revision:** `726d552f05eba3682d8fd2629e163d5866b451d1`  
 **Product maturity:** Early alpha; not production-ready.
 
 This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification. Status is evidence-based; implementation does not imply independent assurance or product-owner acceptance.
