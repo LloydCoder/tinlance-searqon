@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { validateTargetUrl } from "./security/url-policy.js";
 
 const MAX_FACTS = 500;
 const MAX_PROMPTS = 500;
@@ -36,21 +37,18 @@ function canonicalTimestamp(value, name) {
 }
 function normalizeDomain(value) {
   const domain = requiredText(value, "primaryDomain", 253).toLowerCase().replace(/\.$/, "");
-  let parsed;
-  try { parsed = new URL("https://" + domain); } catch { throw new TypeError("primaryDomain must be a DNS hostname"); }
-  if (parsed.hostname !== domain || parsed.pathname !== "/" || parsed.port || parsed.username || parsed.password || domain.split(".").length < 2) {
-    throw new TypeError("primaryDomain must be a hostname without scheme, path, port or credentials");
-  }
-  if (domain === "localhost" || domain.endsWith(".localhost") || domain.endsWith(".local") || domain.endsWith(".test") || domain.endsWith(".example")) {
-    throw new TypeError("primaryDomain must be a public DNS domain");
-  }
+  let target;
+  try { target = validateTargetUrl("https://" + domain); }
+  catch { throw new TypeError("primaryDomain must be a public DNS hostname without a scheme, path, port or credentials"); }
+  if (target.hostname !== domain || target.port || target.isIpLiteral) throw new TypeError("primaryDomain must be a public DNS hostname, not an IP literal");
   return domain;
 }
 function normalizeSourceUrl(value) {
-  let url;
-  try { url = new URL(requiredText(value, "sourceUrl", 2048)); }
-  catch { throw new TypeError("sourceUrl must be an absolute HTTPS URL"); }
-  if (url.protocol !== "https:" || url.username || url.password) throw new TypeError("sourceUrl must use HTTPS without credentials");
+  let target;
+  try { target = validateTargetUrl(requiredText(value, "sourceUrl", 2048)); }
+  catch { throw new TypeError("sourceUrl must be a public absolute HTTPS URL without credentials"); }
+  if (target.protocol !== "https:") throw new TypeError("sourceUrl must use HTTPS");
+  const url = new URL(target.href);
   url.search = "";
   url.hash = "";
   return url.href;
