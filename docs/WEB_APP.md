@@ -51,12 +51,12 @@ The API returns the existing v1 assessment report, including evidence metadata, 
 - The server emits restrictive content-security and browser security headers, uses same-origin requests, rejects unsupported media types, and returns structured errors without stack traces.
 - Static-file resolution is constrained to the application public directory; unknown file types and paths are not served.
 - Authentication uses one-time email links, server-side session digests, origin validation, HttpOnly/SameSite cookies, HMAC-based database rate limits and a restricted PostgreSQL role. See [AUTHENTICATION.md](AUTHENTICATION.md).
-- The API still lacks customer project CRUD, persisted assessment execution/history, background workers, provider observation adapters, billing, operational telemetry, backup/recovery and production deployment. It is not yet safe to expose as a public multi-tenant SaaS.
+- The API currently supports project creation/list/detail and synchronous persisted assessments, but not project update/archive/delete, invitations/role administration, background workers, scheduled monitoring, quotas, provider observation adapters, billing, operational telemetry, backup/recovery or production deployment. It is not yet safe to expose as a public multi-tenant SaaS.
 - Dashboard values in the marketing preview are illustrative sample data. They are not produced by the analyzer and must never be presented as customer measurements.
 
 ## Next hosted-service gates
 
-A hosted product still requires project/assessment persistence, job orchestration, quotas, encryption/key management, audit lifecycle integration, backups/recovery, provider adapters, operational telemetry and deployment controls. Tenant isolation must be enforced in the database and every API/worker boundary. These concerns must not be simulated with browser-only state or hard-coded demo accounts.
+A hosted product still requires asynchronous job orchestration, scheduled monitoring, quotas, encryption/key management, audit lifecycle integration, backups/recovery, provider adapters, operational telemetry and deployment controls. Tenant isolation must be enforced in the database and every API/worker boundary. These concerns must not be simulated with browser-only state or hard-coded demo accounts.
 
 The complete hosted product belongs in this same Searqon repository. Keep the open-source/local toolkit independently usable through modular boundaries and configuration, while implementing hosted identity, tenant persistence, billing and operations as internal packages and deployable applications in this codebase. Do not create a separate Searqon Cloud repository.
 
