@@ -53,7 +53,7 @@ export async function runMigrations({
         // Migration files are authored with standalone BEGIN/COMMIT wrappers. Strip only
         // those outer statements so the migration and its checksum share this transaction.
         const migrationBody = sql
-          .replace(/^\s*BEGIN\s*;\s*/i, "")
+          .replace(/^\s*(?:--[^\n]*\n\s*)*BEGIN\s*;\s*/i, "")
           .replace(/\s*COMMIT\s*;\s*$/i, "");
         await client.query(migrationBody);
         await client.query(
