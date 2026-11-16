@@ -136,3 +136,11 @@ This register separates implemented repository capabilities from customer, secur
 - PR #72 merged as `9ea611bcb567f233df4312f82d4b47882ef804e2`; exact-head Node.js 22/24 CI, CodeQL and full-history secret scan all passed.
 - Follow-on Phase 3 work adds a seven-schema contract registry, explicit version/compatibility rules, API/persistence boundary documentation and regression tests for registry completeness, schema identity/reference integrity and documented exports.
 - Phase 3 remains IN_PROGRESS until migration fixtures/framework and cross-version consumer tests are implemented and audited.
+
+
+## 2026-11-16 — Phase 3 migration framework (in progress)
+
+- Added `ContractMigrationRegistry` with explicit version edges, exact semantic-version inputs, no implicit upgrades, ambiguous-route rejection, deep-frozen cloned inputs, JSON-only outputs, synchronous transforms and schemaVersion preservation when present.
+- Added unit coverage for unregistered/ambiguous routes, duplicate edges, source/target version mismatches, non-mutation, frozen input, async transform rejection, sparse arrays and non-JSON values. Added the registry to the documented public API.
+- Added migration framework reference documentation. No actual published schema has a v2 migration; the framework is infrastructure only and does not claim schema validation or deterministic/lossless migration by itself.
+- Phase 3 remains IN_PROGRESS pending exact-head CI/CodeQL/secret-scan, forensic audit, and real versioned consumer fixtures when a new schema version is introduced.
