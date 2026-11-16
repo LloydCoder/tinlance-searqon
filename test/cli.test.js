@@ -168,3 +168,17 @@ test("CLI audits supplied answer claims against a Brand Truth Registry", async (
     assert.equal(report.results[0].assessment, "registry_consistent");
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+
+test("published claim defense fixture produces contradiction and attribution findings", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-claim-example-"));
+  try {
+    const outputFile = join(dir, "claim-report.json");
+    const result = spawnSync(process.execPath, [cli.pathname, "claims", "audit", "examples/claim-defense-input.json", "--out", outputFile], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(await readFile(outputFile, "utf8"));
+    assert.equal(report.summary.potentialContradictions, 1);
+    assert.equal(report.results[0].citationAssessment, "attribution_swap");
+    assert.equal(report.correctionManifest.autoPublish, false);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
