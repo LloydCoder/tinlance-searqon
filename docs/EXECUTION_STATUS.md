@@ -215,3 +215,12 @@ This register separates implemented repository capabilities from customer, secur
 - Added CLI commands `geo alerts` and `geo citation-changes`, synthetic fixtures, versioned JSON Schemas, contract registry entries, docs and CI smoke tests.
 - These are deterministic local capabilities over supplied observations; no provider acquisition, consumer UI automation, scheduled sampling, durable alert state, outbound webhook delivery, retry worker or live monitoring is implemented. Stateless signature verification requires receiver-side durable event-ID replay deduplication. The Wilson interval non-overlap rule is a conservative screening heuristic, not a formal multi-comparison-corrected hypothesis test.
 - Roadmap Phase 9 remains IN_PROGRESS pending citation replacement/ordering semantics, persisted baselines/events/cooldowns, opt-in encrypted destinations, durable delivery/retry queues, replay/idempotency integration tests, labelled false-positive evaluation, cadence/latency disclosures and hosted scheduling/monitoring.
+
+
+### Phase 9 follow-up — evaluation, replay and latency controls
+
+- Added a caller-labelled quality evaluator that reports TP/FP/FN/TN, precision, recall, specificity, false-positive rate and F1 across bounded cases.
+- Added a synthetic positive/negative regression fixture and CI CLI smoke test. This verifies the evaluator mechanics only; representative customer/provider-labelled evaluation is still an external acceptance gate.
+- Added an in-memory, bounded webhook replay guard for deterministic tests/prototypes. Production replay protection still requires a durable shared event-ID store with a unique constraint and retention beyond timestamp tolerance.
+- Both aggregate and raw-observation reports now disclose observation lag and classify data as fresh/stale against an explicit age threshold.
+- Delivery payload/receipt tests cover formatting and retry metadata, but actual provider delivery, durable retries, idempotent outbox processing and delivery-latency SLOs remain unimplemented.
