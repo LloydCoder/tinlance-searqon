@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   createBrandTruthRegistry,
   createPromptCohort,
@@ -136,4 +137,35 @@ test("sampling plans enforce per-provider caps, request caps, and budget ceiling
   const provider = { name: "API", observationClass: "model_api", collectionMode: "official_api", adapterId: "api.v1", policyReview: reviewed, estimatedCostPerSampleUsd: 1, maxSamples: 2 };
   assert.throws(() => buildGeoSamplingPlan({ cohort: cohort(), sampleCount: 2, costCapUsd: 100, providers: [provider] }), /maxSamples/i);
   assert.throws(() => buildGeoSamplingPlan({ cohort: cohort(), sampleCount: 1, costCapUsd: 0.5, providers: [{ ...provider, maxSamples: 10 }] }), /budget/i);
+});
+
+
+test("GEO registry, cohort and sampling outputs match their published schemas", async () => {
+  const registrySchema = JSON.parse(await readFile(new URL("../schemas/brand-truth-registry.schema.json", import.meta.url), "utf8"));
+  const cohortSchema = JSON.parse(await readFile(new URL("../schemas/geo-prompt-cohort.schema.json", import.meta.url), "utf8"));
+  const planSchema = JSON.parse(await readFile(new URL("../schemas/geo-sampling-plan.schema.json", import.meta.url), "utf8"));
+  const brand = registry();
+  const prompts = cohort();
+  const plan = buildGeoSamplingPlan({
+    cohort: prompts, sampleCount: 1, costCapUsd: 1,
+    createdAt: "2026-11-16T12:00:00.000Z",
+    providers: [{ name: "Manual", observationClass: "consumer_observation", collectionMode: "manual_capture", policyReview: reviewed, estimatedCostPerSampleUsd: 0, maxSamples: 2 }]
+  });
+  assert.deepEqual(Object.keys(brand).sort(), [...registrySchema.required].sort());
+  assert.deepEqual(Object.keys(brand.facts[0]).sort(), [...registrySchema.properties.facts.items.required].sort());
+  assert.deepEqual(Object.keys(prompts).sort(), [...cohortSchema.required].sort());
+  assert.deepEqual(Object.keys(plan).sort(), [...planSchema.required].sort());
+  assert.deepEqual(Object.keys(plan.providers[0]).sort(), [...planSchema.properties.providers.items.required].sort());
+});
+
+test("registry timestamps are monotonic and provider credentials are rejected", () => {
+  assert.throws(() => createBrandTruthRegistry({
+    brandName: "Searqon", primaryDomain: "searqon.com", assertedBy: "founder",
+    createdAt: "2026-11-16T12:00:00.000Z", updatedAt: "2026-11-15T12:00:00.000Z"
+  }), /updatedAt/i);
+  assert.throws(() => buildGeoSamplingPlan({
+    cohort: cohort(), sampleCount: 1, costCapUsd: 1,
+    createdAt: "2026-11-16T12:00:00.000Z",
+    providers: [{ name: "API", observationClass: "model_api", collectionMode: "official_api", adapterId: "api.v1", apiKey: "never-store-this", policyReview: reviewed, estimatedCostPerSampleUsd: 0, maxSamples: 2 }]
+  }), /credential|secret|token|api.?key/i);
 });
