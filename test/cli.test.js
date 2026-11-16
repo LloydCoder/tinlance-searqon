@@ -188,3 +188,33 @@ test("published claim defense fixture produces contradiction and attribution fin
     assert.equal(report.correctionManifest.autoPublish, false);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("CLI builds a cohort-safe GEO alert report from local aggregate snapshots", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-geo-alerts-"));
+  try {
+    const input = join(dir, "alerts.json");
+    await writeFile(input, JSON.stringify({
+      baseline: [{
+        observationClass: "model_api",
+        provider: { name: "OpenAI", model: "gpt-4.1", region: "us", locale: "en-US" },
+        brand: "Searqon", targetDomain: "searqon.com", samplePeriod: null,
+        sampleSize: 100, mentionCount: 80, brandCitationCount: 70
+      }],
+      current: [{
+        observationClass: "model_api",
+        provider: { name: "OpenAI", model: "gpt-4.1", region: "us", locale: "en-US" },
+        brand: "Searqon", targetDomain: "searqon.com", samplePeriod: null,
+        sampleSize: 100, mentionCount: 40, brandCitationCount: 20
+      }],
+      baselineId: "baseline-1", currentId: "current-1",
+      baselineAt: "2026-11-16T12:00:00.000Z",
+      currentAt: "2026-11-16T13:00:00.000Z",
+      evaluatedAt: "2026-11-16T13:01:00.000Z"
+    }));
+    const result = spawnSync(process.execPath, [cli.pathname, "geo", "alerts", input], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.type, "geo_alert_report");
+    assert.equal(report.alerts.length, 2);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
