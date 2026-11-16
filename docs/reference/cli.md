@@ -91,8 +91,11 @@ See [Audit brand claims and citations](../how-to/audit-brand-claims.md) for asse
 ```bash
 node src/cli.js geo alerts ./examples/geo-alert-input.json
 node src/cli.js geo citation-changes ./examples/geo-citation-change-input.json
+node src/cli.js geo quality-evaluate ./examples/geo-citation-alert-quality-input.json
 ```
 
 The input contains baseline/current aggregate arrays, stable snapshot IDs, UTC timestamps and optional minimum-sample, effect-size and cooldown policy. The command emits separate mention-rate and brand-domain citation-rate evaluations. It never queries providers or sends notifications. See [Compare GEO snapshots and generate alerts](../how-to/compare-geo-snapshots-and-alerts.md).
 
 `geo citation-changes` accepts raw GEO observation input arrays, normalizes them through the existing analyzer, and reports evidence-linked citation-domain disappearances for one exact comparable cohort. See [the GEO alert guide](../how-to/compare-geo-snapshots-and-alerts.md).
+
+`geo quality-evaluate` evaluates a caller-labelled set of raw observation cohorts and reports precision, recall, specificity and false-positive rate. The checked-in fixture is synthetic regression data, not real-world validation.
