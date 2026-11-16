@@ -78,3 +78,8 @@ The migration owner is a privileged trust anchor and must not be used by the req
 - Email bounce/complaint webhooks, deliverability monitoring and retry queue.
 - Data retention/cleanup for expired tokens and rate-limit rows.
 - Production secrets, runtime roles, domain verification, deployment, monitoring, backups and recovery drills.
+
+
+## Session lifetime
+
+Sessions expire after 30 minutes of inactivity and 24 hours absolute. The database-backed session lookup updates `last_seen_at` only for a valid, unrevoked, unexpired session. A session that has been idle for more than 30 minutes is rejected and requires a new one-time sign-in link. This is an initial risk-based setting and must be reviewed before production launch against the Searqon threat model and ASVS 5.0 session-management requirements.
