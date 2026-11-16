@@ -22,7 +22,6 @@
 | `src/evidence-redaction-checkpoint.js` | `createEvidenceRedactionJournalCheckpoint(...)`, `verifyEvidenceRedactionJournalCheckpoint(...)` | Detached Ed25519 checkpoint of a journal prefix; external checkpoint and public-key custody remain caller responsibilities. |
 | `src/evidence-recovery.js` | `verifyEvidenceRecoveryBundle(bundle)` | Offline pre-restore integrity gate for an evidence ledger and redaction journal, both with independently trusted checkpoints; no file restore, replication or sanitization. |
 | `src/evidence-legal-holds.js` | `createEvidenceLegalHoldEvent(...)`, `verifyEvidenceLegalHoldEvent(...)`, `deriveActiveEvidenceHolds(...)` | Signed, ordered legal-hold state events; one trusted public key per event history, caller-managed durable storage and actor authorization. |
-| `src/evidence-legal-holds.js` | `createEvidenceLegalHoldEvent(...)`, `verifyEvidenceLegalHoldEvent(...)`, `deriveActiveEvidenceHolds(...)` | Signed, ordered legal-hold state events; one trusted public key per event history, caller-managed durable storage and actor authorization. |
 
 The package's executable interface is the `searqon` CLI. Its current commands are:
 
