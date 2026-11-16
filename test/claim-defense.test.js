@@ -149,3 +149,36 @@ test("claim defense outputs match the published report and correction manifest s
   assert.deepEqual(Object.keys(report.correctionManifest).sort(), [...manifestSchema.required].sort());
   assert.deepEqual(Object.keys(report.correctionManifest.items[0]).sort(), [...manifestSchema.properties.items.items.required].sort());
 });
+
+
+test("answer extraction accepts multiline responses and ignores sentences without brand attribution", () => {
+  const registry = makeRegistry();
+  const claims = extractBrandClaims(
+    "Generic answer with no brand mention.\nSearqon is an AI-search intelligence platform.\nA separate unbranded statement follows.",
+    registry
+  );
+  assert.equal(claims.length, 1);
+  assert.equal(claims[0].text, "Searqon is an AI-search intelligence platform.");
+});
+
+test("structured claims without a resolved brand entity are not matched to registry facts", () => {
+  const report = evaluateBrandClaims({
+    registry: makeRegistry(), observedAt,
+    claims: [{ text: "An AI-search intelligence platform.", attribute: "product.category", value: "AI-search intelligence platform" }]
+  });
+  assert.equal(report.results[0].assessment, "entity_unresolved");
+  assert.equal(report.results[0].factId, null);
+  assert.ok(report.results[0].riskFlags.includes("entity_unresolved"));
+});
+
+test("competitor attribution recognizes subdomains", () => {
+  const report = evaluateBrandClaims({
+    registry: makeRegistry(), observedAt, competitorDomains: ["competitor.com"],
+    claims: [{
+      text: "Searqon is an AI-search intelligence platform.",
+      attribute: "product.category", value: "AI-search intelligence platform",
+      citationUrls: ["https://www.competitor.com/research/searqon"]
+    }]
+  });
+  assert.equal(report.results[0].citationAssessment, "attribution_swap");
+});
