@@ -26,7 +26,7 @@ Published v1 contracts are enumerated in [schemas/contract-registry.json](../sch
 9. Agent Journey Sandbox: disposable, isolated, policy-constrained read-only protocol simulations.
 10. Recommendation and Verification: approval lifecycle, before/after evidence and regression detection.
 11. Interfaces: CLI and JSON/HTML artifacts first; hosted API/UI after validation.
-12. Hosted control plane later: tenant isolation, roles, billing, quotas, scheduling, integrations, retention and audit.
+12. Hosted control plane (later product capability, same repository): tenant isolation, roles, billing, quotas, scheduling, integrations, retention and audit. Implement as internal packages and independently deployable applications/workers in this single repository; do not split into a separate Searqon Cloud repository.
 
 ## Module specifications
 
