@@ -24,7 +24,7 @@ Every module emits versioned schema-valid outputs; records source/evidence IDs, 
 9. Physical deletion requires separate storage-specific sanitization, backup expiry, legal-hold handling and verification; no such capability is currently claimed.
 10. Any future ledger compaction must produce a new chain root and signed custody evidence, and must document the disposition and sanitization of prior copies.
 11. Signed redaction manifests are persisted in a separate bounded, fsync'd hash-linked local journal; reopening verifies all manifest signatures and chain links.
-12. Journal integrity limitations (suffix truncation, full rewrite, no cross-process lock and no WORM guarantee) are disclosed; independent head checkpoint custody remains required.
+12. Journal integrity limitations (recomputed-chain attacks, suffix truncation, full rewrite, no cross-process lock and no WORM guarantee) are disclosed; independent head checkpoint custody remains required.
 
 
 ## A. Hallucination & Citation Defense
