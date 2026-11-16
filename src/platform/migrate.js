@@ -14,10 +14,11 @@ export async function runMigrations({
   createDatabaseImpl = createDatabase
 } = {}) {
   const database = createDatabaseImpl({ connectionString });
-  const client = await database.pool.connect();
+  let client;
   const applied = [];
 
   try {
+    client = await database.pool.connect();
     await client.query("CREATE SCHEMA IF NOT EXISTS searqon");
     await client.query(`
       CREATE TABLE IF NOT EXISTS searqon.schema_migrations (
@@ -64,8 +65,10 @@ export async function runMigrations({
 
     return { applied };
   } finally {
-    await client.query("SELECT pg_advisory_unlock($1, $2)", [LOCK_NAMESPACE, LOCK_ID]).catch(() => {});
-    client.release();
+    if (client) {
+      await client.query("SELECT pg_advisory_unlock($1, $2)", [LOCK_NAMESPACE, LOCK_ID]).catch(() => {});
+      client.release();
+    }
     await database.close();
   }
 }
