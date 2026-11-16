@@ -123,20 +123,22 @@ test("sampling plans reject automated consumer UI collection and unapproved prov
     cohort: cohort(),
     sampleCount: 1,
     costCapUsd: 1,
+    createdAt: "2026-11-16T12:00:00.000Z",
     providers: [{ name: "Consumer UI", observationClass: "consumer_observation", collectionMode: "browser_automation", policyReview: reviewed, maxSamples: 2 }]
   }), /manual_capture/i);
   assert.throws(() => buildGeoSamplingPlan({
     cohort: cohort(),
     sampleCount: 1,
     costCapUsd: 1,
+    createdAt: "2026-11-16T12:00:00.000Z",
     providers: [{ name: "Model API", observationClass: "model_api", collectionMode: "official_api", adapterId: "provider.v1", policyReview: { ...reviewed, status: "pending" }, maxSamples: 2 }]
   }), /approved/i);
 });
 
 test("sampling plans enforce per-provider caps, request caps, and budget ceilings", () => {
   const provider = { name: "API", observationClass: "model_api", collectionMode: "official_api", adapterId: "api.v1", policyReview: reviewed, estimatedCostPerSampleUsd: 1, maxSamples: 2 };
-  assert.throws(() => buildGeoSamplingPlan({ cohort: cohort(), sampleCount: 2, costCapUsd: 100, providers: [provider] }), /maxSamples/i);
-  assert.throws(() => buildGeoSamplingPlan({ cohort: cohort(), sampleCount: 1, costCapUsd: 0.5, providers: [{ ...provider, maxSamples: 10 }] }), /budget/i);
+  assert.throws(() => buildGeoSamplingPlan({ cohort: cohort(), sampleCount: 2, costCapUsd: 100, createdAt: "2026-11-16T12:00:00.000Z", providers: [provider] }), /maxSamples/i);
+  assert.throws(() => buildGeoSamplingPlan({ cohort: cohort(), sampleCount: 1, costCapUsd: 0.5, createdAt: "2026-11-16T12:00:00.000Z", providers: [{ ...provider, maxSamples: 10 }] }), /budget/i);
 });
 
 
