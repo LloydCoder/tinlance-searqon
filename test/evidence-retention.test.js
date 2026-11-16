@@ -163,3 +163,14 @@ test("invalid or untrusted legal-hold events fail retention evaluation closed", 
     legalHoldEvents: [hold]
   }), /invalid legal-hold event/);
 });
+
+test("rejects ambiguous retention hold verification configuration", () => {
+  const keys = generateKeyPairSync("ed25519");
+  const registry = {};
+  assert.throws(() => evaluateEvidenceRetention([], {
+    retentionDays: 30,
+    now: "2026-11-16T00:00:00.000Z",
+    legalHoldPublicKey: keys.publicKey,
+    legalHoldApproverRegistry: registry
+  }), /provide legalHoldPublicKey or legalHoldApproverRegistry/);
+});

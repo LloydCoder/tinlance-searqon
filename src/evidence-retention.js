@@ -26,7 +26,7 @@ function deepFreeze(value) {
  * Evaluate retention eligibility without deleting, modifying, or exporting
  * source records. Purge execution and storage sanitization are separate duties.
  */
-export function evaluateEvidenceRetention(records, { retentionDays, now, legalHoldEvents = [], legalHoldPublicKey } = {}) {
+export function evaluateEvidenceRetention(records, { retentionDays, now, legalHoldEvents = [], legalHoldPublicKey, legalHoldApproverRegistry } = {}) {
   if (!Array.isArray(records)) throw new TypeError("records must be an array");
   if (!Number.isSafeInteger(retentionDays) || retentionDays < 1 || retentionDays > MAX_RETENTION_DAYS) {
     throw new TypeError("retentionDays must be a positive safe integer no greater than 36500");
@@ -35,8 +35,12 @@ export function evaluateEvidenceRetention(records, { retentionDays, now, legalHo
     throw new TypeError("now must be a canonical ISO 8601 UTC timestamp");
   }
 
+  if (legalHoldPublicKey && legalHoldApproverRegistry) {
+    throw new TypeError("provide legalHoldPublicKey or legalHoldApproverRegistry, not both");
+  }
   const nowMs = Date.parse(now);
-  const holdState = deriveActiveEvidenceHolds(legalHoldEvents, legalHoldPublicKey);
+  const holdVerifier = legalHoldApproverRegistry ?? legalHoldPublicKey;
+  const holdState = deriveActiveEvidenceHolds(legalHoldEvents, holdVerifier);
   const heldIds = new Set(holdState.activeEvidenceIds);
   const seenIds = new Set();
   const eligibleForPurge = [];
