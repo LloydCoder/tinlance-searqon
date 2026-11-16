@@ -112,7 +112,79 @@
       "type": "array",
       "maxItems": 4000,
       "items": {
-        "type": "object"
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "dimensions"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  "new_cohort",
+                  "cohort_missing"
+                ]
+              },
+              "dimensions": {
+                "$ref": "#/$defs/dimensions"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "metric",
+              "label",
+              "status",
+              "baseline",
+              "current",
+              "delta",
+              "intervalsOverlap",
+              "dimensions"
+            ],
+            "properties": {
+              "metric": {
+                "enum": [
+                  "mention",
+                  "brand_citation"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "no_significant_change",
+                  "insufficient_evidence",
+                  "alert"
+                ]
+              },
+              "baseline": {
+                "$ref": "#/$defs/sample"
+              },
+              "current": {
+                "$ref": "#/$defs/sample"
+              },
+              "delta": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1
+              },
+              "intervalsOverlap": {
+                "type": "boolean"
+              },
+              "dimensions": {
+                "$ref": "#/$defs/dimensions"
+              },
+              "alertId": {
+                "type": "string"
+              }
+            }
+          }
+        ]
       }
     },
     "alerts": {
