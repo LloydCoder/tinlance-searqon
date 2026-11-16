@@ -133,7 +133,7 @@ test("derived llms.txt provenance binds source content and metadata", () => {
 test("diff proposals distinguish empty, added, unchanged and removed artifacts", () => {
   const added = compileAgentArtifacts({ sources: [{ sourceId: "new", path: "docs/New.md", kind: "markdown", content: "# New\n" }] });
   assert.equal(added.changes[0].status, "added");
-  assert.equal(added.changes[0].unifiedDiff.includes("-"), false);
+  assert.equal(added.changes[0].unifiedDiff.split("\n").some(line => line.startsWith("-") && !line.startsWith("---")), false);
   const unchanged = compileAgentArtifacts({
     sources: [{ sourceId: "same", path: "docs/Same.md", kind: "markdown", content: "# Same\n" }],
     previousArtifacts: [{ path: "docs/Same.md", content: "# Same\n" }]
