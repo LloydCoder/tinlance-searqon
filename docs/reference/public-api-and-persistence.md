@@ -54,6 +54,6 @@ No public Searqon API accepts a model response, tool description, discovered end
 
 ## Recovery verification gate
 
-`verifyEvidenceRecoveryBundle(bundle)` validates the evidence ledger hash chain and detached ledger checkpoint, the signed redaction journal and detached journal checkpoint, duplicate evidence IDs, and redaction references against the restored ledger. It fails closed when either checkpoint or a trusted verification key is missing or invalid. The result contains only integrity status, counts, error codes and sorted suppressed evidence IDs.
+`verifyEvidenceRecoveryBundle(bundle)` validates the evidence ledger hash chain and detached ledger checkpoint, the signed redaction journal and detached journal checkpoint, duplicate evidence IDs, and redaction references against the restored ledger. When legal-hold entries are included, it also verifies the signed hold journal and detached checkpoint, reconstructs active holds and rejects hold references absent from the restored evidence ledger. It fails closed when either checkpoint or a trusted verification key is missing or invalid. The result contains only integrity status, counts, error codes and sorted suppressed evidence IDs.
 
 This function is an offline pre-restore validation gate. It does not copy files, restore backups, sanitize media, expire backup copies, authenticate key owners, or establish that a backup is complete relative to an external system. Store both checkpoints and their trusted public keys independently from the backup being verified.
