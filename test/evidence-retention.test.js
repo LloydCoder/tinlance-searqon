@@ -61,9 +61,9 @@ test("returns immutable metadata only and never mutates or deletes source record
   assert.equal(result.eligibleForPurge[0].evidenceId, expired.id);
 });
 
-test("rejects expiry arithmetic outside the supported ISO timestamp range", () => {
-  assert.throws(() => evaluateEvidenceRetention(
-    [evidence("far-future", "9999-12-31T00:00:00.000Z")],
-    { retentionDays: 36500, now: "2026-11-16T00:00:00.000Z" }
-  ), /expiry timestamp/);
+test("rejects retention intervals beyond the supported policy bound", () => {
+  assert.throws(() => evaluateEvidenceRetention([], {
+    retentionDays: 36501,
+    now: "2026-11-16T00:00:00.000Z"
+  }), /retentionDays/);
 });
