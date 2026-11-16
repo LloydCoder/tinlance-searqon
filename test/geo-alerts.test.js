@@ -135,6 +135,9 @@ test("alerts detect significant mention and citation declines only for comparabl
   assert.ok(result.alerts.every(alert => alert.direction === "decline"));
   assert.deepEqual(result.alerts.map(alert => alert.metric).sort(), ["brand_citation", "mention"]);
   assert.equal(result.summary.cohortsCompared, 1);
+  assert.equal(result.alerts[0].evidence.baselineEvidenceIds.length, 100);
+  assert.equal(result.alerts[0].evidence.currentEvidenceIds.length, 100);
+  assert.equal(result.alerts[0].evidence.truncated, false);
   assert.ok(result.alerts.every(alert => alert.severity === "high"));
   assert.ok(result.alerts.every(alert => alert.baseline.sampleSize === 100 && alert.current.sampleSize === 100));
   assert.equal(result.observationLagSeconds, 60);
@@ -402,4 +405,8 @@ test("aggregate snapshot comparisons reject reused evidence identifiers", () => 
   assert.throws(() => buildGeoAlerts(input({
     current: [row({ mentionCount: 40, brandCitationCount: 20, evidenceSeed: "baseline" })]
   })), /duplicate evidence identifiers/i);
+});
+
+test("aggregate alert generation fails closed when evidence references are missing", () => {
+  assert.throws(() => buildGeoAlerts(input({ baseline: [row({ evidenceIds: [] })] })), /evidenceIds/);
 });
