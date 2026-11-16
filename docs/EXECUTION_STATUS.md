@@ -204,3 +204,14 @@ This register separates implemented repository capabilities from customer, secur
 - Added a fail-closed state reducer and retention integration. Active held evidence remains in the retained set and is excluded from purge eligibility; released holds permit normal expiry evaluation.
 - Added schema-registry alignment, state-transition/signature tests and documentation of key-identity, key-rotation and caller-managed journal limitations.
 - This does not create a durable legal case system, authenticate actor identity, execute deletion, implement key rotation or replace data-controller/legal review.
+
+
+## 2026-11-16 — Roadmap Phase 9 citation-change alert foundation (in progress)
+
+- Added deterministic GEO baseline/current aggregate comparisons with strict matching across observation class, provider, model, region, locale, brand, target domain and sample period.
+- Added minimum sample/effect thresholds, conservative non-overlapping Wilson 95% interval screening, explicit new/missing cohort evaluations, stable deduplication keys and caller-managed cooldown suppression.
+- Added raw observation citation-domain disappearance detection with evidence-record integrity/provenance verification, strict same-cohort checks and baseline/current evidence references.
+- Added signed HMAC-SHA256 webhook event envelopes, timestamp tolerance, raw-body/event-ID binding, bounded delivery receipts, and Slack/Teams Workflows/PagerDuty payload builders.
+- Added CLI commands `geo alerts` and `geo citation-changes`, synthetic fixtures, versioned JSON Schemas, contract registry entries, docs and CI smoke tests.
+- These are deterministic local capabilities over supplied observations; no provider acquisition, consumer UI automation, scheduled sampling, durable alert state, outbound webhook delivery, retry worker or live monitoring is implemented. Stateless signature verification requires receiver-side durable event-ID replay deduplication. The Wilson interval non-overlap rule is a conservative screening heuristic, not a formal multi-comparison-corrected hypothesis test.
+- Roadmap Phase 9 remains IN_PROGRESS pending citation replacement/ordering semantics, persisted baselines/events/cooldowns, opt-in encrypted destinations, durable delivery/retry queues, replay/idempotency integration tests, labelled false-positive evaluation, cadence/latency disclosures and hosted scheduling/monitoring.
