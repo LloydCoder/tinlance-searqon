@@ -198,13 +198,17 @@ test("CLI builds a cohort-safe GEO alert report from local aggregate snapshots",
         observationClass: "model_api",
         provider: { name: "OpenAI", model: "gpt-4.1", region: "us", locale: "en-US" },
         brand: "Searqon", targetDomain: "searqon.com", samplePeriod: null,
-        sampleSize: 100, mentionCount: 80, brandCitationCount: 70
+        sampleSize: 100, mentionCount: 80, brandCitationCount: 70,
+        evidenceIds: Array.from({ length: 100 }, (_, index) => "evidence_" + (index + 1).toString(16).padStart(20, "0")),
+        evidenceCount: 100, evidenceTruncated: false
       }],
       current: [{
         observationClass: "model_api",
         provider: { name: "OpenAI", model: "gpt-4.1", region: "us", locale: "en-US" },
         brand: "Searqon", targetDomain: "searqon.com", samplePeriod: null,
-        sampleSize: 100, mentionCount: 40, brandCitationCount: 20
+        sampleSize: 100, mentionCount: 40, brandCitationCount: 20,
+        evidenceIds: Array.from({ length: 100 }, (_, index) => "evidence_" + (index + 1001).toString(16).padStart(20, "0")),
+        evidenceCount: 100, evidenceTruncated: false
       }],
       baselineId: "baseline-1", currentId: "current-1",
       baselineAt: "2026-11-16T12:00:00.000Z",
