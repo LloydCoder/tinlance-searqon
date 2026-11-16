@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { createBrandTruthRegistry } from "../src/geo-registry.js";
 import { extractBrandClaims, evaluateBrandClaims } from "../src/claim-defense.js";
 
@@ -133,4 +134,18 @@ test("claim defense rejects tampered registries and oversized inputs", () => {
   assert.throws(() => extractBrandClaims("Searqon is great.", altered), /digest|integrity/i);
   assert.throws(() => extractBrandClaims("x".repeat(100_001), registry), /100000|maximum/i);
   assert.throws(() => evaluateBrandClaims({ registry, observedAt: "not-a-date", claims: [{ text: "Searqon" }] }), /ISO 8601/i);
+});
+
+
+test("claim defense outputs match the published report and correction manifest schemas", async () => {
+  const reportSchema = JSON.parse(await readFile(new URL("../schemas/claim-defense-report.schema.json", import.meta.url), "utf8"));
+  const manifestSchema = JSON.parse(await readFile(new URL("../schemas/correction-manifest.schema.json", import.meta.url), "utf8"));
+  const report = evaluateBrandClaims({
+    registry: makeRegistry(), observedAt,
+    claims: [{ text: "Searqon is a social media scheduling tool.", attribute: "product.category", value: "social media scheduling tool" }]
+  });
+  assert.deepEqual(Object.keys(report).sort(), [...reportSchema.required].sort());
+  assert.deepEqual(Object.keys(report.results[0]).sort(), [...reportSchema.properties.results.items.required].sort());
+  assert.deepEqual(Object.keys(report.correctionManifest).sort(), [...manifestSchema.required].sort());
+  assert.deepEqual(Object.keys(report.correctionManifest.items[0]).sort(), [...manifestSchema.properties.items.items.required].sort());
 });
