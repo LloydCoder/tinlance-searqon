@@ -274,10 +274,19 @@ export function createAppServer({ database = null, authService = null } = {}) {
         sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use POST." } });
         return;
       }
-      if (process.env.NODE_ENV === "production" && auth) {
-        const profile = await auth.getProfile(readSessionCookie(request));
-        if (!profile) {
-          sendJson(response, 401, { error: { code: "unauthenticated", message: "Sign in to run an assessment." } });
+      if (process.env.NODE_ENV === "production") {
+        if (!auth) {
+          sendJson(response, 503, { error: { code: "assessment_unavailable", message: "Authenticated assessment service is not configured." } });
+          return;
+        }
+        try {
+          const profile = await auth.getProfile(readSessionCookie(request));
+          if (!profile) {
+            sendJson(response, 401, { error: { code: "unauthenticated", message: "Sign in to run an assessment." } });
+            return;
+          }
+        } catch {
+          sendJson(response, 503, { error: { code: "assessment_unavailable", message: "Assessment authentication is temporarily unavailable." } });
           return;
         }
       }
