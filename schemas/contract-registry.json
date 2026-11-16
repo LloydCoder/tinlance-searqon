@@ -200,6 +200,19 @@
       "notes": "Deterministic comparisons of matching GEO aggregate cohorts using minimum sample and effect thresholds plus non-overlapping Wilson 95% intervals; not real-time provider monitoring."
     },
     {
+      "name": "geo-citation-change-report",
+      "file": "geo-citation-change-report.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-citation-change-report.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-citation-change-detector",
+        "cli"
+      ],
+      "notes": "Evidence-linked citation-domain disappearance events across a single comparable observation cohort; provider, region, locale, brand and observation class must match. Uses conservative Wilson 95% interval screening and does not claim causality."
+    },
+    {
       "name": "geo-delivery-receipt",
       "file": "geo-delivery-receipt.schema.json",
       "schemaId": "https://searqon.com/schemas/geo-delivery-receipt.schema.json",
