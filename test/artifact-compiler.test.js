@@ -104,3 +104,15 @@ test("rejects unknown or unsafe llms.txt links and metadata", () => {
     options: { includeLlmsTxt: true, productName: "Searqon", summary: "Summary", links: [{ label: "Private", path: "../../secrets" }] }
   }), /safe relative path/);
 });
+
+test("rejects duplicate source identities and excessively deep OpenAPI documents", () => {
+  assert.throws(() => compileAgentArtifacts({ sources: [
+    { sourceId: "same", path: "docs/A.md", kind: "markdown", content: "A" },
+    { sourceId: "same", path: "docs/B.md", kind: "markdown", content: "B" }
+  ] }), /duplicate sourceId/);
+  let nested = {};
+  let cursor = nested;
+  for (let index = 0; index < 70; index++) { cursor.child = {}; cursor = cursor.child; }
+  const document = { openapi: "3.2.1", info: { title: "API", version: "1" }, paths: {}, nested };
+  assert.throws(() => compileAgentArtifacts({ sources: [{ sourceId: "deep", path: "openapi.json", kind: "openapi", content: JSON.stringify(document) }] }), /nesting exceeds/);
+});
