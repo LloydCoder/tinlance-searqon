@@ -153,20 +153,26 @@ CREATE POLICY projects_member_access ON searqon.projects
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = projects.organization_id AND m.user_id = searqon.current_user_id()
   ))
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM searqon.memberships m
-    WHERE m.organization_id = projects.organization_id AND m.user_id = searqon.current_user_id()
-  ));
+  WITH CHECK (
+    created_by = searqon.current_user_id()
+    AND EXISTS (
+      SELECT 1 FROM searqon.memberships m
+      WHERE m.organization_id = projects.organization_id AND m.user_id = searqon.current_user_id()
+    )
+  );
 CREATE POLICY assessments_member_access ON searqon.assessments
   FOR ALL
   USING (EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = assessments.organization_id AND m.user_id = searqon.current_user_id()
   ))
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM searqon.memberships m
-    WHERE m.organization_id = assessments.organization_id AND m.user_id = searqon.current_user_id()
-  ));
+  WITH CHECK (
+    requested_by = searqon.current_user_id()
+    AND EXISTS (
+      SELECT 1 FROM searqon.memberships m
+      WHERE m.organization_id = assessments.organization_id AND m.user_id = searqon.current_user_id()
+    )
+  );
 CREATE POLICY sessions_self_access ON searqon.sessions
   FOR ALL USING (user_id = searqon.current_user_id())
   WITH CHECK (user_id = searqon.current_user_id());
