@@ -81,3 +81,15 @@ test("unknown API routes return structured not-found responses", async () => {
     assert.equal((await response.json()).error.code, "not_found");
   });
 });
+
+test("serves the landing page and honors HEAD without returning a response body", async () => {
+  await withServer(async base => {
+    const page = await fetch(base + "/");
+    assert.equal(page.status, 200);
+    assert.match(page.headers.get("content-type"), /text\/html/);
+    assert.match(await page.text(), /Understand Visibility/);
+    const head = await fetch(base + "/", { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.equal(await head.text(), "");
+  });
+});
