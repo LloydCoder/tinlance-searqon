@@ -175,6 +175,43 @@
       "notes": "Signed approval for logical suppression from exports; does not represent physical deletion or media sanitization."
     },
     {
+      "name": "geo-alert-event",
+      "file": "geo-alert-event.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-alert-event.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "apiVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-webhook-delivery"
+      ],
+      "notes": "Signed HMAC webhook envelope; timestamp and event ID are bound to the raw request body. Receivers must persist event IDs to enforce replay deduplication."
+    },
+    {
+      "name": "geo-alert-report",
+      "file": "geo-alert-report.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-alert-report.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-alert-engine",
+        "cli"
+      ],
+      "notes": "Deterministic comparisons of matching GEO aggregate cohorts using minimum sample and effect thresholds plus non-overlapping Wilson 95% intervals; not real-time provider monitoring."
+    },
+    {
+      "name": "geo-delivery-receipt",
+      "file": "geo-delivery-receipt.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-delivery-receipt.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "experimental",
+      "consumers": [
+        "geo-alert-delivery"
+      ],
+      "notes": "Bounded delivery outcome and retry metadata; secrets and webhook URLs are never stored in receipts."
+    },
+    {
       "name": "geo-observation",
       "file": "geo-observation.schema.json",
       "schemaId": "https://tinlance.com/schemas/searqon-geo-observation-1.0.0.json",
