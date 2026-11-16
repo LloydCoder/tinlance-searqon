@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F6F3EC">
+  <meta name="description" content="Sign in to your Searqon workspace.">
+  <title>Sign in — Searqon</title>
+  <link rel="icon" href="/assets/searqon-wordmark-navy.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/auth/auth.css">
+  <script src="/auth/auth.js" defer></script>
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-story">
+      <a class="auth-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+      <div class="auth-kicker">WELCOME BACK</div>
+      <h1>See what changed. Know what to do next.</h1>
+      <p>Return to your evidence, assessments and workspace decisions. Searqon keeps the method visible and the evidence inspectable.</p>
+    </section>
+    <section class="auth-card" aria-labelledby="auth-title">
+      <h2 id="auth-title">Sign in to Searqon</h2>
+      <p class="auth-card-intro">Enter your email and we'll send a one-time sign-in link.</p>
+      <form class="auth-form" id="login-form" novalidate>
+        <div class="auth-field"><label for="email">Work email</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="320" required></div>
+        <button class="button button-dark auth-submit" type="submit">Send sign-in link <span aria-hidden="true">↗</span></button>
+      </form>
+      <p class="auth-status" id="auth-status" role="status" aria-live="polite"></p>
+      <div class="auth-divider"></div>
+      <p class="auth-switch">New to Searqon? <a href="/auth/register/">Create a workspace</a></p>
+      <p class="auth-foot">ONE-TIME LINK · EXPIRES IN 15 MINUTES</p>
+    </section>
+  </main>
+</body>
+</html>
