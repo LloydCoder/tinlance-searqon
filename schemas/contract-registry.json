@@ -59,7 +59,7 @@
         "evidence-retention-evaluator",
         "legal-hold-state-reducer"
       ],
-      "notes": "Signed place/release event for a fixed evidence scope. Signatures verify against a caller-trusted Ed25519 key; actor identity, key authorization and durable journal custody remain external."
+      "notes": "Signed place/release event for a fixed evidence scope. Signatures verify against a caller-trusted Ed25519 key or actor-bound approver registry; requester authentication, legal authority and durable journal/key-registry custody remain external."
     },
     {
       "name": "evidence-record",
