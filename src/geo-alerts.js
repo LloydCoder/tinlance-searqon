@@ -1,6 +1,5 @@
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { wilsonInterval } from "./geo.js";
-import { verifyEvidenceRecord } from "./evidence.js";
+import { wilsonInterval, aggregateGeoObservations } from "./geo.js";
 
 const OBSERVATION_CLASSES = new Set(["consumer_observation", "model_api"]);
 const METRICS = Object.freeze([
@@ -539,18 +538,13 @@ export function detectCitationChanges({ baseline, current, observedAt, policy = 
       after.some(item => cohort(item) !== currentCohort) || baselineCohort !== currentCohort) {
     throw new TypeError("baseline and current must belong to the same comparable cohort");
   }
+  // Reuse the canonical GEO validator so citation, mention, provider and evidence invariants cannot drift.
+  aggregateGeoObservations(baseline);
+  aggregateGeoObservations(current);
   const allEvidenceIds = new Set();
   for (const item of [...before, ...after]) {
     if (allEvidenceIds.has(item.evidenceId)) throw new TypeError("duplicate evidence identifier across GEO snapshots");
     allEvidenceIds.add(item.evidenceId);
-    const evidence = item.observation.evidence;
-    const verification = verifyEvidenceRecord(evidence);
-    if (!verification.valid || evidence.source !== item.observation.provider.name ||
-        evidence.acquisitionMethod !== "provider_observation" ||
-        evidence.observationClass !== item.observation.observationClass ||
-        evidence.collectedAt !== item.observation.sampledAt || evidence.contentType !== "application/json") {
-      throw new TypeError("GEO observation evidence provenance is invalid");
-    }
   }
   const baselineTime = Math.max(...before.map(item => item.sampledAt.getTime()));
   const currentTime = Math.min(...after.map(item => item.sampledAt.getTime()));
