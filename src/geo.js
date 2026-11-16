@@ -6,6 +6,7 @@ const OBSERVATION_CLASSES = new Set(GEO_OBSERVATION_CLASSES);
 const MAX_PROMPT_CHARS = 32_000;
 const MAX_ANSWER_CHARS = 1_000_000;
 const MAX_CITATIONS = 100;
+const MAX_GEO_EVIDENCE_REFERENCES = 500;
 
 function requiredText(value, name, maxLength) {
   if (typeof value !== "string" || !value.trim() || value.length > maxLength) {
@@ -221,7 +222,9 @@ export function aggregateGeoObservations(observations, options = {}) {
         mentionCount:0,
         mentionOccurrences:0,
         brandCitationCount:0,
-        citationCount:0
+        citationCount:0,
+        evidenceIds:[],
+        evidenceCount:0
       };
       groups.set(key,group);
     }
@@ -230,9 +233,13 @@ export function aggregateGeoObservations(observations, options = {}) {
     group.mentionOccurrences+=observation.mentionCount;
     group.brandCitationCount+=observation.brandCited ? 1 : 0;
     group.citationCount+=observation.citationCount;
+    group.evidenceCount+=1;
+    if (group.evidenceIds.length < MAX_GEO_EVIDENCE_REFERENCES) group.evidenceIds.push(evidence.id);
   }
   return [...groups.values()].map(group=>Object.freeze({
     ...group,
+    evidenceIds:Object.freeze([...group.evidenceIds].sort()),
+    evidenceTruncated:group.evidenceCount > group.evidenceIds.length,
     mentionRate:Number((group.mentionCount/group.sampleSize).toFixed(4)),
     mentionRate95:wilsonInterval(group.mentionCount,group.sampleSize),
     brandCitationRate:Number((group.brandCitationCount/group.sampleSize).toFixed(4)),
