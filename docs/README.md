@@ -20,6 +20,7 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Scanner contract](SCANNER.md)
 - [Assessment report schema](../schemas/assessment-report.schema.json)
 - [Evidence record schema](../schemas/evidence-record.schema.json)
+- [Evidence legal-hold event schema](../schemas/evidence-legal-hold-event.schema.json)
 - [GEO observation schema](../schemas/geo-observation.schema.json)
 - [MCP snapshot schema](../schemas/mcp-snapshot.schema.json)
 - [Versioned contract registry](../schemas/contract-registry.json)
