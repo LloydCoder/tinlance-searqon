@@ -161,6 +161,7 @@ function omittedDiff(path) { return `--- a/${path}\n+++ b/${path}\n@@ diff omitt
 function buildChanges(artifacts, previousArtifacts) {
   let diffBudget = MAX_DIFF_FILES;
   const previous = new Map();
+  let previousBytes = 0;
   if (!Array.isArray(previousArtifacts) || previousArtifacts.length > MAX_SOURCES) {
     throw new TypeError("previousArtifacts must be an array of at most " + MAX_SOURCES + " items");
   }
@@ -168,6 +169,8 @@ function buildChanges(artifacts, previousArtifacts) {
     if (!item || typeof item !== "object" || Array.isArray(item) || typeof item.content !== "string") {
       throw new TypeError("previousArtifacts[" + index + "] must contain path and string content");
     }
+    previousBytes += Buffer.byteLength(item.content, "utf8");
+    if (previousBytes > MAX_TOTAL_BYTES) throw new RangeError("Combined previous artifact content exceeds the 2 MiB compiler limit");
     const path = safeRelativePath(item.path, "previousArtifacts[" + index + "].path");
     if (previous.has(path)) throw new TypeError("previous artifact paths must be unique");
     previous.set(path, item.content);
