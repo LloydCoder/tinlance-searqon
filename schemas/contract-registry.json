@@ -49,6 +49,19 @@
       "notes": "Append-only logical ledger entry; local store limitations are documented separately."
     },
     {
+      "name": "evidence-legal-hold-event",
+      "file": "evidence-legal-hold-event.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/evidence-legal-hold-event/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": "schemaVersion",
+      "status": "stable",
+      "consumers": [
+        "evidence-retention-evaluator",
+        "legal-hold-state-reducer"
+      ],
+      "notes": "Signed place/release event for a fixed evidence scope. Signatures verify against a caller-trusted Ed25519 key; actor identity, key authorization and durable journal custody remain external."
+    },
+    {
       "name": "evidence-record",
       "file": "evidence-record.schema.json",
       "schemaId": "https://searqon.tinlance.com/schemas/evidence-record/1.0.0",
