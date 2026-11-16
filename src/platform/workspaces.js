@@ -36,7 +36,8 @@ function validateProjectInput(input) {
 function validateAssessmentInput(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new WorkspaceError(400, "invalid_request", "Assessment content is required.");
   if (!CONTENT_TYPES.has(input.contentType)) throw new WorkspaceError(415, "unsupported_media_type", "Use HTML, Markdown, OpenAPI JSON or a normalized MCP metadata snapshot.");
-  if (typeof input.content !== "string" || Buffer.byteLength(input.content, "utf8") > MAX_DOCUMENT_BYTES) throw new WorkspaceError(413, "document_too_large", "Assessment content must be a string no larger than 2 MiB.");
+  if (typeof input.content !== "string") throw new WorkspaceError(400, "invalid_content", "Assessment content must be a string.");
+  if (Buffer.byteLength(input.content, "utf8") > MAX_DOCUMENT_BYTES) throw new WorkspaceError(413, "document_too_large", "Assessment content must be a string no larger than 2 MiB.");
   return { contentType: input.contentType, content: input.content };
 }
 
