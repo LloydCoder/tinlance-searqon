@@ -58,6 +58,16 @@ function validateAggregateRow(row, field) {
   const sampleSize = boundedInteger(row.sampleSize, field + ".sampleSize", 1, 1_000_000);
   const mentionCount = boundedInteger(row.mentionCount, field + ".mentionCount", 0, sampleSize);
   const brandCitationCount = boundedInteger(row.brandCitationCount, field + ".brandCitationCount", 0, sampleSize);
+  if (!Array.isArray(row.evidenceIds) || row.evidenceIds.length > 500) throw new TypeError(field + " evidenceIds must be a bounded array");
+  const evidenceIds = row.evidenceIds.map((id, index) => boundedIdentifier(id, field + ".evidenceIds[" + index + "]", 64));
+  if (evidenceIds.some(id => !/^evidence_[a-f0-9]{20}$/.test(id)) || new Set(evidenceIds).size !== evidenceIds.length) {
+    throw new TypeError(field + " evidenceIds must contain unique evidence references");
+  }
+  const evidenceCount = boundedInteger(row.evidenceCount, field + ".evidenceCount", sampleSize, sampleSize);
+  if (typeof row.evidenceTruncated !== "boolean" || row.evidenceTruncated !== (evidenceCount > evidenceIds.length) ||
+      (!row.evidenceTruncated && evidenceIds.length !== evidenceCount) || (row.evidenceTruncated && evidenceIds.length !== 500)) {
+    throw new TypeError(field + " evidence reference completeness is inconsistent");
+  }
   if (row.mentionRate !== undefined && (typeof row.mentionRate !== "number" || Math.abs(row.mentionRate - mentionCount / sampleSize) > 0.00011)) {
     throw new TypeError(field + " mentionRate does not match its counts");
   }
@@ -73,6 +83,9 @@ function validateAggregateRow(row, field) {
     sampleSize,
     mentionCount,
     brandCitationCount,
+    evidenceIds: Object.freeze(evidenceIds),
+    evidenceCount,
+    evidenceTruncated: row.evidenceTruncated,
     mentionRate: mentionCount / sampleSize,
     mentionRate95: wilsonInterval(mentionCount, sampleSize),
     brandCitationRate: brandCitationCount / sampleSize,
@@ -110,8 +123,8 @@ function compareMetric(cohort, metric, baseline, current, policy, evaluatedAt) {
     metric: metric.metricName,
     label: metric.label,
     status: "no_significant_change",
-    baseline: { sampleSize: baseline.sampleSize, count: beforeCount, rate: Number(beforeRate.toFixed(4)), interval95: baseInterval },
-    current: { sampleSize: current.sampleSize, count: afterCount, rate: Number(afterRate.toFixed(4)), interval95: currentInterval },
+    baseline: { sampleSize: baseline.sampleSize, count: beforeCount, rate: Number(beforeRate.toFixed(4)), interval95: baseInterval, evidenceIds: baseline.evidenceIds, evidenceCount: baseline.evidenceCount, evidenceTruncated: baseline.evidenceTruncated },
+    current: { sampleSize: current.sampleSize, count: afterCount, rate: Number(afterRate.toFixed(4)), interval95: currentInterval, evidenceIds: current.evidenceIds, evidenceCount: current.evidenceCount, evidenceTruncated: current.evidenceTruncated },
     delta,
     intervalsOverlap
   };
@@ -156,7 +169,12 @@ function compareMetric(cohort, metric, baseline, current, policy, evaluatedAt) {
     evaluatedAt: evaluatedAt.toISOString(),
     evidence: {
       baselineSampleSize: baseline.sampleSize,
-      currentSampleSize: current.sampleSize
+      currentSampleSize: current.sampleSize,
+      baselineEvidenceIds: baseline.evidenceIds,
+      currentEvidenceIds: current.evidenceIds,
+      baselineEvidenceCount: baseline.evidenceCount,
+      currentEvidenceCount: current.evidenceCount,
+      truncated: baseline.evidenceTruncated || current.evidenceTruncated
     }
   });
   evaluation.status = "alert";
