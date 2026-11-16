@@ -174,6 +174,10 @@ The repository now includes an early local web interface and same-origin assessm
 
 The repository contains the Searqon landing page and local assessment API. Run `npm run dev:web` and open `http://127.0.0.1:4173`. The PostgreSQL platform schema and tenant-isolation design are documented in [the database foundation](docs/PLATFORM_DATABASE.md). The complete product—including future hosted SaaS capabilities—remains in this repository; see [ADR-0002](docs/adr/0002-single-repository-product.md). The current web server is a local development slice, not a hosted multi-tenant service.
 
+## Authentication and workspace
+
+Passwordless registration, magic-link sign-in and an authenticated workspace shell are available when PostgreSQL and email delivery are configured. See [the authentication guide](docs/AUTHENTICATION.md) and [database foundation](docs/PLATFORM_DATABASE.md). Apply database migrations with `npm run db:migrate`. For local-only email, set `SEARQON_EMAIL_MODE=console` in a non-production environment.
+
 ## Documentation
 
 | Guide | Purpose |
