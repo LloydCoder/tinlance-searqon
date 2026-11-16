@@ -56,6 +56,38 @@ test("database factory permits plaintext only for loopback development hosts", (
   assert.equal(options.ssl, false);
 });
 
+test("remote database URLs cannot downgrade TLS through sslmode query parameters", () => {
+  let options;
+  class FakePool {
+    constructor(value) { options = value; }
+    on() {}
+    async end() {}
+  }
+  createDatabase({
+    connectionString: "postgresql://app:secret@db.example.test:5432/searqon?sslmode=disable&sslrootcert=%2Ftmp%2Funtrusted.pem&application_name=custom-client",
+    PoolImpl: FakePool
+  });
+  assert.deepEqual(options.ssl, { rejectUnauthorized: true });
+  assert.equal(options.connectionString.includes("sslmode"), false);
+  assert.equal(options.connectionString.includes("sslrootcert"), false);
+  assert.equal(options.connectionString.includes("application_name=custom-client"), true);
+});
+
+test("loopback database URLs cannot force TLS through connection-string options", () => {
+  let options;
+  class FakePool {
+    constructor(value) { options = value; }
+    on() {}
+    async end() {}
+  }
+  createDatabase({
+    connectionString: "postgresql://app:secret@localhost:5432/searqon?sslmode=require",
+    PoolImpl: FakePool
+  });
+  assert.equal(options.ssl, false);
+  assert.equal(options.connectionString.includes("sslmode"), false);
+});
+
 test("user transaction sets identity transaction-locally and commits", async () => {
   const client = fakeClient();
   const pool = { async connect() { return client; } };
