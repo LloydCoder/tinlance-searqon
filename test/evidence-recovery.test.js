@@ -101,7 +101,6 @@ test("recovery verifier rejects redaction references absent from the restored le
 
 test("recovery verifier rejects duplicate evidence identifiers in a restored ledger", async () => {
   const bundle = await validBundle();
-  const duplicate = { ...bundle.ledgerEntries[0], sequence: 2, previousHash: bundle.ledgerEntries[0].entryHash };
   const { createEvidenceLedgerEntry } = await import("../src/evidence-ledger.js");
   const second = createEvidenceLedgerEntry(bundle.ledgerEntries[0].record, {
     sequence: 2,
@@ -109,7 +108,7 @@ test("recovery verifier rejects duplicate evidence identifiers in a restored led
     createdAt: "2026-11-16T00:05:00.000Z"
   });
   const entries = [...bundle.ledgerEntries, second];
-  assert.notEqual(duplicate.entryHash, second.entryHash);
+  assert.equal(second.record.id, bundle.ledgerEntries[0].record.id);
   const checkpoint = createEvidenceLedgerCheckpoint(entries, bundle.ledgerCheckpointPrivateKey, {
     createdAt: "2026-11-16T00:06:00.000Z"
   });
