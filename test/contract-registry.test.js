@@ -1,9 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
-import { resolve, basename } from "node:path";
+import { basename } from "node:path";
 
-const root = new URL("../", import.meta.url);
 const schemasDir = new URL("../schemas/", import.meta.url);
 
 async function readJson(url) {
