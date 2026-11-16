@@ -243,7 +243,10 @@
         "sampleSize",
         "count",
         "rate",
-        "interval95"
+        "interval95",
+        "evidenceIds",
+        "evidenceCount",
+        "evidenceTruncated"
       ],
       "properties": {
         "sampleSize": {
@@ -261,6 +264,22 @@
         },
         "interval95": {
           "$ref": "#/$defs/interval"
+        },
+        "evidenceIds": {
+          "type": "array",
+          "maxItems": 500,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^evidence_[a-f0-9]{20}$"
+          }
+        },
+        "evidenceCount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "evidenceTruncated": {
+          "type": "boolean"
         }
       }
     },
@@ -436,7 +455,12 @@
           "additionalProperties": false,
           "required": [
             "baselineSampleSize",
-            "currentSampleSize"
+            "currentSampleSize",
+            "baselineEvidenceIds",
+            "currentEvidenceIds",
+            "baselineEvidenceCount",
+            "currentEvidenceCount",
+            "truncated"
           ],
           "properties": {
             "baselineSampleSize": {
@@ -446,6 +470,35 @@
             "currentSampleSize": {
               "type": "integer",
               "minimum": 1
+            },
+            "baselineEvidenceIds": {
+              "type": "array",
+              "maxItems": 500,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^evidence_[a-f0-9]{20}$"
+              }
+            },
+            "currentEvidenceIds": {
+              "type": "array",
+              "maxItems": 500,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^evidence_[a-f0-9]{20}$"
+              }
+            },
+            "baselineEvidenceCount": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "currentEvidenceCount": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "truncated": {
+              "type": "boolean"
             }
           }
         }
