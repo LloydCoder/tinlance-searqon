@@ -37,6 +37,7 @@ CREATE TABLE searqon.jobs (
   updated_at timestamptz NOT NULL DEFAULT now(),
   finished_at timestamptz,
   CONSTRAINT jobs_org_idempotency_unique UNIQUE (organization_id, idempotency_key),
+  CONSTRAINT jobs_id_organization_unique UNIQUE (id, organization_id),
   CONSTRAINT jobs_attempt_bounds CHECK (attempts <= max_attempts),
   CONSTRAINT jobs_lease_state CHECK (
     (status = 'leased' AND lease_owner IS NOT NULL AND lease_token IS NOT NULL AND lease_expires_at IS NOT NULL AND finished_at IS NULL)
@@ -59,7 +60,7 @@ CREATE INDEX jobs_org_recent_idx
 
 CREATE TABLE searqon.job_events (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  job_id uuid NOT NULL REFERENCES searqon.jobs(id) ON DELETE RESTRICT,
+  job_id uuid NOT NULL,
   organization_id uuid NOT NULL REFERENCES searqon.organizations(id) ON DELETE RESTRICT,
   event_type text NOT NULL CHECK (event_type IN ('queued','leased','retry_scheduled','succeeded','failed','cancelled','lease_expired')),
   actor_kind text NOT NULL CHECK (actor_kind IN ('user','worker')),
@@ -70,6 +71,8 @@ CREATE TABLE searqon.job_events (
     jsonb_typeof(metadata) = 'object' AND octet_length(metadata::text) <= 4096
   ),
   created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT job_events_job_tenant_fk FOREIGN KEY (job_id, organization_id)
+    REFERENCES searqon.jobs(id, organization_id) ON DELETE RESTRICT,
   CONSTRAINT job_events_actor_consistency CHECK (
     (actor_kind = 'user' AND actor_user_id IS NOT NULL AND worker_id IS NULL)
     OR (actor_kind = 'worker' AND actor_user_id IS NULL AND worker_id IS NOT NULL)
@@ -137,7 +140,7 @@ CREATE POLICY job_events_worker_access ON searqon.job_events
   FOR SELECT TO searqon_worker USING (true);
 CREATE POLICY job_events_worker_insert ON searqon.job_events
   FOR INSERT TO searqon_worker WITH CHECK (
-    actor_kind = 'worker' AND actor_user_id IS NULL AND worker_id IS NOT NULL
+    actor_kind = 'worker' AND actor_user_id IS NULL AND worker_id = current_setting('searqon.worker_id', true)
   );
 
 REVOKE ALL PRIVILEGES ON searqon.jobs, searqon.job_events FROM PUBLIC, searqon_app, searqon_worker;
