@@ -28,10 +28,14 @@ function requireWorkerId(value) {
 }
 
 function normalizeKey(keyring, version = keyring?.currentVersion) {
-  if (!keyring || typeof keyring !== "object" || typeof version !== "string" || !KEY_VERSION.test(version)) {
+  if (!keyring || typeof keyring !== "object" || Array.isArray(keyring)
+    || (Object.getPrototypeOf(keyring) !== Object.prototype && Object.getPrototypeOf(keyring) !== null)
+    || !keyring.keys || typeof keyring.keys !== "object" || Array.isArray(keyring.keys)
+    || (Object.getPrototypeOf(keyring.keys) !== Object.prototype && Object.getPrototypeOf(keyring.keys) !== null)
+    || typeof version !== "string" || !KEY_VERSION.test(version) || !Object.hasOwn(keyring.keys,version)) {
     throw new AlertDestinationError(503,"encryption_key_unavailable","A valid destination encryption key is not configured.");
   }
-  const raw = keyring.keys?.[version];
+  const raw = keyring.keys[version];
   let key;
   if (Buffer.isBuffer(raw)) key = Buffer.from(raw);
   else if (typeof raw === "string" && /^[A-Za-z0-9+/]+={0,2}$/.test(raw)) key = Buffer.from(raw,"base64");
