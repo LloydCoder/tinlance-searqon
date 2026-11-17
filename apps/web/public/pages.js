@@ -1,6 +1,16 @@
 const toggle = document.querySelector(".page-nav-toggle");
 const navigation = document.querySelector("#page-primary-nav");
 
+if (navigation) {
+  const currentPath = window.location.pathname.endsWith("/")
+    ? window.location.pathname
+    : window.location.pathname + "/";
+  for (const link of navigation.querySelectorAll("a")) {
+    const linkPath = new URL(link.href, window.location.origin).pathname;
+    if (linkPath === currentPath) link.setAttribute("aria-current", "page");
+  }
+}
+
 if (toggle && navigation) {
   toggle.addEventListener("click", () => {
     const expanded = toggle.getAttribute("aria-expanded") !== "true";
