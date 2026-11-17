@@ -54,6 +54,7 @@ function reservationRow(row, idempotentReplay = false) {
     id: row.id,
     meter: row.meter,
     periodStart: row.period_start,
+    periodEnd: row.period_end,
     requestedUnits: numberValue(row.requested_units, "requested_units"),
     includedReservedUnits: numberValue(row.included_reserved_units, "included_reserved_units"),
     overageReservedUnits: numberValue(row.overage_reserved_units, "overage_reserved_units"),
@@ -151,6 +152,7 @@ export function createUsageLedger({ database, getEntitlements } = {}) {
           const row = existing.rows[0];
           const matches = row.meter === meter
             && new Date(row.period_start).getTime() === periodStart.getTime()
+            && new Date(row.period_end).getTime() === periodEnd.getTime()
             && numberValue(row.requested_units, "requested_units") === quantity;
           if (!matches) throw new UsageLedgerError(409, "idempotency_key_conflict", "The idempotency key was already used for a different usage request.");
           return reservationRow(row, true);
@@ -218,13 +220,13 @@ export function createUsageLedger({ database, getEntitlements } = {}) {
 
         const inserted = await client.query(
           `INSERT INTO searqon.usage_reservations
-            (organization_id, meter, period_start, idempotency_key, requested_units,
+            (organization_id, meter, period_start, period_end, idempotency_key, requested_units,
              included_reserved_units, overage_reserved_units, reserved_amount_micro_usd,
              overage_rate_micro_usd_per_block, overage_block)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
            ON CONFLICT (organization_id, idempotency_key) DO NOTHING
            RETURNING *`,
-          [organizationId, meter, periodStart, input.idempotencyKey, quantity,
+          [organizationId, meter, periodStart, periodEnd, input.idempotencyKey, quantity,
             includedReservedUnits, overageReservedUnits, reservedAmountMicroUsd,
             overageRateMicroUsdPerBlock, overageBlock]
         );
@@ -235,6 +237,7 @@ export function createUsageLedger({ database, getEntitlements } = {}) {
           );
           const row = raced.rows[0];
           if (!row || row.meter !== meter || new Date(row.period_start).getTime() !== periodStart.getTime()
+            || new Date(row.period_end).getTime() !== periodEnd.getTime()
             || numberValue(row.requested_units, "requested_units") !== quantity) {
             throw new UsageLedgerError(409, "idempotency_key_conflict", "The idempotency key was concurrently used for a different usage request.");
           }
