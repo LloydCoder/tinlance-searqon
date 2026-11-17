@@ -59,6 +59,7 @@ CREATE TABLE searqon.usage_spend_periods (
 CREATE TABLE searqon.usage_reservations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL,
+  created_by uuid NOT NULL REFERENCES searqon.app_users(id) ON DELETE RESTRICT,
   meter text NOT NULL CHECK (meter IN ('ai_answer_checks','crawl_pages','keyword_months','api_requests')),
   period_start timestamptz NOT NULL,
   period_end timestamptz NOT NULL,
@@ -114,6 +115,7 @@ CREATE INDEX usage_reservations_expiry_idx
 CREATE TABLE searqon.usage_ledger_entries (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   organization_id uuid NOT NULL REFERENCES searqon.organizations(id) ON DELETE RESTRICT,
+  actor_user_id uuid NOT NULL REFERENCES searqon.app_users(id) ON DELETE RESTRICT,
   reservation_id uuid NOT NULL,
   meter text NOT NULL CHECK (meter IN ('ai_answer_checks','crawl_pages','keyword_months','api_requests')),
   period_start timestamptz NOT NULL,
@@ -200,11 +202,14 @@ CREATE POLICY usage_ledger_member_access ON searqon.usage_ledger_entries
   ));
 CREATE POLICY usage_ledger_member_insert ON searqon.usage_ledger_entries
   FOR INSERT
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM searqon.memberships m
-    WHERE m.organization_id = usage_ledger_entries.organization_id
-      AND m.user_id = searqon.current_user_id()
-  ));
+  WITH CHECK (
+    actor_user_id = searqon.current_user_id()
+    AND EXISTS (
+      SELECT 1 FROM searqon.memberships m
+      WHERE m.organization_id = usage_ledger_entries.organization_id
+        AND m.user_id = searqon.current_user_id()
+    )
+  );
 
 REVOKE ALL PRIVILEGES ON searqon.usage_spend_periods, searqon.usage_period_counters, searqon.usage_reservations, searqon.usage_ledger_entries FROM PUBLIC, searqon_app;
 REVOKE ALL ON FUNCTION searqon.reject_usage_ledger_mutation() FROM PUBLIC;
