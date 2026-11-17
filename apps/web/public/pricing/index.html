@@ -168,10 +168,10 @@
       </div>
       <div class="pricing-guardrails">
         <article><span>01</span><h3>Admin opt-in</h3><p>Overages remain disabled until an administrator explicitly enables them and sets a positive spend cap.</p></article>
-        <article><span>02</span><h3>Live spend guard</h3><p>Operations stop when the customer cap or platform safety budget is reached. We do not silently raise limits.</p></article>
+        <article><span>02</span><h3>Live spend guard</h3><p>Operations stop when the customer cap or platform safety budget is reached; the customer cap is aggregated across usage meters. We do not silently raise limits.</p></article>
         <article><span>03</span><h3>Usage notifications</h3><p>Usage notifications are defined at 80% and 100% of included allowances, with reserved, settled and overage usage distinguished.</p></article>
       </div>
-      <div class="pricing-callout"><strong>No rollover. No hidden meter conversion.</strong><p>No unused usage rollover: unused monthly allowances do not roll over. Non-metered limits such as projects, seats, prompts and engines block at the cap and require an upgrade or contract; they do not silently become paid overages.</p></div>
+      <div class="pricing-callout"><strong>No rollover. No hidden meter conversion.</strong><p>No unused usage rollover: unused monthly allowances do not roll over. Only newly consumed excess units are billed; idempotent retries and duplicate requests do not create duplicate charges. Non-metered limits such as projects, seats, prompts and engines block at the cap and require an upgrade or contract; they do not silently become paid overages.</p></div>
     </section>
 
     <section class="page-shell pricing-section">
