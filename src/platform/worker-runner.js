@@ -130,7 +130,7 @@ export function createWorkerRunner({
   }
 
   async function runOnce() {
-    const jobs = await queue.claim(workerId,{limit:concurrency,leaseSeconds});
+    const jobs = await queue.claim(workerId,{limit:concurrency,leaseSeconds,jobTypes:Object.keys(handlers)});
     const results = await Promise.all(jobs.map(processJob));
     return {
       claimed:jobs.length,
