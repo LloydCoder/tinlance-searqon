@@ -16,8 +16,8 @@ test("public pricing page publishes all six proposed plan prices and annual tota
 test("public pricing page discloses the exact trial, usage, and overage policy", async () => {
   const html = await readFile(pricingPage, "utf8");
   for (const expected of [
-    "14 days", "500 successful AI answer checks", "500 crawl page credits",
-    "No credit card", "No automatic conversion", "80%", "100%",
+    "14 days", "Successful AI answer checks total", "Crawl page credits total",
+    "no payment card", "No automatic conversion", "80%", "100%",
     "$0.025", "$0.020", "$0.0175", "$0.015",
     "$4 / 1,000", "$10 / 1,000", "$1 / 10,000",
     "Overages are off by default", "No unused usage rollover"
