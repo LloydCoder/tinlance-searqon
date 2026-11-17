@@ -31,3 +31,10 @@ test("public pricing page separates proposed packages from available product cap
   assert.match(html, /feature eligibility is not proof of implementation/i);
   assert.match(html, /open-source toolkit remains free/i);
 });
+
+
+test("LLM discovery summary accurately describes the proposed pricing page", async () => {
+  const llms = await readFile(new URL("../apps/web/public/llms.txt", import.meta.url), "utf8");
+  assert.match(llms, /proposed six-tier hosted packages/i);
+  assert.match(llms, /paid subscriptions are not currently available for purchase/i);
+});
