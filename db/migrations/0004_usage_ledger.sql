@@ -38,6 +38,8 @@ CREATE TABLE searqon.usage_reservations (
   included_reserved_units bigint NOT NULL CHECK (included_reserved_units >= 0),
   overage_reserved_units bigint NOT NULL CHECK (overage_reserved_units >= 0),
   reserved_amount_micro_usd bigint NOT NULL DEFAULT 0 CHECK (reserved_amount_micro_usd >= 0),
+  overage_rate_micro_usd_per_block bigint NOT NULL DEFAULT 0 CHECK (overage_rate_micro_usd_per_block >= 0),
+  overage_block bigint NOT NULL DEFAULT 1 CHECK (overage_block > 0),
   status text NOT NULL DEFAULT 'reserved' CHECK (status IN ('reserved','settled','released')),
   actual_units bigint,
   charged_amount_micro_usd bigint,
