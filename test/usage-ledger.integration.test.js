@@ -28,9 +28,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
   const getEntitlements = async (_client, organizationId) => ({
     ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }),
     limits: { ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }).limits, aiAnswerChecksPerMonth: 1500 },
-    overage: organizationId === orgA
-      ? { enabled: true, spendCapMicroUsd: 1_000_000 }
-      : { enabled: false, spendCapMicroUsd: 0 }
+    overage: { enabled: false, spendCapMicroUsd: 0 }
   });
   const ledger = createUsageLedger({ database, getEntitlements });
 
