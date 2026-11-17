@@ -195,3 +195,77 @@ test("PostgreSQL usage ledger prices only reserved overage and releases unused r
     await owner.end();
   }
 });
+
+
+test("PostgreSQL atomic consumption enforces fixed quotas and commits operation state with usage", { skip: !disposable }, async () => {
+  const owner = new Pool({ connectionString: databaseUrl });
+  const runtime = new Pool({ connectionString: process.env.SEARQON_RUNTIME_DATABASE_URL ?? databaseUrl, max: 4 });
+  const user = randomUUID();
+  const organization = randomUUID();
+  const periodStart = "2026-11-01T00:00:00.000Z";
+  const periodEnd = "2026-12-01T00:00:00.000Z";
+  const ledger = createUsageLedger({
+    database: { pool: runtime },
+    getEntitlements: async () => ({
+      ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }),
+      limits: { ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }).limits, manualAssessmentsPerMonth: 2 },
+      billingPeriod: { start: periodStart, end: periodEnd },
+      overage: { enabled: true, spendCapMicroUsd: 1000 }
+    })
+  });
+  try {
+    await owner.query("INSERT INTO searqon.app_users (id,email,display_name) VALUES ($1,$2,'Atomic Consume')", [user,user+"@consume.example.test"]);
+    await owner.query("INSERT INTO searqon.organizations (id,name,slug) VALUES ($1,'Atomic Consume',$2)", [organization,"consume-"+user.replaceAll("-","")]);
+    await owner.query("INSERT INTO searqon.memberships (organization_id,user_id,role) VALUES ($1,$2,'owner')", [organization,user]);
+
+    const failedKey = "atomic-rollback-0001";
+    await assert.rejects(
+      ledger.consume(user, organization, { meter: "manual_assessments", quantity: 1, idempotencyKey: failedKey }, async () => {
+        await owner.query("SELECT 1");
+        throw new Error("operation failed");
+      }),
+      /operation failed/
+    );
+    const afterRollback = await owner.query("SELECT count(*)::int AS count FROM searqon.usage_reservations WHERE organization_id = $1", [organization]);
+    assert.equal(afterRollback.rows[0].count, 0, "a failed operation must roll back its quota reservation");
+
+    let callbacks = 0;
+    const requests = [1,2,3].map(index => ledger.consume(user, organization, {
+      meter: "manual_assessments", quantity: 1, idempotencyKey: "atomic-consume-000" + index
+    }, async client => {
+      callbacks += 1;
+      const identity = await client.query("SELECT current_setting('searqon.user_id', true) AS user_id");
+      assert.equal(identity.rows[0].user_id, user);
+      return "assessment-" + index;
+    }));
+    const outcomes = await Promise.allSettled(requests);
+    assert.equal(outcomes.filter(item => item.status === "fulfilled").length, 2);
+    assert.equal(outcomes.filter(item => item.status === "rejected" && item.reason.code === "included_allowance_exhausted").length, 1);
+    assert.equal(callbacks, 2);
+
+    const first = outcomes.find(item => item.status === "fulfilled").value;
+    assert.equal(first.result.startsWith("assessment-"), true);
+    const replay = await ledger.consume(user, organization, {
+      meter: "manual_assessments", quantity: 1, idempotencyKey: "atomic-consume-0001"
+    }, async () => {
+      throw new Error("idempotent replay must not execute the operation again");
+    });
+    assert.equal(replay.idempotentReplay, true);
+    assert.equal(replay.result, null);
+
+    const counter = await owner.query(
+      "SELECT consumed_units, reserved_units FROM searqon.usage_period_counters WHERE organization_id = $1 AND meter = 'manual_assessments'",
+      [organization]
+    );
+    assert.equal(Number(counter.rows[0].consumed_units), 2);
+    assert.equal(Number(counter.rows[0].reserved_units), 0);
+    const entries = await owner.query(
+      "SELECT event_type, quantity_delta FROM searqon.usage_ledger_entries WHERE organization_id = $1 ORDER BY id",
+      [organization]
+    );
+    assert.deepEqual(entries.rows.map(row => [row.event_type, Number(row.quantity_delta)]), [["settled",1],["settled",1]]);
+  } finally {
+    await runtime.end();
+    await owner.end();
+  }
+});
