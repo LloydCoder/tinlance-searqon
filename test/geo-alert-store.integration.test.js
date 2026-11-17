@@ -177,6 +177,25 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
     assert.equal(deliveredRow.rows[0].status,"delivered");
     assert.equal(deliveredRow.rows[0].provider_receipt_id,"slack-test-receipt");
 
+    await destinationStore.disable(userA,orgA,destination.id);
+    const nextClaim = await queue.claim(workerId,{limit:1,leaseSeconds:30});
+    const cancelledJob = nextClaim.find(job=>job.jobType==="alert_delivery");
+    assert.ok(cancelledJob);
+    const disabledDelivery = await destinationStore.getDelivery(
+      workerId,cancelledJob.payload.deliveryId,cancelledJob.id,cancelledJob.leaseToken
+    );
+    assert.equal(disabledDelivery.destinationDisabled,true);
+    const cancelled = await destinationStore.markCancelled(
+      workerId,cancelledJob.payload.deliveryId,cancelledJob.id,cancelledJob.leaseToken
+    );
+    assert.equal(cancelled.accepted,true);
+    assert.equal((await queue.complete(workerId,cancelledJob.id,cancelledJob.leaseToken)).accepted,true);
+    const outboxStates = await owner.query(
+      "SELECT status,count(*)::int AS count FROM searqon.alert_delivery_outbox WHERE organization_id=$1 GROUP BY status ORDER BY status",
+      [orgA]
+    );
+    assert.deepEqual(outboxStates.rows.map(row=>[row.status,row.count]),[["cancelled",1],["delivered",1],["queued",1]]);
+
     const hidden = await withUserTransaction(runtime,userB,client => client.query(
       "SELECT id FROM searqon.geo_alert_events WHERE organization_id=$1",[orgA]
     ));
