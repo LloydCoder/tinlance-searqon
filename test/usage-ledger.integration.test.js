@@ -27,6 +27,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
   const periodEnd = "2026-12-01T00:00:00.000Z";
   const getEntitlements = async (_client, organizationId) => ({
     ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }),
+    limits: { ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }).limits, aiAnswerChecksPerMonth: 1500 },
     overage: organizationId === orgA
       ? { enabled: true, spendCapMicroUsd: 1_000_000 }
       : { enabled: false, spendCapMicroUsd: 0 }
@@ -59,7 +60,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
     assert.equal(first.overageReservedUnits, 0);
 
     const [second, third] = await Promise.all([
-      ledger.reserve(userA, orgA, { ...request, quantity: 1498, idempotencyKey: "usage-reservation-0002" }),
+      ledger.reserve(userA, orgA, { ...request, quantity: 1494, idempotencyKey: "usage-reservation-0002" }),
       ledger.reserve(userA, orgA, { ...request, quantity: 1, idempotencyKey: "usage-reservation-0003" })
     ]);
     assert.ok(second && third);
