@@ -28,11 +28,19 @@ function requireString(value, field, pattern) {
 }
 
 function requireUtcTimestamp(value, field) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)
-    || !Number.isFinite(Date.parse(value))) {
+  const match = typeof value === "string"
+    ? value.match(/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,3}))?Z$/)
+    : null;
+  if (!match || !Number.isFinite(Date.parse(value))) {
     throw new BillingEventError("invalid_" + field, field + " must be an ISO-8601 UTC timestamp.");
   }
-  return new Date(value).toISOString();
+  const parsed = new Date(value);
+  const expectedFraction = (match[7] ?? "").padEnd(3, "0");
+  if (parsed.toISOString().slice(0, 19) !== value.slice(0, 19)
+    || parsed.toISOString().slice(20, 23) !== expectedFraction) {
+    throw new BillingEventError("invalid_" + field, field + " must be a real calendar timestamp.");
+  }
+  return parsed.toISOString();
 }
 
 /**
