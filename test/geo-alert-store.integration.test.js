@@ -104,11 +104,11 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
 
     const concurrent = comparison({
       suffix:"concurrent",baselineId:"baseline-concurrent",currentId:"current-concurrent",
-      baselineAt:"2026-11-17T14:11:00.000Z",currentAt:"2026-11-17T14:12:00.000Z",
-      evaluatedAt:"2026-11-17T14:13:00.000Z",alertId:"geoalert_concurrent"
+      baselineAt:"2026-11-17T15:11:00.000Z",currentAt:"2026-11-17T15:12:00.000Z",
+      evaluatedAt:"2026-11-17T15:13:00.000Z",alertId:"geoalert_concurrent"
     });
     const concurrentStore = createGeoAlertStore({
-      database:{pool:runtime},now:()=>new Date("2026-11-17T14:14:00.000Z")
+      database:{pool:runtime},now:()=>new Date("2026-11-17T15:14:00.000Z")
     });
     const concurrentResults = await Promise.all([
       concurrentStore.recordComparison(userA,orgA,concurrent),
@@ -131,8 +131,8 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
       "SELECT last_evaluated_at,cooldown_until FROM searqon.geo_alert_cooldowns WHERE organization_id=$1 AND dedupe_key=$2",
       [orgA,"a".repeat(64)]
     );
-    assert.equal(new Date(cooldown.rows[0].last_evaluated_at).toISOString(),"2026-11-17T14:13:00.000Z");
-    assert.equal(new Date(cooldown.rows[0].cooldown_until).toISOString(),"2026-11-17T15:10:00.000Z");
+    assert.equal(new Date(cooldown.rows[0].last_evaluated_at).toISOString(),"2026-11-17T15:13:00.000Z");
+    assert.equal(new Date(cooldown.rows[0].cooldown_until).toISOString(),"2026-11-17T16:14:00.000Z");
     const eventCounts = await owner.query(
       "SELECT state,count(*)::int AS count FROM searqon.geo_alert_events WHERE organization_id=$1 GROUP BY state ORDER BY state",
       [orgA]
