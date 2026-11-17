@@ -11,7 +11,7 @@ const keyring = JSON.stringify({
   keys: { v1: Buffer.alloc(32, 7).toString("base64") }
 });
 const env = {
-  SEARQON_WORKER_DATABASE_URL: "postgresql://worker:password@db.example.test:5432/searqon",
+  SEARQON_WORKER_DATABASE_URL: "postgresql://db.example.test:5432/searqon",
   SEARQON_WORKER_ID: "worker-alerts-01",
   SEARQON_ALERT_DESTINATION_KEYRING_JSON: keyring,
   SEARQON_WORKER_CONCURRENCY: "3",
@@ -40,7 +40,7 @@ test("worker role preflight uses a transaction-local restricted role and checks 
         async query(sql, params) {
           queries.push({ sql, params });
           if (sql.includes("has_table_privilege")) return { rows: [{
-            jobsSelect: true, jobsUpdate: true, eventsSelect: true, eventsInsert: true,
+            jobsSelect: true, jobsUpdate: true, eventsSelect: true, eventsInsert: true, eventsSequence: true,
             destinationsSelect: true, alertEventsSelect: true, outboxSelect: true, outboxUpdate: true
           }] };
           return { rows: [] };
@@ -61,7 +61,7 @@ test("worker role preflight fails closed when required table privileges are abse
       return {
         async query(sql) {
           if (sql.includes("has_table_privilege")) return { rows: [{
-            jobsSelect: true, jobsUpdate: false, eventsSelect: true, eventsInsert: true,
+            jobsSelect: true, jobsUpdate: false, eventsSelect: true, eventsInsert: true, eventsSequence: true,
             destinationsSelect: true, alertEventsSelect: true, outboxSelect: true, outboxUpdate: true
           }] };
           return { rows: [] };
