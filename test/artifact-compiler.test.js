@@ -10,9 +10,9 @@ Use bearer authentication.
 
 Return documented HTTP status codes.
 
-```http
+\`\`\`http
 GET /v1/status
-```
+\`\`\`
 `;
 
 const openapi = {
