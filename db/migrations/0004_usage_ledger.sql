@@ -45,6 +45,7 @@ CREATE TABLE searqon.usage_reservations (
   actual_units bigint,
   charged_amount_micro_usd bigint,
   release_reason text,
+  expires_at timestamptz NOT NULL DEFAULT (now() + interval '15 minutes'),
   created_at timestamptz NOT NULL DEFAULT now(),
   settled_at timestamptz,
   CONSTRAINT usage_reservation_period_bounds CHECK (period_end > period_start),
@@ -65,6 +66,9 @@ CREATE TABLE searqon.usage_reservations (
 );
 CREATE INDEX usage_reservations_period_status_idx
   ON searqon.usage_reservations (organization_id, meter, period_start, status, created_at DESC);
+CREATE INDEX usage_reservations_expiry_idx
+  ON searqon.usage_reservations (organization_id, expires_at)
+  WHERE status = 'reserved';
 
 CREATE TABLE searqon.usage_ledger_entries (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
