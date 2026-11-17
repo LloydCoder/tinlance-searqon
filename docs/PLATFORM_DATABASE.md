@@ -143,3 +143,10 @@ This is durable queue infrastructure only. No worker process, scheduler, job han
 Workspace project creation now resolves the persisted subscription plan inside the authenticated tenant transaction and checks the plan's `projects` limit before insertion. A transaction-scoped advisory lock serializes project creation per organization, preventing concurrent requests from exceeding the quota. The project row and the quota check commit or roll back together.
 
 The Free plan's one-project limit is covered by a PostgreSQL concurrency test. Other plan limits (team seats, tracked prompts, AI engines, locales, scheduled reports, API requests and GEO observations) still require their corresponding operations and administration flows to be implemented and wired to canonical entitlements.
+
+
+## Worker execution loop
+
+`src/platform/worker-runner.js` adds a bounded worker runtime around the durable queue. It requires an explicit allowlisted handler registry, limits concurrency and polling, renews leases while handlers run, aborts work when lease ownership is lost, hashes bounded JSON results rather than persisting result bodies, and retries failures with capped exponential delay using machine-readable error codes. It supports graceful shutdown through `AbortSignal`.
+
+The runner is execution infrastructure, not a deployed daemon. No default job handlers, scheduler, browser sandbox, network egress policy, production worker credentials or long-running worker deployment are configured. Every future handler must separately validate tenant/job authorization, input provenance, resource limits and any external-action approval before acting.
