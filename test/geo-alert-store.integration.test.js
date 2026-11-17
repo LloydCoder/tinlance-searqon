@@ -69,6 +69,17 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
     const replay = await store.recordComparison(userA,orgA,firstInput);
     assert.equal(replay.summary.idempotentReplays,1);
     assert.equal(replay.events[0].eventId,first.events[0].eventId);
+    await assert.rejects(
+      store.recordComparison(userA,orgA,{...firstInput,baseline:[{cohort:"tampered",sampleSize:30,mentionCount:12}]}),
+      error => error.code === "snapshot_id_conflict"
+    );
+    await assert.rejects(
+      store.recordComparison(userA,orgA,{
+        ...firstInput,
+        report:{...firstInput.report,alerts:[{...firstInput.report.alerts[0],delta:-0.3}]}
+      }),
+      error => error.code === "alert_id_conflict"
+    );
 
     const duringCooldown = comparison({
       suffix:"two",baselineId:"baseline-1",currentId:"current-2",
