@@ -125,3 +125,20 @@ test("browser navigation to unknown public paths returns the branded 404 page", 
     assert.equal(await head.text(), "");
   });
 });
+
+
+test("public pages never expose escaped newline sequences as visible HTML text", async () => {
+  await withServer(async base => {
+    const routes = [
+      "/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/",
+      "/security/", "/about/", "/contact/", "/privacy/", "/terms/",
+      "/auth/login/", "/auth/register/", "/auth/verify/", "/app/"
+    ];
+    for (const route of routes) {
+      const response = await fetch(base + route);
+      assert.equal(response.status, 200, route);
+      const html = await response.text();
+      assert.equal(html.includes("\\n"), false, route + " contains a literal backslash-n sequence");
+    }
+  });
+});
