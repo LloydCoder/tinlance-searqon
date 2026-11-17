@@ -35,6 +35,8 @@ test("public marketing routes are real pages with a shared accessible navigation
       assert.match(html, /Skip to content/, path);
       assert.match(html, /aria-label="Main navigation"/, path);
       assert.match(html, /\/pages\.css/, path);
+      assert.match(html, /fonts\.googleapis\.com/, path);
+      assert.match(html, new RegExp('rel="canonical" href="https://searqon\\.tinlance\\.com' + path.replaceAll("/", "\\/") + '"'), path);
     }
   });
 });
@@ -53,13 +55,22 @@ test("marketing pages expose crawlable metadata and sitemap resources", async ()
   await withServer(async base => {
     const robots = await fetch(base + "/robots.txt");
     assert.equal(robots.status, 200);
-    assert.match(await robots.text(), /Sitemap:/);
+    const robotsText = await robots.text();
+    assert.match(robotsText, /Sitemap:/);
+    assert.match(robotsText, /Disallow: \/app\//);
+    assert.match(robotsText, /Disallow: \/auth\//);
     const sitemap = await fetch(base + "/sitemap.xml");
     assert.equal(sitemap.status, 200);
     const xml = await sitemap.text();
-    for (const path of ["/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/", "/security/", "/about/", "/contact/", "/privacy/", "/terms/"]) {
-      assert.ok(xml.includes("https://searqon.tinlance.com" + path), "missing sitemap route " + path);
+    for (const route of ["/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/", "/security/", "/about/", "/contact/", "/privacy/", "/terms/"]) {
+      assert.ok(xml.includes("https://searqon.tinlance.com" + route), "missing sitemap route " + route);
     }
+    const llms = await fetch(base + "/llms.txt");
+    assert.equal(llms.status, 200);
+    assert.match(llms.headers.get("content-type"), /text\/plain/);
+    const llmsText = await llms.text();
+    assert.match(llmsText, /early alpha; not production-ready/);
+    assert.match(llmsText, /Live provider acquisition/);
   });
 });
 
@@ -71,5 +82,7 @@ test("shared marketing styles preserve the brand palette and responsive layout",
     assert.match(css, /#E8A33D/);
     assert.match(css, /@media\s*\(max-width:\s*720px\)/);
     assert.equal(/linear-gradient|radial-gradient|conic-gradient/i.test(css), false);
+    const page = await fetch(base + "/product/");
+    assert.match(page.headers.get("content-security-policy"), /fonts\.googleapis\.com/);
   });
 });
