@@ -22,7 +22,7 @@ test("public marketing routes are real pages with a shared accessible navigation
       ["/solutions/", "Built for teams"],
       ["/methodology/", "Evidence before conclusions"],
       ["/docs/", "Documentation"],
-      ["/pricing/", "Pricing and early access"],
+      ["/pricing/", "One intelligence layer."],
       ["/security/", "Security and trust"],
       ["/about/", "About Searqon"],
       ["/contact/", "Talk to the team"],
