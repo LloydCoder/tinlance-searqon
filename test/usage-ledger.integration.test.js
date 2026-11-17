@@ -54,6 +54,17 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
     const retry = await ledger.reserve(userA, orgA, request);
     assert.equal(retry.id, first.id);
     assert.equal(retry.idempotentReplay, true);
+    const [raceA, raceB] = await Promise.all([
+      ledger.reserve(userA, orgA, request),
+      ledger.reserve(userA, orgA, request)
+    ]);
+    assert.equal(raceA.id, first.id);
+    assert.equal(raceB.id, first.id);
+    assert.equal(raceA.idempotentReplay, true);
+    await assert.rejects(
+      ledger.reserve(userA, orgA, { ...request, quantity: 6 }),
+      error => error.code === "idempotency_key_conflict"
+    );
     assert.equal(first.includedReservedUnits, 5);
     assert.equal(first.overageReservedUnits, 0);
 
