@@ -81,7 +81,7 @@ Migration `0004_usage_ledger.sql` adds tenant-scoped PostgreSQL usage periods, r
 
 The integration suite verifies concurrent reservations at the included quota boundary, duplicate request idempotency, settlement/release behavior, overage quote capture and partial settlement, cross-tenant isolation, and rejection of ledger mutation.
 
-**Still not implemented:** a durable subscription/contract source of truth, customer-facing overage-consent workflow, verified payment-provider webhooks, invoice settlement, automated reservation expiry/reconciliation, worker dispatch integration, API-wide entitlement enforcement, billing notifications, provider budget controls, or production billing operations. Do not treat this ledger as a complete billing system or enable paid usage solely because the ledger exists.
+**Still not implemented:** customer-facing overage-consent workflow, provider-specific webhook signature verification and HTTP ingestion, durable inbox processing/reconciliation worker, invoice settlement, automated subscription lifecycle writes, automated reservation expiry/reconciliation, worker dispatch integration, API-wide entitlement enforcement, billing notifications, provider budget controls, or production billing operations. Do not treat these primitives as a complete billing system or enable paid usage solely because they exist.
 
 
 ## Subscription lifecycle and verified webhook inbox
@@ -96,3 +96,17 @@ Migration `0005_billing_lifecycle.sql` introduces a tenant-scoped subscription s
 - No payment provider is selected or connected. There is no webhook route, subscription writer, billing worker, invoice reconciliation, checkout, payment collection or paid-plan activation. A separate least-privilege worker, provider-specific raw-body signature verifier, replay/idempotency handling and reconciliation process are mandatory before accepting billing events.
 
 The CI PostgreSQL job applies the migration and checks subscription constraints, webhook-event uniqueness, forced RLS and the runtime role's inability to read the privileged inbox. This is schema and normalization groundwork, not a complete billing lifecycle.
+
+
+## Canonical subscription entitlement resolver
+
+`src/platform/subscription-entitlements.js` resolves the active plan from `searqon.subscriptions` using the caller's already-authenticated tenant transaction. It does not accept a plan, trial date or billing-period boundary from the HTTP request.
+
+- No subscription row resolves to Free with UTC calendar-month boundaries.
+- Active subscriptions use the persisted provider billing period, but are downgraded to Free if the period has not started or has expired.
+- Trials use the persisted trial start and expiry as the billing period, preserving the one-time trial allowance rather than resetting it monthly.
+- Past-due, canceled and expired subscriptions resolve to Free.
+- Overage is always disabled until an explicit customer-consent and spend-cap workflow is implemented.
+- Forced RLS hides another tenant's subscription row. The runtime role has SELECT-only access and cannot mutate subscription state.
+
+The resolver is a tested source for the usage-ledger entitlement callback, but it is not yet wired into every billable API or worker path. Subscription creation/update, provider webhook processing, overage consent, invoicing and end-to-end billing enforcement remain future work.
