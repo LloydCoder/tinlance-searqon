@@ -153,7 +153,7 @@ async function appendAudit(client,organizationId,userId,eventType,destinationId,
   );
 }
 
-async function withWorkerTransaction(pool,workerId,operation) {
+async function withWorkerTransaction(pool,workerId,leaseToken,operation) {
   if (!pool || typeof pool.connect !== "function") {
     throw new AlertDestinationError(503,"worker_unavailable","A dedicated worker database pool is not configured.");
   }
@@ -162,6 +162,7 @@ async function withWorkerTransaction(pool,workerId,operation) {
     await client.query("BEGIN");
     await client.query("SET LOCAL ROLE searqon_worker");
     await client.query("SELECT set_config('searqon.worker_id',$1,true)",[workerId]);
+    await client.query("SELECT set_config('searqon.lease_token',$1,true)",[leaseToken]);
     const result = await operation(client);
     await client.query("COMMIT");
     return result;
@@ -242,28 +243,132 @@ export function createAlertDestinationStore({database,workerPool=null,encryption
       });
     },
 
-    async getForDelivery(workerId,organizationId,destinationId) {
+    async getDelivery(workerId,deliveryId,jobId,leaseToken) {
       requireWorkerId(workerId);
-      requireUuid(organizationId,"organization_id");
-      requireUuid(destinationId,"destination_id");
-      return withWorkerTransaction(workerPool,workerId,async client => {
+      requireUuid(deliveryId,"delivery_id");
+      requireUuid(jobId,"job_id");
+      requireUuid(leaseToken,"lease_token");
+      return withWorkerTransaction(workerPool,workerId,leaseToken,async client => {
         const result = await client.query(
-          `SELECT id,organization_id,channel,display_name,status,secret_ciphertext,secret_nonce,secret_tag,key_version,secret_sha256
-           FROM searqon.alert_destinations
-           WHERE organization_id=$1 AND id=$2 AND status='enabled'`,
-          [organizationId,destinationId]
+          `SELECT o.id,o.organization_id,o.status,o.event_id,o.destination_id,o.job_id,
+                  e.state AS event_state,e.payload AS event_payload,
+                  d.channel,d.display_name,d.status AS destination_status,
+                  d.secret_ciphertext,d.secret_nonce,d.secret_tag,d.key_version,d.secret_sha256
+           FROM searqon.alert_delivery_outbox o
+           JOIN searqon.jobs j ON j.id=o.job_id AND j.organization_id=o.organization_id
+           JOIN searqon.geo_alert_events e ON e.id=o.event_id AND e.organization_id=o.organization_id
+           JOIN searqon.alert_destinations d ON d.id=o.destination_id AND d.organization_id=o.organization_id
+           WHERE o.id=$1 AND o.job_id=$2
+             AND j.status='leased' AND j.lease_owner=$3 AND j.lease_token=$4 AND j.lease_expires_at > now()`,
+          [deliveryId,jobId,workerId,leaseToken]
         );
         const row = result.rows[0];
         if (!row) return null;
+        if (row.status !== "queued") {
+          return {id:row.id,organizationId:row.organization_id,status:row.status,alreadyTerminal:true};
+        }
+        if (row.destination_status !== "enabled" || row.event_state !== "emitted") {
+          return {
+            id:row.id,organizationId:row.organization_id,status:"cancelled",
+            destinationDisabled:row.destination_status !== "enabled"
+          };
+        }
         const secret = decryptDestinationSecret({
           ciphertext:row.secret_ciphertext,nonce:row.secret_nonce,tag:row.secret_tag,
           keyVersion:row.key_version,secretSha256:row.secret_sha256,
-          organizationId:row.organization_id,destinationId:row.id,channel:row.channel,keyring
+          organizationId:row.organization_id,destinationId:row.destination_id,channel:row.channel,keyring
         });
         return {
-          id:row.id,organizationId:row.organization_id,channel:row.channel,
-          displayName:row.display_name,secret
+          id:row.id,organizationId:row.organization_id,status:row.status,
+          eventId:row.event_id,jobId:row.job_id,eventPayload:row.event_payload,
+          destination:{
+            id:row.destination_id,channel:row.channel,displayName:row.display_name,secret
+          }
         };
+      });
+    },
+
+    async markDelivered(workerId,deliveryId,jobId,leaseToken,{providerReceiptId=null} = {}) {
+      requireWorkerId(workerId);
+      requireUuid(deliveryId,"delivery_id");
+      requireUuid(jobId,"job_id");
+      requireUuid(leaseToken,"lease_token");
+      if (providerReceiptId !== null
+        && (typeof providerReceiptId !== "string" || !/^[A-Za-z0-9._:-]{1,160}$/.test(providerReceiptId))) {
+        throw new AlertDestinationError(400,"invalid_provider_receipt","The provider receipt identifier is invalid.");
+      }
+      return withWorkerTransaction(workerPool,workerId,leaseToken,async client => {
+        const updated = await client.query(
+          `UPDATE searqon.alert_delivery_outbox o
+           SET status='delivered',provider_receipt_id=$5,delivered_at=now(),updated_at=now()
+           WHERE o.id=$1 AND o.job_id=$2 AND o.status='queued'
+             AND EXISTS (
+               SELECT 1 FROM searqon.jobs j
+               WHERE j.id=o.job_id AND j.organization_id=o.organization_id
+                 AND j.status='leased' AND j.lease_owner=$3 AND j.lease_token=$4 AND j.lease_expires_at > now()
+             )
+           RETURNING o.id,o.status,o.delivered_at,o.provider_receipt_id`,
+          [deliveryId,jobId,workerId,leaseToken,providerReceiptId]
+        );
+        if (updated.rows[0]) return {accepted:true,idempotentReplay:false,...updated.rows[0]};
+        const existing = await client.query(
+          "SELECT id,status,delivered_at,provider_receipt_id FROM searqon.alert_delivery_outbox WHERE id=$1 AND job_id=$2",
+          [deliveryId,jobId]
+        );
+        if (existing.rows[0]?.status === "delivered") {
+          return {accepted:true,idempotentReplay:true,...existing.rows[0]};
+        }
+        return {accepted:false,reason:"lease_lost"};
+      });
+    },
+
+    async markFailed(workerId,deliveryId,jobId,leaseToken,{errorCode} = {}) {
+      requireWorkerId(workerId);
+      requireUuid(deliveryId,"delivery_id");
+      requireUuid(jobId,"job_id");
+      requireUuid(leaseToken,"lease_token");
+      if (typeof errorCode !== "string" || !/^[a-z][a-z0-9_]{0,63}$/.test(errorCode)) {
+        throw new AlertDestinationError(400,"invalid_error_code","A bounded machine-readable delivery error code is required.");
+      }
+      return withWorkerTransaction(workerPool,workerId,leaseToken,async client => {
+        const updated = await client.query(
+          `UPDATE searqon.alert_delivery_outbox o
+           SET status='failed',last_error_code=$5,updated_at=now()
+           WHERE o.id=$1 AND o.job_id=$2 AND o.status='queued'
+             AND EXISTS (
+               SELECT 1 FROM searqon.jobs j
+               WHERE j.id=o.job_id AND j.organization_id=o.organization_id
+                 AND j.status='leased' AND j.lease_owner=$3 AND j.lease_token=$4
+                 AND j.lease_expires_at > now() AND j.attempts >= j.max_attempts
+             )
+           RETURNING o.id,o.status,o.last_error_code`,
+          [deliveryId,jobId,workerId,leaseToken,errorCode]
+        );
+        if (updated.rows[0]) return {accepted:true,...updated.rows[0]};
+        return {accepted:false,reason:"lease_lost_or_attempts_remaining"};
+      });
+    },
+
+    async markCancelled(workerId,deliveryId,jobId,leaseToken) {
+      requireWorkerId(workerId);
+      requireUuid(deliveryId,"delivery_id");
+      requireUuid(jobId,"job_id");
+      requireUuid(leaseToken,"lease_token");
+      return withWorkerTransaction(workerPool,workerId,leaseToken,async client => {
+        const updated = await client.query(
+          `UPDATE searqon.alert_delivery_outbox o
+           SET status='cancelled',last_error_code='destination_disabled',updated_at=now()
+           WHERE o.id=$1 AND o.job_id=$2 AND o.status='queued'
+             AND EXISTS (
+               SELECT 1 FROM searqon.jobs j
+               WHERE j.id=o.job_id AND j.organization_id=o.organization_id
+                 AND j.status='leased' AND j.lease_owner=$3 AND j.lease_token=$4 AND j.lease_expires_at > now()
+             )
+           RETURNING o.id,o.status,o.last_error_code`,
+          [deliveryId,jobId,workerId,leaseToken]
+        );
+        if (updated.rows[0]) return {accepted:true,...updated.rows[0]};
+        return {accepted:false,reason:"lease_lost"};
       });
     }
   });

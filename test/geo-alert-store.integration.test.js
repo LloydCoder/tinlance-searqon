@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { withUserTransaction } from "../src/platform/database.js";
 import { createGeoAlertStore } from "../src/platform/geo-alert-store.js";
+import { createAlertDestinationStore } from "../src/platform/alert-destinations.js";
+import { createJobQueue } from "../src/platform/jobs.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 let disposable = false;
@@ -34,6 +36,7 @@ function comparison({suffix,baselineId,currentId,baselineAt,currentAt,evaluatedA
 test("GEO alert snapshots, events and cooldowns persist idempotently under tenant RLS", { skip: !disposable }, async () => {
   const owner = new Pool({connectionString:databaseUrl});
   const runtime = new Pool({connectionString:process.env.SEARQON_RUNTIME_DATABASE_URL,max:4});
+  const worker = new Pool({connectionString:process.env.SEARQON_WORKER_DATABASE_URL,max:3});
   const userA = randomUUID();
   const userB = randomUUID();
   const orgA = randomUUID();
@@ -41,6 +44,12 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
   const email = id => id+"@geo-alert-store.example.test";
   const firstClock = new Date("2026-11-17T12:01:00.000Z");
   const store = createGeoAlertStore({database:{pool:runtime},now:()=>firstClock});
+  const destinationStore = createAlertDestinationStore({
+    database:{pool:runtime},workerPool:worker,
+    encryptionKeyring:{currentVersion:"test-k1",keys:{"test-k1":randomBytes(32)}}
+  });
+  const queue = createJobQueue({database:{pool:runtime},workerPool:worker});
+  const workerId = "worker-node-alerts";
   try {
     await owner.query(
       "INSERT INTO searqon.app_users (id,email,display_name) VALUES ($1,$2,'Alert A'),($3,$4,'Alert B')",
@@ -55,6 +64,11 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
       [orgA,userA,orgB,userB]
     );
 
+    const destination = await destinationStore.create(userA,orgA,{
+      channel:"slack",displayName:"GEO alerts",
+      secret:"https://hooks.slack.com/services/T000/B000/alert-delivery-secret"
+    });
+
     const firstInput = comparison({
       suffix:"one",baselineId:"baseline-1",currentId:"current-1",
       baselineAt:"2026-11-01T00:00:00.000Z",currentAt:"2026-11-17T00:00:00.000Z",
@@ -63,11 +77,14 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
     const first = await store.recordComparison(userA,orgA,firstInput);
     assert.equal(first.summary.emitted,1);
     assert.equal(first.summary.suppressed,0);
+    assert.equal(first.summary.queuedDeliveries,1);
     assert.equal(first.events[0].state,"emitted");
+    assert.equal(first.events[0].deliveries.length,1);
     assert.equal(first.baselineSnapshot.idempotentReplay,false);
 
     const replay = await store.recordComparison(userA,orgA,firstInput);
     assert.equal(replay.summary.idempotentReplays,1);
+    assert.equal(replay.summary.queuedDeliveries,0);
     assert.equal(replay.events[0].eventId,first.events[0].eventId);
     await assert.rejects(
       store.recordComparison(userA,orgA,{...firstInput,baseline:[{cohort:"tampered",sampleSize:30,mentionCount:12}]}),
@@ -112,6 +129,7 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
     });
     const emittedAgain = await laterStore.recordComparison(userA,orgA,later);
     assert.equal(emittedAgain.summary.emitted,1);
+    assert.equal(emittedAgain.summary.queuedDeliveries,1);
 
     const concurrent = comparison({
       suffix:"concurrent",baselineId:"baseline-concurrent",currentId:"current-concurrent",
@@ -127,6 +145,56 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
     ]);
     assert.equal(concurrentResults.reduce((sum,result)=>sum+result.summary.emitted,0),1);
     assert.equal(concurrentResults.reduce((sum,result)=>sum+result.summary.idempotentReplays,0),1);
+    assert.equal(concurrentResults.reduce((sum,result)=>sum+result.summary.queuedDeliveries,0),1);
+
+    const outbox = await owner.query(
+      "SELECT id,job_id,status FROM searqon.alert_delivery_outbox WHERE organization_id=$1 ORDER BY created_at,id",
+      [orgA]
+    );
+    assert.equal(outbox.rows.length,3);
+    assert.ok(outbox.rows.every(row=>row.status==="queued"));
+    const deliveryJobs = await owner.query(
+      "SELECT id,job_type,payload FROM searqon.jobs WHERE organization_id=$1 AND job_type='alert_delivery'",
+      [orgA]
+    );
+    assert.equal(deliveryJobs.rows.length,3);
+
+    const claimed = await queue.claim(workerId,{limit:1,leaseSeconds:30});
+    const deliveryJob = claimed.find(job=>job.jobType==="alert_delivery");
+    assert.ok(deliveryJob);
+    const deliveryId = deliveryJob.payload.deliveryId;
+    assert.equal(await destinationStore.getDelivery(workerId,deliveryId,deliveryJob.id,randomUUID()),null);
+    const rejectedMark = await destinationStore.markDelivered(workerId,deliveryId,deliveryJob.id,randomUUID(),{providerReceiptId:"stale-worker"});
+    assert.equal(rejectedMark.accepted,false);
+    const delivery = await destinationStore.getDelivery(workerId,deliveryId,deliveryJob.id,deliveryJob.leaseToken);
+    assert.equal(delivery.status,"queued");
+    assert.equal(delivery.destination.secret,"https://hooks.slack.com/services/T000/B000/alert-delivery-secret");
+    assert.equal(delivery.eventPayload.type,"mention_change");
+    const marked = await destinationStore.markDelivered(workerId,deliveryId,deliveryJob.id,deliveryJob.leaseToken,{providerReceiptId:"slack-test-receipt"});
+    assert.equal(marked.accepted,true);
+    assert.equal((await queue.complete(workerId,deliveryJob.id,deliveryJob.leaseToken)).accepted,true);
+    const deliveredRow = await owner.query("SELECT status,provider_receipt_id FROM searqon.alert_delivery_outbox WHERE id=$1",[deliveryId]);
+    assert.equal(deliveredRow.rows[0].status,"delivered");
+    assert.equal(deliveredRow.rows[0].provider_receipt_id,"slack-test-receipt");
+
+    await destinationStore.disable(userA,orgA,destination.id);
+    const nextClaim = await queue.claim(workerId,{limit:1,leaseSeconds:30});
+    const cancelledJob = nextClaim.find(job=>job.jobType==="alert_delivery");
+    assert.ok(cancelledJob);
+    const disabledDelivery = await destinationStore.getDelivery(
+      workerId,cancelledJob.payload.deliveryId,cancelledJob.id,cancelledJob.leaseToken
+    );
+    assert.equal(disabledDelivery.destinationDisabled,true);
+    const cancelled = await destinationStore.markCancelled(
+      workerId,cancelledJob.payload.deliveryId,cancelledJob.id,cancelledJob.leaseToken
+    );
+    assert.equal(cancelled.accepted,true);
+    assert.equal((await queue.complete(workerId,cancelledJob.id,cancelledJob.leaseToken)).accepted,true);
+    const outboxStates = await owner.query(
+      "SELECT status,count(*)::int AS count FROM searqon.alert_delivery_outbox WHERE organization_id=$1 GROUP BY status ORDER BY status",
+      [orgA]
+    );
+    assert.deepEqual(outboxStates.rows.map(row=>[row.status,row.count]),[["cancelled",1],["delivered",1],["queued",1]]);
 
     const hidden = await withUserTransaction(runtime,userB,client => client.query(
       "SELECT id FROM searqon.geo_alert_events WHERE organization_id=$1",[orgA]
@@ -158,6 +226,7 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
     );
     assert.deepEqual(eventCounts.rows.map(row=>[row.state,row.count]),[["emitted",3],["suppressed",2]]);
   } finally {
+    await worker.end();
     await runtime.end();
     await owner.end();
   }

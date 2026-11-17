@@ -58,16 +58,29 @@ test("alert destination secrets are encrypted, unreadable to request runtime and
     assert.notEqual(ciphertext.rows[0].secret_ciphertext.toString("utf8"),secret);
     assert.equal(ciphertext.rows[0].key_version,"test-k1");
 
+    const workerClient = await worker.connect();
+    try {
+      await workerClient.query("BEGIN");
+      await workerClient.query("SET LOCAL ROLE searqon_worker");
+      await workerClient.query("SELECT set_config('searqon.worker_id',$1,true)",["worker-node-alerts"]);
+      const unleasedSecret = await workerClient.query(
+        "SELECT id FROM searqon.alert_destinations WHERE id=$1",[created.id]
+      );
+      assert.equal(unleasedSecret.rows.length,0);
+      await workerClient.query("COMMIT");
+    } catch (error) {
+      await workerClient.query("ROLLBACK").catch(()=>{});
+      throw error;
+    } finally {
+      workerClient.release();
+    }
+
     await assert.rejects(
       withUserTransaction(runtime,userA,client => client.query(
         "SELECT secret_ciphertext FROM searqon.alert_destinations WHERE id=$1",[created.id]
       )),
       error => error.code === "42501"
     );
-    const decrypted = await store.getForDelivery("worker-node-alerts",orgA,created.id);
-    assert.equal(decrypted.secret,secret);
-    assert.equal(decrypted.displayName,"Operations alerts");
-
     const hidden = await store.list(userB,orgA);
     assert.equal(hidden.length,0);
     await assert.rejects(
@@ -81,7 +94,7 @@ test("alert destination secrets are encrypted, unreadable to request runtime and
 
     const disabled = await store.disable(userA,orgA,created.id);
     assert.equal(disabled.status,"disabled");
-    assert.equal(await store.getForDelivery("worker-node-alerts",orgA,created.id),null);
+    assert.equal((await store.list(userA,orgA))[0].status,"disabled");
 
     const audit = await owner.query(
       "SELECT event_type,subject_type,subject_id FROM searqon.audit_events WHERE organization_id=$1 AND subject_id=$2 ORDER BY id",
