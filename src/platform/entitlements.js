@@ -55,7 +55,9 @@ function limitsFor(plan, approvedOverrides, now) {
       projects: 'projects', teamMembers: 'teamMembers', trackedPrompts: 'trackedPrompts',
       aiEngines: 'aiEngines', localesPerProject: 'localesPerProject',
       aiAnswerChecksPerMonth: 'aiAnswerChecksPerMonth', crawlPagesPerMonth: 'crawlPagesPerMonth',
-      trackedKeywords: 'trackedKeywords', apiRequestsPerMonth: 'apiRequestsPerMonth'
+      trackedKeywords: 'trackedKeywords', apiRequestsPerMonth: 'apiRequestsPerMonth',
+      evidenceHistoryDays: 'evidenceHistoryDays', scheduledReportsPerMonth: 'scheduledReportsPerMonth',
+      manualAssessmentsPerMonth: 'manualAssessmentsPerMonth', suppliedGeoObservationsPerMonth: 'suppliedGeoObservationsPerMonth'
     })[key];
     if (ceilingKey && value > ENTITLEMENTS.hardSafetyCeilings[ceilingKey]) {
       throw new Error(`Override exceeds hard safety ceiling for ${key}`);
@@ -111,6 +113,9 @@ export function authorizeUsage({
   assertNonNegativeInteger(requested, 'requested');
   assertNonNegativeInteger(overage.spendCapMicroUsd ?? 0, 'spendCapMicroUsd');
   assertNonNegativeInteger(overage.spentMicroUsd ?? 0, 'spentMicroUsd');
+  if ((overage.spendCapMicroUsd ?? 0) > ENTITLEMENTS.hardSafetyCeilings.maxOverageSpendMicroUsd) {
+    throw new RangeError('Spend cap exceeds the platform hard safety ceiling');
+  }
   const limitKey = ({
     ai_answer_checks: 'aiAnswerChecksPerMonth',
     crawl_pages: 'crawlPagesPerMonth',
@@ -122,6 +127,7 @@ export function authorizeUsage({
   const limit = entitlements.plan === 'trial' && meter === 'ai_answer_checks'
     ? ENTITLEMENTS.billing.trial.totalAiAnswerChecks
     : entitlements.limits[limitKey];
+  if (!Number.isSafeInteger(used + requested)) throw new RangeError('Requested usage exceeds safe integer precision');
   const priorOverage = Math.max(0, used - limit);
   const newOverage = Math.max(0, used + requested - limit);
   const billableOverage = newOverage - priorOverage;
