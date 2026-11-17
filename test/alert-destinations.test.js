@@ -47,7 +47,7 @@ test("destination secrets are validated against channel-specific endpoint rules"
 
 test("keyring validation fails closed for missing, malformed or weak keys", () => {
   assert.throws(() => encryptDestinationSecret({secret:"A".repeat(32),organizationId:tenant,destinationId:destination,channel:"pagerduty",keyring:{currentVersion:"k1",keys:{}}}),error=>error.code==="encryption_key_unavailable");
-  assert.throws(() => encryptDestinationSecret({secret:"x",organizationId:tenant,destinationId:destination,channel:"pagerduty",keyring:{currentVersion:"k1",keys:{k1:Buffer.alloc(16)}}}),error=>error.code==="encryption_key_unavailable");
+  assert.throws(() => encryptDestinationSecret({secret:"A".repeat(32),organizationId:tenant,destinationId:destination,channel:"pagerduty",keyring:{currentVersion:"k1",keys:{k1:Buffer.alloc(16)}}}),error=>error.code==="encryption_key_unavailable");
 });
 
 test("alert destination store requires a PostgreSQL pool and a valid keyring", () => {
