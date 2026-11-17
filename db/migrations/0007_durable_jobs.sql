@@ -176,6 +176,7 @@ GRANT SELECT, INSERT ON searqon.jobs TO searqon_app;
 GRANT SELECT, INSERT ON searqon.job_events TO searqon_app;
 GRANT SELECT, UPDATE ON searqon.jobs TO searqon_worker;
 GRANT SELECT, INSERT ON searqon.job_events TO searqon_worker;
+GRANT USAGE ON SEQUENCE searqon.job_events_id_seq TO searqon_app,searqon_worker;
 GRANT USAGE ON SCHEMA searqon TO searqon_worker;
 
 COMMIT;
