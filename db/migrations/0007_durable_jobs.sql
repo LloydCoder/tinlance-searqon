@@ -126,13 +126,13 @@ ALTER TABLE searqon.job_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE searqon.job_events FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY jobs_member_read ON searqon.jobs
-  FOR SELECT USING (EXISTS (
+  FOR SELECT TO searqon_app USING (EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = jobs.organization_id
       AND m.user_id = searqon.current_user_id()
   ));
 CREATE POLICY jobs_writer_insert ON searqon.jobs
-  FOR INSERT WITH CHECK (
+  FOR INSERT TO searqon_app WITH CHECK (
     created_by = searqon.current_user_id()
     AND EXISTS (
       SELECT 1 FROM searqon.memberships m
@@ -145,13 +145,13 @@ CREATE POLICY jobs_worker_access ON searqon.jobs
   FOR ALL TO searqon_worker USING (true) WITH CHECK (true);
 
 CREATE POLICY job_events_member_read ON searqon.job_events
-  FOR SELECT USING (EXISTS (
+  FOR SELECT TO searqon_app USING (EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = job_events.organization_id
       AND m.user_id = searqon.current_user_id()
   ));
 CREATE POLICY job_events_user_insert ON searqon.job_events
-  FOR INSERT WITH CHECK (
+  FOR INSERT TO searqon_app WITH CHECK (
     actor_kind = 'user'
     AND actor_user_id = searqon.current_user_id()
     AND worker_id IS NULL
