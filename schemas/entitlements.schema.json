@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://searqon.tinlance.com/schemas/entitlements/1.0.0",
+  "title": "Searqon Entitlement Configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "currency",
+    "billing",
+    "hardSafetyCeilings",
+    "meters",
+    "plans"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "currency": {
+      "const": "USD"
+    },
+    "billing": {
+      "type": "object",
+      "required": [
+        "annualDiscountBasisPoints",
+        "trial",
+        "usagePeriod",
+        "unusedUsageRollover",
+        "overageDefaultEnabled",
+        "overageRequiresSpendCap",
+        "notifyAtPercent",
+        "currencyPrecision"
+      ],
+      "properties": {
+        "annualDiscountBasisPoints": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "trial": {
+          "type": "object",
+          "required": [
+            "durationDays",
+            "plan",
+            "cardRequired",
+            "autoConvert",
+            "onExpiry",
+            "totalAiAnswerChecks"
+          ],
+          "properties": {
+            "durationDays": {
+              "const": 14
+            },
+            "plan": {
+              "const": "trial"
+            },
+            "cardRequired": {
+              "const": false
+            },
+            "autoConvert": {
+              "const": false
+            },
+            "onExpiry": {
+              "const": "downgrade_to_free"
+            },
+            "totalAiAnswerChecks": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "usagePeriod": {
+          "const": "subscription_month"
+        },
+        "unusedUsageRollover": {
+          "const": false
+        },
+        "overageDefaultEnabled": {
+          "const": false
+        },
+        "overageRequiresSpendCap": {
+          "const": true
+        },
+        "notifyAtPercent": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [
+              80,
+              100
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "currencyPrecision": {
+          "const": "micro_usd"
+        }
+      },
+      "additionalProperties": false
+    },
+    "hardSafetyCeilings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "meters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "unit",
+          "overageBlock"
+        ],
+        "properties": {
+          "unit": {
+            "type": "string"
+          },
+          "overageBlock": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "plans": {
+      "type": "object",
+      "required": [
+        "free",
+        "starter",
+        "growth",
+        "agency",
+        "business",
+        "enterprise",
+        "trial"
+      ],
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "monthlyPriceUsd",
+          "annualPriceUsd",
+          "limits",
+          "features",
+          "overageRatesMicroUsd"
+        ],
+        "properties": {
+          "monthlyPriceUsd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "annualPriceUsd": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "features": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "overageRatesMicroUsd": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

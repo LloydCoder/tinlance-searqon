@@ -64,6 +64,19 @@
       "notes": "Proposed corrections and supporting sources; approval is mandatory and auto-publishing is structurally prohibited."
     },
     {
+      "name": "entitlements",
+      "file": "entitlements.schema.json",
+      "schemaId": "https://searqon.tinlance.com/schemas/entitlements/1.0.0",
+      "contractVersion": "1.0.0",
+      "versionField": null,
+      "status": "experimental",
+      "consumers": [
+        "hosted-entitlement-resolver",
+        "billing-and-usage-policy"
+      ],
+      "notes": "Versioned plan, quota, feature and overage configuration. Proposed commercial contract; hosted persistence, payment settlement and atomic quota reservations are separate implementation gates."
+    },
+    {
       "name": "evidence-ledger-checkpoint",
       "file": "evidence-ledger-checkpoint.schema.json",
       "schemaId": "https://tinlance.com/schemas/evidence-ledger-checkpoint-1.0.0.json",
