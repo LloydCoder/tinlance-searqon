@@ -34,7 +34,7 @@ test("AES-256-GCM destination encryption binds ciphertext to tenant, destination
 
 test("destination secrets are validated against channel-specific endpoint rules", () => {
   assert.equal(validateAlertDestinationSecret("slack","https://hooks.slack.com/services/T000/B000/secret"),"https://hooks.slack.com/services/T000/B000/secret");
-  assert.equal(validateAlertDestinationSecret("teams","https://tenant.webhook.office.com/webhookb2/secret"),"https://tenant.webhook.office.com/webhookb2/secret");
+  assert.throws(() => validateAlertDestinationSecret("teams","https://tenant.webhook.office.com/webhookb2/legacy"),error=>error.code==="invalid_destination_secret");
   assert.equal(validateAlertDestinationSecret("teams","https://tenant.logic.azure.com/workflows/secret?sig=secret"),"https://tenant.logic.azure.com/workflows/secret?sig=secret");
   assert.equal(validateAlertDestinationSecret("pagerduty","A".repeat(32)),"A".repeat(32));
   assert.throws(() => validateAlertDestinationSecret("slack","https://attacker.example/services/secret"),error=>error.code==="invalid_destination_secret");
