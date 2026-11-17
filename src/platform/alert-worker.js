@@ -20,7 +20,7 @@ export function createAlertDeliveryWorker({
   const destinationStore = createAlertDestinationStore({
     database,
     workerPool: database.pool,
-    keyring: encryptionKeyring
+    encryptionKeyring
   });
   const handler = createAlertDeliveryHandler({ destinationStore, sender });
   return createWorkerRunner({
