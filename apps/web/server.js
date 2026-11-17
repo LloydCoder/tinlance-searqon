@@ -20,7 +20,11 @@ const MIME_TYPES = Object.freeze({
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".ico": "image/x-icon",
-  ".webmanifest": "application/manifest+json; charset=utf-8"
+  ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+  ".webp": "image/webp",
+  ".woff2": "font/woff2"
 });
 
 function sendJson(response, status, payload) {
@@ -38,7 +42,7 @@ function applySecurityHeaders(response) {
   response.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
   response.setHeader("cross-origin-resource-policy", "same-origin");
   if (process.env.NODE_ENV === "production") response.setHeader("strict-transport-security", "max-age=31536000; includeSubDomains");
-  response.setHeader("content-security-policy", "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; font-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; upgrade-insecure-requests");
+  response.setHeader("content-security-policy", "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com; script-src 'self'; connect-src 'self'; upgrade-insecure-requests");
 }
 
 async function readJsonBody(request, maxBytes = MAX_BODY_BYTES) {
