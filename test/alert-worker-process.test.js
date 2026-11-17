@@ -78,6 +78,7 @@ test("worker loop closes its database and emits only aggregate safe telemetry", 
   const events = [];
   let closed = false;
   let cycles = 0;
+  let workerOptions;
   const database = {
     pool: { async connect() { return { async query(sql) {
       if (sql.includes("has_table_privilege")) return { rows: [{
@@ -93,19 +94,25 @@ test("worker loop closes its database and emits only aggregate safe telemetry", 
     env,
     signal: controller.signal,
     createDatabaseImpl: () => database,
-    createWorkerImpl: () => ({
+    createWorkerImpl: options => {
+      workerOptions = options;
+      return ({
       async runOnce() {
         cycles++;
         controller.abort();
         return { claimed: 1, completed: 1, retried: 0, failed: 0, leaseLost: 0, runnerErrors: 0 };
       }
-    }),
+    });
+    },
     logger: {
       info(value) { events.push(value); },
       error(value) { events.push(value); }
     }
   });
   assert.equal(cycles, 1);
+  assert.equal(workerOptions.workerId, "worker-alerts-01");
+  assert.equal(workerOptions.concurrency, 3);
+  assert.equal(workerOptions.encryptionKeyring.currentVersion, "v1");
   assert.equal(closed, true);
   assert.deepEqual(result, { stopped: true });
   assert.deepEqual(events, [{
