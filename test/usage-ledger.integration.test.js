@@ -69,6 +69,25 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
     assert.equal(new Date(first.periodStart).toISOString(), periodStart);
     assert.equal(new Date(first.periodEnd).toISOString(), periodEnd);
     assert.equal(first.includedReservedUnits, 5);
+    const changedPolicy = createUsageLedger({
+      database,
+      getEntitlements: async () => ({
+        ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }),
+        limits: {
+          ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }).limits,
+          aiAnswerChecksPerMonth: 1500,
+          trackedKeywords: 999
+        },
+        billingPeriod: { start: periodStart, end: periodEnd },
+        overage: { enabled: false, spendCapMicroUsd: 0 }
+      })
+    });
+    await assert.rejects(
+      changedPolicy.reserve(userA, orgA, {
+        meter: "crawl_pages", quantity: 1, idempotencyKey: "usage-policy-change-01"
+      }),
+      error => error.code === "usage_policy_changed"
+    );
     assert.equal(first.overageReservedUnits, 0);
 
     const [second, third] = await Promise.all([
