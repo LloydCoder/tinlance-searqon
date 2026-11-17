@@ -86,7 +86,10 @@ test("shared marketing styles preserve the brand palette and responsive layout",
     assert.match(css, /@media\s*\(max-width:\s*720px\)/);
     assert.equal(/linear-gradient|radial-gradient|conic-gradient/i.test(css), false);
     const page = await fetch(base + "/product/");
-    assert.match(page.headers.get("content-security-policy"), /fonts\.googleapis\.com/);
+    const csp = page.headers.get("content-security-policy");
+    assert.match(csp, /fonts\.googleapis\.com/);
+    assert.match(csp, /fonts\.gstatic\.com/);
+    if (process.env.NODE_ENV !== "production") assert.doesNotMatch(csp, /upgrade-insecure-requests/);
   });
 });
 
