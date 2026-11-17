@@ -49,7 +49,7 @@
 .page-footer-brand img{width:100px;display:block}
 .page-footer-links{display:flex;flex-wrap:wrap;gap:20px}
 .page-footer-links a,.page-footer-note{font-size:11px;color:var(--page-slate)}
-.page-footer-note{font:9px "DM Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}
+.page-footer-note{font:9px "DM Mono",ui-monospace,monospace;letter-spacing:.04em}
 .page-breadcrumb{font:10px "DM Mono",ui-monospace,monospace;letter-spacing:.1em;color:var(--page-slate);text-transform:uppercase}
 .page-breadcrumb a{color:var(--page-amber-deep)}
 .page-inline-link{color:var(--page-amber-deep);text-decoration:underline;text-underline-offset:3px}
