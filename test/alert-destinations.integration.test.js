@@ -84,7 +84,7 @@ test("alert destination secrets are encrypted, unreadable to request runtime and
     assert.equal(await store.getForDelivery("worker-node-alerts",orgA,created.id),null);
 
     const audit = await owner.query(
-      "SELECT event_type,subject_type,subject_id FROM searqon.audit_events WHERE organization_id=$1 AND subject_id=$2 ORDER BY created_at",
+      "SELECT event_type,subject_type,subject_id FROM searqon.audit_events WHERE organization_id=$1 AND subject_id=$2 ORDER BY id",
       [orgA,created.id]
     );
     assert.deepEqual(audit.rows.map(row=>row.event_type),["alert_destination.created","alert_destination.disabled"]);
