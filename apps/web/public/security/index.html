@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12203A">\n  <link rel="preconnect" href="https://fonts.googleapis.com">\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="description" content="Understand Searqon's implemented security controls, data boundaries and remaining independent assurance requirements.">
+  <link rel="canonical" href="https://searqon.tinlance.com/security/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://searqon.tinlance.com/security/">
+  <meta property="og:title" content="Security and trust — Searqon™">
+  <meta property="og:description" content="Understand Searqon's implemented security controls, data boundaries and remaining independent assurance requirements.">
+  <meta name="twitter:card" content="summary">
+  <title>Security and trust — Searqon™</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/pages.css">
+  <script src="/pages.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="page-header">
+    <div class="page-nav-shell">
+      <a class="page-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+      <button class="page-nav-toggle" type="button" aria-expanded="false" aria-controls="page-primary-nav" aria-label="Open navigation"><span></span><span></span></button>
+      <nav class="page-primary-nav" id="page-primary-nav" aria-label="Main navigation">
+        <a href="/product/">Product</a><a href="/solutions/">Solutions</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a>
+      </nav>
+      <a class="page-cta" href="/auth/register/">Get started <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+  <main id="main">
+  <section class="page-shell page-hero"><div class="page-kicker">SECURITY & TRUST</div><h1>Security and trust.<br><em>Designed to make boundaries visible.</em></h1><p>Searqon handles discovery data and technical evidence. Its security posture must be inspectable, scoped and honest about what has—and has not—been independently verified.</p></section>
+  <section class="page-shell page-section"><div class="page-grid">
+    <article class="page-card"><span class="page-label">ACQUISITION</span><h3>Bounded by authorization</h3><p>Remote scanning is an explicit operator action. The scanner applies URL and DNS policy, redirect destination checks, robots handling and bounded retrieval. It does not recursively crawl a site or execute page JavaScript.</p></article>
+    <article class="page-card"><span class="page-label">APPLICATION</span><h3>Tenant-aware foundations</h3><p>The repository includes passwordless email authentication, server-side session digests, same-origin write checks, secure production cookie settings and PostgreSQL row-level security for organization-scoped data.</p></article>
+    <article class="page-card"><span class="page-label">EVIDENCE</span><h3>Integrity with stated limits</h3><p>Evidence records and local ledgers support content digests, hash-linked entries and detached Ed25519 checkpoints. The local ledger is not encrypted, WORM storage or distributed multi-writer custody.</p></article>
+    <article class="page-card"><span class="page-label">DELIVERY</span><h3>Secure development controls</h3><p>The repository runs Node.js 22/24 tests, PostgreSQL integration checks, CodeQL and full-history secret scanning in CI. Dependency and release checks are also part of the pipeline.</p></article>
+  </div></section>
+  <section class="page-shell page-section"><div class="page-eyebrow">ASSURANCE STATUS</div><h2>Controls are not<br><em>certifications.</em></h2><p>Searqon does not claim SOC 2, ISO 27001, a completed independent penetration test or formal OWASP ASVS certification. The OWASP Top 10:2025 and ASVS 5.0 are useful reference frameworks; conformance requires a scoped, evidence-backed verification process.</p><div class="page-callout"><strong>Before production launch</strong><p>Independent security testing, privacy and legal review, backup/restore exercises, operational telemetry, incident response, deployment controls and customer acceptance remain required gates.</p></div></section>
+  <section class="page-shell page-section"><h2>Report a vulnerability.</h2><p>Use the repository's published <a class="page-inline-link" href="https://github.com/LloydCoder/tinlance-searqon/blob/main/SECURITY.md">security policy</a> for responsible disclosure. Please do not publish sensitive vulnerability details in a public issue.</p></section>
+  </main>
+  <footer class="page-footer">
+    <div class="page-footer-inner">
+      <a class="page-footer-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+      <nav class="page-footer-links" aria-label="Footer navigation">
+        <a href="/methodology/">Methodology</a><a href="/security/">Security</a><a href="/docs/">Documentation</a><a href="/contact/">Contact</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/LloydCoder/tinlance-searqon">GitHub</a>
+      </nav>
+      <span class="page-footer-note">Searqon™ by Tinlance · Early alpha</span>
+    </div>
+  </footer>
+</body>
+</html>

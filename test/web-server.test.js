@@ -100,7 +100,8 @@ test("landing page follows the brand kit prohibition on gradients and magnifier 
     const page = await response.text();
     const stylesheet = await fetch(base + "/styles.css").then(result => result.text());
     assert.equal(page.includes("<linearGradient"), false);
-    assert.match(page, /circle cx="10\.8"/);
+    assert.match(page, /M6 3\.5h8l4 4V20H6z/);
+    assert.doesNotMatch(page, /m16 16 5 5/);
     assert.match(stylesheet, /#E8A33D/);
   });
 });

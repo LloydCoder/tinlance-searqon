@@ -67,3 +67,26 @@ The complete hosted product belongs in this same Searqon repository. Keep the op
 ## Passwordless authentication
 
 The same repository includes email-based registration, one-time magic-link login, server-side sessions, same-origin checks, cookie handling and an authenticated workspace shell. See [the authentication security and operations guide](AUTHENTICATION.md). Authentication is enabled only when a PostgreSQL runtime URL is configured. Email delivery uses Resend when configured; local-only console delivery requires explicit `SEARQON_EMAIL_MODE=console`. The workspace now supports organization-scoped project creation/list/detail and persisted document assessments. The four-discipline overview reports findings and coverage only; it does not fabricate scores or imply that a partial document analysis measures live GEO visibility.
+
+
+## Public website and discoverability
+
+The static public website is served from apps/web/public/ by the same Node.js server and remains in this repository. The landing page follows the approved Searqon visual reference and brand kit: Ink Navy, Ivory, Signal Amber, Instrument Sans and DM Mono; the dashboard sample is explicitly illustrative. Do not use the preview values as customer data or claim that they are live metrics.
+
+Public content routes:
+
+- / — landing page and supplied-document analyzer.
+- /product/ — implemented capabilities and explicit limitations.
+- /solutions/ — use cases by team.
+- /methodology/ — evidence classes, assessment scope and measurement boundaries.
+- /docs/ — documentation index linking to repository-owned references.
+- /pricing/ — explains that no paid hosted plans are currently offered.
+- /security/ — describes implemented controls and outstanding independent assurance gates.
+- /about/ and /contact/ — product context and support channels.
+- /privacy/ and /terms/ — early-alpha transparency/draft notices. These are not substitutes for final legal review or a complete production privacy notice.
+
+The public root also serves robots.txt, sitemap.xml and llms.txt. Unknown browser-facing paths return the branded 404 page with an HTTP 404 status; API misses remain structured JSON responses. llms.txt is descriptive only; it is not a ranking mechanism and does not guarantee model ingestion. Authentication and workspace routes remain disallowed from crawler indexing. The website uses canonical URLs and responsive shared page styles, and the mobile navigation supports keyboard dismissal.
+
+The brand fonts are currently loaded through Google Fonts. This is disclosed in the privacy notice because the font request exposes normal connection metadata to Google's font infrastructure. Self-hosting the licensed brand font files is a preferred privacy/performance follow-up before general availability.
+
+The homepage analyzer accepts caller-supplied documents only. In production, the endpoint requires an authenticated session; an unauthenticated response offers a clear registration/sign-in path. The persisted workspace assessment route is separate and stores the report in project history.

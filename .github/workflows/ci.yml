@@ -105,7 +105,7 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
-          for file in src/*.js src/security/*.js src/platform/*.js test/*.js apps/web/server.js apps/web/public/app.js; do
+          for file in src/*.js src/security/*.js src/platform/*.js test/*.js apps/web/server.js apps/web/public/app.js apps/web/public/pages.js apps/web/public/app/workspace.js apps/web/public/auth/auth.js; do
             node --check "$file"
           done
       - name: Run test suite
