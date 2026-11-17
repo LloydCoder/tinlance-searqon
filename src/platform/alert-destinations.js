@@ -72,6 +72,15 @@ export function validateAlertDestinationSecret(channel, secret) {
   return url.toString();
 }
 
+function snapshotKeyring(keyring) {
+  const current = normalizeKey(keyring);
+  const keys = Object.create(null);
+  for (const version of Object.keys(keyring.keys)) {
+    keys[version] = normalizeKey(keyring,version).key;
+  }
+  return Object.freeze({currentVersion:current.version,keys:Object.freeze(keys)});
+}
+
 function aad({organizationId,destinationId,channel,keyVersion}) {
   return Buffer.from(["searqon-alert-destination","v1",organizationId,destinationId,channel,keyVersion].join(":"));
 }
@@ -171,7 +180,7 @@ export function createAlertDestinationStore({database,workerPool=null,encryption
   if (!encryptionKeyring || typeof encryptionKeyring !== "object") {
     throw new TypeError("A valid destination encryption keyring is required.");
   }
-  normalizeKey(encryptionKeyring);
+  const keyring = snapshotKeyring(encryptionKeyring);
 
   return Object.freeze({
     async create(userId,organizationId,input) {
@@ -187,7 +196,7 @@ export function createAlertDestinationStore({database,workerPool=null,encryption
       }
       const id = randomUUID();
       const encrypted = encryptDestinationSecret({
-        secret:input.secret,organizationId,destinationId:id,channel:input.channel,keyring:encryptionKeyring
+        secret:input.secret,organizationId,destinationId:id,channel:input.channel,keyring
       });
       return withUserTransaction(database.pool,userId,async client => {
         await requireWriter(client,organizationId,userId);
@@ -249,7 +258,7 @@ export function createAlertDestinationStore({database,workerPool=null,encryption
         const secret = decryptDestinationSecret({
           ciphertext:row.secret_ciphertext,nonce:row.secret_nonce,tag:row.secret_tag,
           keyVersion:row.key_version,secretSha256:row.secret_sha256,
-          organizationId:row.organization_id,destinationId:row.id,channel:row.channel,keyring:encryptionKeyring
+          organizationId:row.organization_id,destinationId:row.id,channel:row.channel,keyring
         });
         return {
           id:row.id,organizationId:row.organization_id,channel:row.channel,
