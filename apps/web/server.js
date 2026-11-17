@@ -143,7 +143,25 @@ function validateAssessmentInput(input) {
   return { source: source.trim(), contentType: input.contentType, content: input.content };
 }
 
-async function serveStatic(pathname, response, headOnly = false) {
+async function sendStaticNotFound(response, headOnly, acceptsHtml) {
+  if (acceptsHtml) {
+    try {
+      const body = await readFile(resolve(ROOT, "404.html"));
+      response.writeHead(404, {
+        "content-type": "text/html; charset=utf-8",
+        "content-length": body.length,
+        "cache-control": "no-cache"
+      });
+      response.end(headOnly ? undefined : body);
+      return;
+    } catch {
+      // Fall through to the structured response if the custom page is unavailable.
+    }
+  }
+  sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
+}
+
+async function serveStatic(pathname, response, headOnly = false, acceptsHtml = false) {
   let decoded;
   try {
     decoded = decodeURIComponent(pathname);
@@ -177,7 +195,7 @@ async function serveStatic(pathname, response, headOnly = false) {
     const extension = extname(fileRealPath).toLowerCase();
     const contentType = MIME_TYPES[extension];
     if (!contentType) {
-      sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
+      await sendStaticNotFound(response, headOnly, acceptsHtml);
       return;
     }
     const body = await readFile(fileRealPath);
@@ -188,7 +206,7 @@ async function serveStatic(pathname, response, headOnly = false) {
     });
     response.end(headOnly ? undefined : body);
   } catch {
-    sendJson(response, 404, { error: { code: "not_found", message: "Resource not found." } });
+    await sendStaticNotFound(response, headOnly, acceptsHtml);
   }
 }
 
@@ -442,7 +460,7 @@ export function createAppServer({ database = null, authService = null, workspace
       sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or HEAD." } });
       return;
     }
-    await serveStatic(url.pathname, response, request.method === "HEAD");
+    await serveStatic(url.pathname, response, request.method === "HEAD", request.headers.accept?.includes("text/html") ?? false);
   });
   server.headersTimeout = 10_000;
   server.requestTimeout = 30_000;
