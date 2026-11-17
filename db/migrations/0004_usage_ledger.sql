@@ -16,20 +16,16 @@ CREATE TABLE searqon.usage_period_counters (
   CONSTRAINT usage_period_bounds CHECK (period_end > period_start),
   CONSTRAINT usage_period_identity UNIQUE (organization_id, meter, period_start, period_end),
   CONSTRAINT usage_period_meter_ceiling CHECK (
-    CASE meter
-      WHEN 'ai_answer_checks' THEN included_limit <= 1000000
-      WHEN 'crawl_pages' THEN included_limit <= 5000000
-      WHEN 'keyword_months' THEN included_limit <= 1000000
-      WHEN 'api_requests' THEN included_limit <= 5000000
-    END
+    (meter = 'ai_answer_checks' AND included_limit <= 1000000)
+    OR (meter = 'crawl_pages' AND included_limit <= 5000000)
+    OR (meter = 'keyword_months' AND included_limit <= 1000000)
+    OR (meter = 'api_requests' AND included_limit <= 5000000)
   ),
   CONSTRAINT usage_period_total_meter_ceiling CHECK (
-    CASE meter
-      WHEN 'ai_answer_checks' THEN consumed_units + reserved_units <= 1000000
-      WHEN 'crawl_pages' THEN consumed_units + reserved_units <= 5000000
-      WHEN 'keyword_months' THEN consumed_units + reserved_units <= 1000000
-      WHEN 'api_requests' THEN consumed_units + reserved_units <= 5000000
-    END
+    (meter = 'ai_answer_checks' AND consumed_units + reserved_units <= 1000000)
+    OR (meter = 'crawl_pages' AND consumed_units + reserved_units <= 5000000)
+    OR (meter = 'keyword_months' AND consumed_units + reserved_units <= 1000000)
+    OR (meter = 'api_requests' AND consumed_units + reserved_units <= 5000000)
   ),
   CONSTRAINT usage_period_units_safe CHECK (
     consumed_units <= 9007199254740991
@@ -80,12 +76,10 @@ CREATE TABLE searqon.usage_reservations (
   settled_at timestamptz,
   CONSTRAINT usage_reservation_period_bounds CHECK (period_end > period_start),
   CONSTRAINT usage_reservation_meter_ceiling CHECK (
-    CASE meter
-      WHEN 'ai_answer_checks' THEN requested_units <= 1000000
-      WHEN 'crawl_pages' THEN requested_units <= 5000000
-      WHEN 'keyword_months' THEN requested_units <= 1000000
-      WHEN 'api_requests' THEN requested_units <= 5000000
-    END
+    (meter = 'ai_answer_checks' AND requested_units <= 1000000)
+    OR (meter = 'crawl_pages' AND requested_units <= 5000000)
+    OR (meter = 'keyword_months' AND requested_units <= 1000000)
+    OR (meter = 'api_requests' AND requested_units <= 5000000)
   ),
   CONSTRAINT usage_reservation_amount_ceiling CHECK (reserved_amount_micro_usd <= 100000000000),
   CONSTRAINT usage_reservation_split CHECK (
