@@ -297,7 +297,7 @@ export function createAlertDestinationStore({database,workerPool=null,encryption
         && (typeof providerReceiptId !== "string" || !/^[A-Za-z0-9._:-]{1,160}$/.test(providerReceiptId))) {
         throw new AlertDestinationError(400,"invalid_provider_receipt","The provider receipt identifier is invalid.");
       }
-      return withWorkerTransaction(workerPool,workerId,async client => {
+      return withWorkerTransaction(workerPool,workerId,leaseToken,async client => {
         const updated = await client.query(
           `UPDATE searqon.alert_delivery_outbox o
            SET status='delivered',provider_receipt_id=$5,delivered_at=now(),updated_at=now()
@@ -330,7 +330,7 @@ export function createAlertDestinationStore({database,workerPool=null,encryption
       if (typeof errorCode !== "string" || !/^[a-z][a-z0-9_]{0,63}$/.test(errorCode)) {
         throw new AlertDestinationError(400,"invalid_error_code","A bounded machine-readable delivery error code is required.");
       }
-      return withWorkerTransaction(workerPool,workerId,async client => {
+      return withWorkerTransaction(workerPool,workerId,leaseToken,async client => {
         const updated = await client.query(
           `UPDATE searqon.alert_delivery_outbox o
            SET status='failed',last_error_code=$5,updated_at=now()
@@ -354,7 +354,7 @@ export function createAlertDestinationStore({database,workerPool=null,encryption
       requireUuid(deliveryId,"delivery_id");
       requireUuid(jobId,"job_id");
       requireUuid(leaseToken,"lease_token");
-      return withWorkerTransaction(workerPool,workerId,async client => {
+      return withWorkerTransaction(workerPool,workerId,leaseToken,async client => {
         const updated = await client.query(
           `UPDATE searqon.alert_delivery_outbox o
            SET status='cancelled',last_error_code='destination_disabled',updated_at=now()
