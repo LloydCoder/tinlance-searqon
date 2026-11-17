@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 
 const CONFIG_URL = new URL('../../config/entitlements.v1.json', import.meta.url);
 const VALID_PLANS = new Set(['free', 'starter', 'growth', 'agency', 'business', 'enterprise', 'trial']);
@@ -36,13 +35,13 @@ function activePlan(subscription, now) {
   throw new TypeError('Unknown subscription status');
 }
 
-function limitsFor(plan, approvedOverrides) {
+function limitsFor(plan, approvedOverrides, now) {
   const limits = clone(ENTITLEMENTS.plans[plan].limits);
-  if (!approvedOverrides) return limits;
+  if (!approvedOverrides) return { limits, features: clone(ENTITLEMENTS.plans[plan].features) };
+  if (plan !== 'enterprise') throw new Error('Contract overrides are only valid for Enterprise subscriptions');
   if (approvedOverrides.contractStatus !== 'active' || typeof approvedOverrides.approvedBy !== 'string' || !approvedOverrides.approvedBy.trim()) {
     throw new Error('Enterprise overrides require an active contract and an approving principal');
   }
-  const now = Date.now();
   const from = Date.parse(approvedOverrides.validFrom);
   const until = Date.parse(approvedOverrides.validUntil);
   if (!Number.isFinite(from) || !Number.isFinite(until) || now < from || now >= until) {
@@ -63,18 +62,23 @@ function limitsFor(plan, approvedOverrides) {
     }
     limits[key] = value;
   }
-  return limits;
+  const features = clone(ENTITLEMENTS.plans[plan].features);
+  for (const [key, value] of Object.entries(approvedOverrides.features ?? {})) {
+    if (!(key in features) || typeof value !== 'boolean') throw new Error(`Invalid enterprise feature override: ${key}`);
+    features[key] = value;
+  }
+  return { limits, features };
 }
 
 export function resolveEntitlements({ subscription, approvedOverrides, now = Date.now() } = {}) {
   const resolved = activePlan(subscription, now);
   const plan = ENTITLEMENTS.plans[resolved.plan];
-  const limits = limitsFor(resolved.plan, approvedOverrides);
+  const configured = limitsFor(resolved.plan, approvedOverrides, now);
   return {
     plan: resolved.plan,
     status: resolved.status,
-    limits,
-    features: clone(plan.features),
+    limits: configured.limits,
+    features: configured.features,
     monthlyPriceUsd: plan.monthlyPriceUsd,
     overageRatesMicroUsd: clone(plan.overageRatesMicroUsd),
     overageDefaultEnabled: false,
@@ -96,6 +100,7 @@ export function quoteOverage({ plan, meter, quantity }) {
   if (!rate) return { allowed: false, amountMicroUsd: 0, reason: 'overage_not_available' };
   const block = ENTITLEMENTS.meters[meter].overageBlock;
   const amountMicroUsd = Math.ceil((quantity * rate) / block);
+  if (!Number.isSafeInteger(amountMicroUsd)) throw new RangeError('Overage quote exceeds safe integer precision');
   return { allowed: true, amountMicroUsd, currency: 'USD', meter, quantity, rateMicroUsdPerBlock: rate, block };
 }
 
@@ -113,20 +118,24 @@ export function authorizeUsage({
     api_requests: 'apiRequestsPerMonth'
   })[meter];
   if (!limitKey || !BILLABLE_METERS.has(meter)) throw new TypeError('Unknown usage meter');
-  const limit = entitlements.limits[limitKey];
-  if (!Number.isSafeInteger(limit)) throw new TypeError('Meter is not configured for this plan');
-  if (used + requested <= limit) return { allowed: true, billableOverage: 0, amountMicroUsd: 0, reason: 'within_included_allowance' };
-  const excess = used + requested - limit;
+  if (!entitlements || !Number.isSafeInteger(entitlements.limits[limitKey])) throw new TypeError('Meter is not configured for this plan');
+  const limit = entitlements.plan === 'trial' && meter === 'ai_answer_checks'
+    ? ENTITLEMENTS.billing.trial.totalAiAnswerChecks
+    : entitlements.limits[limitKey];
+  const priorOverage = Math.max(0, used - limit);
+  const newOverage = Math.max(0, used + requested - limit);
+  const billableOverage = newOverage - priorOverage;
+  if (billableOverage === 0) return { allowed: true, billableOverage: 0, amountMicroUsd: 0, reason: 'within_included_allowance' };
   if (!overage.enabled || overage.spendCapMicroUsd <= 0) {
     return { allowed: false, billableOverage: 0, amountMicroUsd: 0, reason: 'included_allowance_exhausted' };
   }
-  const quote = quoteOverage({ plan: entitlements.plan, meter, quantity: excess });
+  const quote = quoteOverage({ plan: entitlements.plan, meter, quantity: billableOverage });
   if (!quote.allowed) return { allowed: false, billableOverage: 0, amountMicroUsd: 0, reason: quote.reason };
   const remaining = Math.max(0, overage.spendCapMicroUsd - overage.spentMicroUsd);
   if (quote.amountMicroUsd > remaining) {
-    return { allowed: false, billableOverage: excess, amountMicroUsd: 0, reason: 'overage_spend_cap_exhausted' };
+    return { allowed: false, billableOverage, amountMicroUsd: 0, reason: 'overage_spend_cap_exhausted' };
   }
-  return { allowed: true, billableOverage: excess, amountMicroUsd: quote.amountMicroUsd, reason: 'authorized_overage' };
+  return { allowed: true, billableOverage, amountMicroUsd: quote.amountMicroUsd, reason: 'authorized_overage' };
 }
 
 export function trialTransition({ trialEndsAt, now = Date.now() }) {
