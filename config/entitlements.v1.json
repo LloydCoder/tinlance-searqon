@@ -15,7 +15,10 @@
     "unusedUsageRollover": false,
     "overageDefaultEnabled": false,
     "overageRequiresSpendCap": true,
-    "notifyAtPercent": [80, 100],
+    "notifyAtPercent": [
+      80,
+      100
+    ],
     "currencyPrecision": "micro_usd"
   },
   "hardSafetyCeilings": {
@@ -28,132 +31,317 @@
     "crawlPagesPerMonth": 5000000,
     "trackedKeywords": 1000000,
     "apiRequestsPerMonth": 5000000,
-    "maxOverageSpendMicroUsd": 100000000000
+    "maxOverageSpendMicroUsd": 100000000000,
+    "evidenceHistoryDays": 3650,
+    "scheduledReportsPerMonth": 10000,
+    "manualAssessmentsPerMonth": 100000,
+    "suppliedGeoObservationsPerMonth": 1000000
   },
   "meters": {
-    "ai_answer_checks": { "unit": "answer_check", "overageBlock": 1 },
-    "crawl_pages": { "unit": "page", "overageBlock": 1000 },
-    "keyword_months": { "unit": "keyword_month", "overageBlock": 1000 },
-    "api_requests": { "unit": "request", "overageBlock": 10000 }
+    "ai_answer_checks": {
+      "unit": "answer_check",
+      "overageBlock": 1
+    },
+    "crawl_pages": {
+      "unit": "page",
+      "overageBlock": 1000
+    },
+    "keyword_months": {
+      "unit": "keyword_month",
+      "overageBlock": 1000
+    },
+    "api_requests": {
+      "unit": "request",
+      "overageBlock": 10000
+    }
   },
   "plans": {
     "free": {
       "monthlyPriceUsd": 0,
       "annualPriceUsd": 0,
       "limits": {
-        "projects": 1, "teamMembers": 1, "trackedPrompts": 0, "aiEngines": 0,
-        "localesPerProject": 1, "aiAnswerChecksPerMonth": 0, "crawlPagesPerMonth": 1,
-        "trackedKeywords": 0, "evidenceHistoryDays": 30, "scheduledReportsPerMonth": 0,
-        "apiRequestsPerMonth": 0, "manualAssessmentsPerMonth": 1, "suppliedGeoObservationsPerMonth": 10
+        "projects": 1,
+        "teamMembers": 1,
+        "trackedPrompts": 0,
+        "aiEngines": 0,
+        "localesPerProject": 1,
+        "aiAnswerChecksPerMonth": 0,
+        "crawlPagesPerMonth": 1,
+        "trackedKeywords": 0,
+        "evidenceHistoryDays": 30,
+        "scheduledReportsPerMonth": 0,
+        "apiRequestsPerMonth": 0,
+        "manualAssessmentsPerMonth": 1,
+        "suppliedGeoObservationsPerMonth": 10
       },
       "features": {
-        "manualAssessment": true, "suppliedGeoAnalysis": true, "recurringGeoMonitoring": false,
-        "competitorAnalysis": false, "citationChangeAlerts": false, "apiAccess": false,
-        "whiteLabelReports": false, "clientPortal": false, "advancedAgEO": false,
-        "sso": false, "scim": false, "auditLogExport": false, "customRetention": false,
-        "dataResidency": false, "dedicatedEnvironment": false, "governedRemediation": false
+        "manualAssessment": true,
+        "suppliedGeoAnalysis": true,
+        "recurringGeoMonitoring": false,
+        "competitorAnalysis": false,
+        "citationChangeAlerts": false,
+        "apiAccess": false,
+        "whiteLabelReports": false,
+        "clientPortal": false,
+        "advancedAgEO": false,
+        "sso": false,
+        "scim": false,
+        "auditLogExport": false,
+        "customRetention": false,
+        "dataResidency": false,
+        "dedicatedEnvironment": false,
+        "governedRemediation": false
       },
       "overageRatesMicroUsd": {}
     },
     "starter": {
-      "monthlyPriceUsd": 79, "annualPriceUsd": 806,
+      "monthlyPriceUsd": 79,
+      "annualPriceUsd": 806,
       "limits": {
-        "projects": 2, "teamMembers": 1, "trackedPrompts": 25, "aiEngines": 3,
-        "localesPerProject": 1, "aiAnswerChecksPerMonth": 1500, "crawlPagesPerMonth": 500,
-        "trackedKeywords": 250, "evidenceHistoryDays": 90, "scheduledReportsPerMonth": 3,
-        "apiRequestsPerMonth": 0, "manualAssessmentsPerMonth": 100, "suppliedGeoObservationsPerMonth": 100
+        "projects": 2,
+        "teamMembers": 1,
+        "trackedPrompts": 25,
+        "aiEngines": 3,
+        "localesPerProject": 1,
+        "aiAnswerChecksPerMonth": 1500,
+        "crawlPagesPerMonth": 500,
+        "trackedKeywords": 250,
+        "evidenceHistoryDays": 90,
+        "scheduledReportsPerMonth": 3,
+        "apiRequestsPerMonth": 0,
+        "manualAssessmentsPerMonth": 100,
+        "suppliedGeoObservationsPerMonth": 100
       },
       "features": {
-        "manualAssessment": true, "suppliedGeoAnalysis": true, "recurringGeoMonitoring": true,
-        "competitorAnalysis": false, "citationChangeAlerts": false, "apiAccess": false,
-        "whiteLabelReports": false, "clientPortal": false, "advancedAgEO": false,
-        "sso": false, "scim": false, "auditLogExport": false, "customRetention": false,
-        "dataResidency": false, "dedicatedEnvironment": false, "governedRemediation": false
+        "manualAssessment": true,
+        "suppliedGeoAnalysis": true,
+        "recurringGeoMonitoring": true,
+        "competitorAnalysis": false,
+        "citationChangeAlerts": false,
+        "apiAccess": false,
+        "whiteLabelReports": false,
+        "clientPortal": false,
+        "advancedAgEO": false,
+        "sso": false,
+        "scim": false,
+        "auditLogExport": false,
+        "customRetention": false,
+        "dataResidency": false,
+        "dedicatedEnvironment": false,
+        "governedRemediation": false
       },
-      "overageRatesMicroUsd": { "ai_answer_checks": 25000, "crawl_pages": 4000000, "keyword_months": 10000000 }
+      "overageRatesMicroUsd": {
+        "ai_answer_checks": 25000,
+        "crawl_pages": 4000000,
+        "keyword_months": 10000000
+      }
     },
     "growth": {
-      "monthlyPriceUsd": 199, "annualPriceUsd": 2030,
+      "monthlyPriceUsd": 199,
+      "annualPriceUsd": 2030,
       "limits": {
-        "projects": 5, "teamMembers": 3, "trackedPrompts": 75, "aiEngines": 5,
-        "localesPerProject": 2, "aiAnswerChecksPerMonth": 6000, "crawlPagesPerMonth": 2500,
-        "trackedKeywords": 1000, "evidenceHistoryDays": 365, "scheduledReportsPerMonth": 15,
-        "apiRequestsPerMonth": 0, "manualAssessmentsPerMonth": 500, "suppliedGeoObservationsPerMonth": 1000
+        "projects": 5,
+        "teamMembers": 3,
+        "trackedPrompts": 75,
+        "aiEngines": 5,
+        "localesPerProject": 2,
+        "aiAnswerChecksPerMonth": 6000,
+        "crawlPagesPerMonth": 2500,
+        "trackedKeywords": 1000,
+        "evidenceHistoryDays": 365,
+        "scheduledReportsPerMonth": 15,
+        "apiRequestsPerMonth": 0,
+        "manualAssessmentsPerMonth": 500,
+        "suppliedGeoObservationsPerMonth": 1000
       },
       "features": {
-        "manualAssessment": true, "suppliedGeoAnalysis": true, "recurringGeoMonitoring": true,
-        "competitorAnalysis": true, "citationChangeAlerts": true, "apiAccess": false,
-        "whiteLabelReports": false, "clientPortal": false, "advancedAgEO": true,
-        "sso": false, "scim": false, "auditLogExport": false, "customRetention": false,
-        "dataResidency": false, "dedicatedEnvironment": false, "governedRemediation": false
+        "manualAssessment": true,
+        "suppliedGeoAnalysis": true,
+        "recurringGeoMonitoring": true,
+        "competitorAnalysis": true,
+        "citationChangeAlerts": true,
+        "apiAccess": false,
+        "whiteLabelReports": false,
+        "clientPortal": false,
+        "advancedAgEO": true,
+        "sso": false,
+        "scim": false,
+        "auditLogExport": false,
+        "customRetention": false,
+        "dataResidency": false,
+        "dedicatedEnvironment": false,
+        "governedRemediation": false
       },
-      "overageRatesMicroUsd": { "ai_answer_checks": 20000, "crawl_pages": 4000000, "keyword_months": 10000000 }
+      "overageRatesMicroUsd": {
+        "ai_answer_checks": 20000,
+        "crawl_pages": 4000000,
+        "keyword_months": 10000000
+      }
     },
     "agency": {
-      "monthlyPriceUsd": 499, "annualPriceUsd": 5090,
+      "monthlyPriceUsd": 499,
+      "annualPriceUsd": 5090,
       "limits": {
-        "projects": 20, "teamMembers": 10, "trackedPrompts": 200, "aiEngines": 8,
-        "localesPerProject": 5, "aiAnswerChecksPerMonth": 18000, "crawlPagesPerMonth": 10000,
-        "trackedKeywords": 5000, "evidenceHistoryDays": 730, "scheduledReportsPerMonth": 50,
-        "apiRequestsPerMonth": 10000, "manualAssessmentsPerMonth": 2000, "suppliedGeoObservationsPerMonth": 5000
+        "projects": 20,
+        "teamMembers": 10,
+        "trackedPrompts": 200,
+        "aiEngines": 8,
+        "localesPerProject": 5,
+        "aiAnswerChecksPerMonth": 18000,
+        "crawlPagesPerMonth": 10000,
+        "trackedKeywords": 5000,
+        "evidenceHistoryDays": 730,
+        "scheduledReportsPerMonth": 50,
+        "apiRequestsPerMonth": 10000,
+        "manualAssessmentsPerMonth": 2000,
+        "suppliedGeoObservationsPerMonth": 5000
       },
       "features": {
-        "manualAssessment": true, "suppliedGeoAnalysis": true, "recurringGeoMonitoring": true,
-        "competitorAnalysis": true, "citationChangeAlerts": true, "apiAccess": true,
-        "whiteLabelReports": true, "clientPortal": true, "advancedAgEO": true,
-        "sso": false, "scim": false, "auditLogExport": false, "customRetention": false,
-        "dataResidency": false, "dedicatedEnvironment": false, "governedRemediation": true
+        "manualAssessment": true,
+        "suppliedGeoAnalysis": true,
+        "recurringGeoMonitoring": true,
+        "competitorAnalysis": true,
+        "citationChangeAlerts": true,
+        "apiAccess": true,
+        "whiteLabelReports": true,
+        "clientPortal": true,
+        "advancedAgEO": true,
+        "sso": false,
+        "scim": false,
+        "auditLogExport": false,
+        "customRetention": false,
+        "dataResidency": false,
+        "dedicatedEnvironment": false,
+        "governedRemediation": true
       },
-      "overageRatesMicroUsd": { "ai_answer_checks": 17500, "crawl_pages": 4000000, "keyword_months": 10000000, "api_requests": 1000000 }
+      "overageRatesMicroUsd": {
+        "ai_answer_checks": 17500,
+        "crawl_pages": 4000000,
+        "keyword_months": 10000000,
+        "api_requests": 1000000
+      }
     },
     "business": {
-      "monthlyPriceUsd": 999, "annualPriceUsd": 10190,
+      "monthlyPriceUsd": 999,
+      "annualPriceUsd": 10190,
       "limits": {
-        "projects": 50, "teamMembers": 25, "trackedPrompts": 500, "aiEngines": 10,
-        "localesPerProject": 10, "aiAnswerChecksPerMonth": 45000, "crawlPagesPerMonth": 50000,
-        "trackedKeywords": 20000, "evidenceHistoryDays": 1095, "scheduledReportsPerMonth": 150,
-        "apiRequestsPerMonth": 250000, "manualAssessmentsPerMonth": 10000, "suppliedGeoObservationsPerMonth": 25000
+        "projects": 50,
+        "teamMembers": 25,
+        "trackedPrompts": 500,
+        "aiEngines": 10,
+        "localesPerProject": 10,
+        "aiAnswerChecksPerMonth": 45000,
+        "crawlPagesPerMonth": 50000,
+        "trackedKeywords": 20000,
+        "evidenceHistoryDays": 1095,
+        "scheduledReportsPerMonth": 150,
+        "apiRequestsPerMonth": 250000,
+        "manualAssessmentsPerMonth": 10000,
+        "suppliedGeoObservationsPerMonth": 25000
       },
       "features": {
-        "manualAssessment": true, "suppliedGeoAnalysis": true, "recurringGeoMonitoring": true,
-        "competitorAnalysis": true, "citationChangeAlerts": true, "apiAccess": true,
-        "whiteLabelReports": true, "clientPortal": true, "advancedAgEO": true,
-        "sso": false, "scim": false, "auditLogExport": true, "customRetention": false,
-        "dataResidency": false, "dedicatedEnvironment": false, "governedRemediation": true
+        "manualAssessment": true,
+        "suppliedGeoAnalysis": true,
+        "recurringGeoMonitoring": true,
+        "competitorAnalysis": true,
+        "citationChangeAlerts": true,
+        "apiAccess": true,
+        "whiteLabelReports": true,
+        "clientPortal": true,
+        "advancedAgEO": true,
+        "sso": false,
+        "scim": false,
+        "auditLogExport": true,
+        "customRetention": false,
+        "dataResidency": false,
+        "dedicatedEnvironment": false,
+        "governedRemediation": true
       },
-      "overageRatesMicroUsd": { "ai_answer_checks": 15000, "crawl_pages": 4000000, "keyword_months": 10000000, "api_requests": 1000000 }
+      "overageRatesMicroUsd": {
+        "ai_answer_checks": 15000,
+        "crawl_pages": 4000000,
+        "keyword_months": 10000000,
+        "api_requests": 1000000
+      }
     },
     "enterprise": {
-      "monthlyPriceUsd": 2500, "annualPriceUsd": null,
+      "monthlyPriceUsd": 2500,
+      "annualPriceUsd": null,
       "limits": {
-        "projects": 100, "teamMembers": 50, "trackedPrompts": 1000, "aiEngines": 20,
-        "localesPerProject": 25, "aiAnswerChecksPerMonth": 100000, "crawlPagesPerMonth": 250000,
-        "trackedKeywords": 100000, "evidenceHistoryDays": 1095, "scheduledReportsPerMonth": 1000,
-        "apiRequestsPerMonth": 250000, "manualAssessmentsPerMonth": 50000, "suppliedGeoObservationsPerMonth": 100000
+        "projects": 100,
+        "teamMembers": 50,
+        "trackedPrompts": 1000,
+        "aiEngines": 20,
+        "localesPerProject": 25,
+        "aiAnswerChecksPerMonth": 100000,
+        "crawlPagesPerMonth": 250000,
+        "trackedKeywords": 100000,
+        "evidenceHistoryDays": 1095,
+        "scheduledReportsPerMonth": 1000,
+        "apiRequestsPerMonth": 250000,
+        "manualAssessmentsPerMonth": 50000,
+        "suppliedGeoObservationsPerMonth": 100000
       },
       "features": {
-        "manualAssessment": true, "suppliedGeoAnalysis": true, "recurringGeoMonitoring": true,
-        "competitorAnalysis": true, "citationChangeAlerts": true, "apiAccess": true,
-        "whiteLabelReports": true, "clientPortal": true, "advancedAgEO": true,
-        "sso": true, "scim": true, "auditLogExport": true, "customRetention": true,
-        "dataResidency": true, "dedicatedEnvironment": true, "governedRemediation": true
+        "manualAssessment": true,
+        "suppliedGeoAnalysis": true,
+        "recurringGeoMonitoring": true,
+        "competitorAnalysis": true,
+        "citationChangeAlerts": true,
+        "apiAccess": true,
+        "whiteLabelReports": true,
+        "clientPortal": true,
+        "advancedAgEO": true,
+        "sso": true,
+        "scim": true,
+        "auditLogExport": true,
+        "customRetention": true,
+        "dataResidency": true,
+        "dedicatedEnvironment": true,
+        "governedRemediation": true
       },
-      "overageRatesMicroUsd": { "ai_answer_checks": 15000, "crawl_pages": 4000000, "keyword_months": 10000000, "api_requests": 1000000 }
+      "overageRatesMicroUsd": {
+        "ai_answer_checks": 15000,
+        "crawl_pages": 4000000,
+        "keyword_months": 10000000,
+        "api_requests": 1000000
+      }
     },
     "trial": {
-      "monthlyPriceUsd": 0, "annualPriceUsd": null,
+      "monthlyPriceUsd": 0,
+      "annualPriceUsd": null,
       "limits": {
-        "projects": 1, "teamMembers": 1, "trackedPrompts": 25, "aiEngines": 3,
-        "localesPerProject": 1, "aiAnswerChecksPerMonth": 500, "crawlPagesPerMonth": 500,
-        "trackedKeywords": 250, "evidenceHistoryDays": 14, "scheduledReportsPerMonth": 3,
-        "apiRequestsPerMonth": 0, "manualAssessmentsPerMonth": 100, "suppliedGeoObservationsPerMonth": 100
+        "projects": 1,
+        "teamMembers": 1,
+        "trackedPrompts": 25,
+        "aiEngines": 3,
+        "localesPerProject": 1,
+        "aiAnswerChecksPerMonth": 500,
+        "crawlPagesPerMonth": 500,
+        "trackedKeywords": 250,
+        "evidenceHistoryDays": 14,
+        "scheduledReportsPerMonth": 3,
+        "apiRequestsPerMonth": 0,
+        "manualAssessmentsPerMonth": 100,
+        "suppliedGeoObservationsPerMonth": 100
       },
       "features": {
-        "manualAssessment": true, "suppliedGeoAnalysis": true, "recurringGeoMonitoring": true,
-        "competitorAnalysis": false, "citationChangeAlerts": false, "apiAccess": false,
-        "whiteLabelReports": false, "clientPortal": false, "advancedAgEO": true,
-        "sso": false, "scim": false, "auditLogExport": false, "customRetention": false,
-        "dataResidency": false, "dedicatedEnvironment": false, "governedRemediation": false
+        "manualAssessment": true,
+        "suppliedGeoAnalysis": true,
+        "recurringGeoMonitoring": true,
+        "competitorAnalysis": false,
+        "citationChangeAlerts": false,
+        "apiAccess": false,
+        "whiteLabelReports": false,
+        "clientPortal": false,
+        "advancedAgEO": true,
+        "sso": false,
+        "scim": false,
+        "auditLogExport": false,
+        "customRetention": false,
+        "dataResidency": false,
+        "dedicatedEnvironment": false,
+        "governedRemediation": false
       },
       "overageRatesMicroUsd": {}
     }
