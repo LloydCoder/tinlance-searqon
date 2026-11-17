@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { withUserTransaction } from "./database.js";
 import { createUsageLedger } from "./usage-ledger.js";
 import { createSubscriptionEntitlementResolver } from "./subscription-entitlements.js";
+import { ENTITLEMENTS } from "./entitlements.js";
 import { analyzeDocument } from "../analyzer.js";
 import { validateTargetUrl } from "../security/url-policy.js";
 
@@ -57,9 +58,10 @@ function assessmentRow(row) {
 export function createWorkspaceService({ database, analyze = analyzeDocument, usageLedger = null, getEntitlements = null } = {}) {
   if (!database?.pool || typeof database.pool.connect !== "function") throw new TypeError("A PostgreSQL database pool is required.");
   if (typeof analyze !== "function") throw new TypeError("An assessment function is required.");
+  const entitlementResolver = getEntitlements ?? createSubscriptionEntitlementResolver();
   const ledger = usageLedger ?? createUsageLedger({
     database,
-    getEntitlements: getEntitlements ?? createSubscriptionEntitlementResolver()
+    getEntitlements: entitlementResolver
   });
   if (typeof ledger?.consume !== "function") throw new TypeError("A trusted atomic usage ledger is required.");
 
@@ -86,6 +88,19 @@ export function createWorkspaceService({ database, analyze = analyzeDocument, us
       requireUuid(userId, "user_id"); const project = validateProjectInput(input);
       return withUserTransaction(database.pool, userId, async client => {
         await requireProjectWriter(client, project.organizationId, userId);
+        // Serialize project creation per workspace so concurrent requests cannot oversubscribe the plan.
+        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [project.organizationId + ":project-entitlement"]);
+        const entitlements = await entitlementResolver(client, project.organizationId);
+        const projectLimit = entitlements?.limits?.projects;
+        if (!entitlements || !ENTITLEMENTS.plans[entitlements.plan]
+          || !Number.isSafeInteger(projectLimit) || projectLimit < 0
+          || projectLimit > ENTITLEMENTS.hardSafetyCeilings.projects) {
+          throw new WorkspaceError(503, "entitlement_unavailable", "A valid server-side project entitlement could not be resolved.");
+        }
+        const usage = await client.query("SELECT count(*)::int AS count FROM searqon.projects WHERE organization_id = $1", [project.organizationId]);
+        if (usage.rows[0].count >= projectLimit) {
+          throw new WorkspaceError(409, "project_limit_reached", "The workspace has reached its project limit for the current plan.");
+        }
         const result = await client.query("INSERT INTO searqon.projects (organization_id, name, target_url, created_by) VALUES ($1, $2, $3, $4) RETURNING id, organization_id, name, target_url, created_at, updated_at", [project.organizationId, project.name, project.targetUrl, userId]);
         const row = result.rows[0];
         await appendAudit(client, row.organization_id, userId, "project.created", "project", row.id, { targetHost: new URL(row.target_url).hostname });
