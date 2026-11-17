@@ -53,3 +53,20 @@ test("usage settlement and release reject malformed identifiers before database 
     error => error instanceof UsageLedgerError && error.code === "invalid_reservation_id");
   assert.equal(connects(), 0);
 });
+
+test("usage consume validates non-overage meter, idempotency key and atomic operation callback", async () => {
+  const { ledger, connects } = fixture();
+  await assert.rejects(ledger.consume(userId, organizationId, {
+    meter: "ai_answer_checks", quantity: 1, idempotencyKey: "consume-key-0001"
+  }, async () => "ok"), error => error instanceof UsageLedgerError && error.code === "invalid_meter");
+  await assert.rejects(ledger.consume(userId, organizationId, {
+    meter: "manual_assessments", quantity: 0, idempotencyKey: "consume-key-0001"
+  }, async () => "ok"), error => error instanceof UsageLedgerError && error.code === "invalid_quantity");
+  await assert.rejects(ledger.consume(userId, organizationId, {
+    meter: "manual_assessments", quantity: 1, idempotencyKey: "short"
+  }, async () => "ok"), error => error instanceof UsageLedgerError && error.code === "invalid_idempotency_key");
+  await assert.rejects(ledger.consume(userId, organizationId, {
+    meter: "manual_assessments", quantity: 1, idempotencyKey: "consume-key-0001"
+  }), error => error instanceof UsageLedgerError && error.code === "invalid_operation");
+  assert.equal(connects(), 0);
+});

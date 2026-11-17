@@ -1,4 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { withUserTransaction } from "./database.js";
+import { createUsageLedger } from "./usage-ledger.js";
+import { createSubscriptionEntitlementResolver } from "./subscription-entitlements.js";
 import { analyzeDocument } from "../analyzer.js";
 import { validateTargetUrl } from "../security/url-policy.js";
 
@@ -51,9 +54,14 @@ function assessmentRow(row) {
   return { id: row.id, projectId: row.project_id, status: row.status, assessmentType: row.assessment_type, methodologyVersion: row.methodology_version, evidenceId: row.report?.evidence?.id ?? null, report: row.report ?? null, errorCode: row.error_code, createdAt: row.created_at, startedAt: row.started_at, completedAt: row.completed_at };
 }
 
-export function createWorkspaceService({ database, analyze = analyzeDocument } = {}) {
+export function createWorkspaceService({ database, analyze = analyzeDocument, usageLedger = null, getEntitlements = null } = {}) {
   if (!database?.pool || typeof database.pool.connect !== "function") throw new TypeError("A PostgreSQL database pool is required.");
   if (typeof analyze !== "function") throw new TypeError("An assessment function is required.");
+  const ledger = usageLedger ?? createUsageLedger({
+    database,
+    getEntitlements: getEntitlements ?? createSubscriptionEntitlementResolver()
+  });
+  if (typeof ledger?.consume !== "function") throw new TypeError("A trusted atomic usage ledger is required.");
 
   async function requireProjectWriter(client, organizationId, userId) {
     const result = await client.query("SELECT role FROM searqon.memberships WHERE organization_id = $1 AND user_id = $2", [organizationId, userId]);
@@ -99,28 +107,66 @@ export function createWorkspaceService({ database, analyze = analyzeDocument } =
       });
     },
     async createAssessment(userId, projectId, input) {
-      requireUuid(userId, "user_id"); requireUuid(projectId, "project_id"); const content = validateAssessmentInput(input);
-      const outcome = await withUserTransaction(database.pool, userId, async client => {
-        const projectResult = await client.query("SELECT id, organization_id, target_url FROM searqon.projects WHERE id = $1", [projectId]);
-        const project = projectResult.rows[0];
-        if (!project) throw new WorkspaceError(404, "project_not_found", "The requested project was not found.");
-        await requireProjectWriter(client, project.organization_id, userId);
-        const created = await client.query("INSERT INTO searqon.assessments (organization_id, project_id, requested_by, status, assessment_type, methodology_version, started_at) VALUES ($1, $2, $3, 'running', 'combined', 'pending', now()) RETURNING id", [project.organization_id, project.id, userId]);
-        const assessmentId = created.rows[0].id;
+      requireUuid(userId, "user_id");
+      requireUuid(projectId, "project_id");
+      const content = validateAssessmentInput(input);
+      const project = await withUserTransaction(database.pool, userId, async client => {
+        const result = await client.query(
+          "SELECT id, organization_id, target_url FROM searqon.projects WHERE id = $1",
+          [projectId]
+        );
+        const row = result.rows[0];
+        if (!row) throw new WorkspaceError(404, "project_not_found", "The requested project was not found.");
+        await requireProjectWriter(client, row.organization_id, userId);
+        return row;
+      });
+
+      const assessmentId = randomUUID();
+      const outcome = await ledger.consume(userId, project.organization_id, {
+        meter: "manual_assessments",
+        quantity: 1,
+        idempotencyKey: "assessment:" + assessmentId
+      }, async client => {
+        const current = await client.query(
+          "SELECT id, organization_id, target_url FROM searqon.projects WHERE id = $1",
+          [projectId]
+        );
+        const currentProject = current.rows[0];
+        if (!currentProject) throw new WorkspaceError(404, "project_not_found", "The requested project was not found.");
+        await requireProjectWriter(client, currentProject.organization_id, userId);
+        await client.query(
+          "INSERT INTO searqon.assessments (id, organization_id, project_id, requested_by, status, assessment_type, methodology_version, started_at) VALUES ($1, $2, $3, $4, 'running', 'combined', 'pending', now())",
+          [assessmentId, currentProject.organization_id, currentProject.id, userId]
+        );
         let report;
         try {
-          report = analyze({ source: project.target_url, contentType: content.contentType, content: content.content });
+          report = analyze({ source: currentProject.target_url, contentType: content.contentType, content: content.content });
         } catch {
-          await client.query("UPDATE searqon.assessments SET status = 'failed', methodology_version = 'unknown', error_code = 'analysis_failed', completed_at = now() WHERE id = $1", [assessmentId]);
-          await appendAudit(client, project.organization_id, userId, "assessment.failed", "assessment", assessmentId);
+          await client.query(
+            "UPDATE searqon.assessments SET status = 'failed', methodology_version = 'unknown', error_code = 'analysis_failed', completed_at = now() WHERE id = $1",
+            [assessmentId]
+          );
+          await appendAudit(client, currentProject.organization_id, userId, "assessment.failed", "assessment", assessmentId);
           return { failure: true };
         }
-        const updated = await client.query("UPDATE searqon.assessments SET status = 'succeeded', methodology_version = $2, report = $3::jsonb, completed_at = now() WHERE id = $1 RETURNING id, project_id, status, assessment_type, methodology_version, report, error_code, created_at, started_at, completed_at", [assessmentId, report.rulesVersion, JSON.stringify(report)]);
-        await appendAudit(client, project.organization_id, userId, "assessment.completed", "assessment", assessmentId, { findingCount: report.summary.findingCount, methodologyVersion: report.rulesVersion });
+        const updated = await client.query(
+          "UPDATE searqon.assessments SET status = 'succeeded', methodology_version = $2, report = $3::jsonb, completed_at = now() WHERE id = $1 RETURNING id, project_id, status, assessment_type, methodology_version, report, error_code, created_at, started_at, completed_at",
+          [assessmentId, report.rulesVersion, JSON.stringify(report)]
+        );
+        await appendAudit(client, currentProject.organization_id, userId, "assessment.completed", "assessment", assessmentId, {
+          findingCount: report.summary.findingCount,
+          methodologyVersion: report.rulesVersion
+        });
         return { assessment: assessmentRow(updated.rows[0]) };
       });
-      if (outcome.failure) throw new WorkspaceError(422, "assessment_failed", "The supplied document could not be assessed.");
-      return outcome.assessment;
+
+      if (outcome.idempotentReplay) {
+        throw new WorkspaceError(409, "assessment_already_processed", "This assessment usage operation was already committed.");
+      }
+      if (outcome.result?.failure) {
+        throw new WorkspaceError(422, "assessment_failed", "The supplied document could not be assessed.");
+      }
+      return outcome.result.assessment;
     }
   });
 }

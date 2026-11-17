@@ -6,14 +6,20 @@ const METERS = Object.freeze({
   ai_answer_checks: "aiAnswerChecksPerMonth",
   crawl_pages: "crawlPagesPerMonth",
   keyword_months: "trackedKeywords",
-  api_requests: "apiRequestsPerMonth"
+  api_requests: "apiRequestsPerMonth",
+  manual_assessments: "manualAssessmentsPerMonth",
+  supplied_geo_observations: "suppliedGeoObservationsPerMonth"
 });
 const METER_CEILINGS = Object.freeze({
   ai_answer_checks: "aiAnswerChecksPerMonth",
   crawl_pages: "crawlPagesPerMonth",
   keyword_months: "trackedKeywords",
-  api_requests: "apiRequestsPerMonth"
+  api_requests: "apiRequestsPerMonth",
+  manual_assessments: "manualAssessmentsPerMonth",
+  supplied_geo_observations: "suppliedGeoObservationsPerMonth"
 });
+const ATOMIC_METERS = new Set(["manual_assessments", "supplied_geo_observations"]);
+const OVERAGE_METERS = new Set(["ai_answer_checks", "crawl_pages", "keyword_months", "api_requests"]);
 const WRITERS = new Set(["owner", "admin", "analyst"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
@@ -267,7 +273,7 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         let overageBlock = 1;
 
         if (overageReservedUnits > 0) {
-          if (!overageEnabled || spendCapMicroUsd <= 0) {
+          if (!OVERAGE_METERS.has(meter) || !overageEnabled || spendCapMicroUsd <= 0) {
             throw new UsageLedgerError(409, "included_allowance_exhausted", "The included usage allowance is exhausted and overage is not enabled.");
           }
           const quote = quoteOverage({ plan: entitlements.plan, meter, quantity: overageReservedUnits });
@@ -327,6 +333,141 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           metadata: { includedUnits: includedReservedUnits, overageUnits: overageReservedUnits }
         });
         return reservationRow(row);
+      });
+    },
+
+    async consume(userId, organizationId, input, operation) {
+      requireUuid(userId, "user_id");
+      requireUuid(organizationId, "organization_id");
+      if (!input || typeof input !== "object" || Array.isArray(input)) throw new UsageLedgerError(400, "invalid_request", "Usage consumption details are required.");
+      const { meter } = input;
+      const limitKey = METERS[meter];
+      if (!ATOMIC_METERS.has(meter) || !limitKey) throw new UsageLedgerError(400, "invalid_meter", "The requested atomic usage meter is not supported.");
+      const quantity = requireSafeInteger(input.quantity, "quantity", { minimum: 1 });
+      if (typeof input.idempotencyKey !== "string" || !IDEMPOTENCY_KEY.test(input.idempotencyKey)) {
+        throw new UsageLedgerError(400, "invalid_idempotency_key", "A valid idempotency key between 8 and 128 safe characters is required.");
+      }
+      if (typeof operation !== "function") throw new UsageLedgerError(400, "invalid_operation", "An atomic usage operation callback is required.");
+
+      return withUserTransaction(database.pool, userId, async client => {
+        await requireUsageWriter(client, organizationId, userId);
+        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [organizationId + ":" + input.idempotencyKey]);
+        const entitlements = await getEntitlements(client, organizationId);
+        if (!entitlements || !ENTITLEMENTS.plans[entitlements.plan]) {
+          throw new UsageLedgerError(503, "entitlement_unavailable", "A valid server-side subscription plan could not be resolved.");
+        }
+        let period;
+        try {
+          period = ensurePeriod(entitlements.billingPeriod?.start, entitlements.billingPeriod?.end);
+        } catch {
+          throw new UsageLedgerError(503, "billing_period_unavailable", "The canonical subscription billing period could not be resolved.");
+        }
+        const { periodStart, periodEnd } = period;
+        const existing = await client.query(
+          "SELECT * FROM searqon.usage_reservations WHERE organization_id = $1 AND idempotency_key = $2",
+          [organizationId, input.idempotencyKey]
+        );
+        if (existing.rows[0]) {
+          const row = existing.rows[0];
+          const matches = row.meter === meter
+            && new Date(row.period_start).getTime() === periodStart.getTime()
+            && new Date(row.period_end).getTime() === periodEnd.getTime()
+            && numberValue(row.requested_units, "requested_units") === quantity
+            && row.status === "settled";
+          if (!matches) throw new UsageLedgerError(409, "idempotency_key_conflict", "The idempotency key was already used for a different or non-atomic usage request.");
+          return { usage: reservationRow(row, true), result: null, idempotentReplay: true };
+        }
+
+        const includedLimit = entitlements.limits?.[limitKey];
+        const hardQuotaCeiling = ENTITLEMENTS.hardSafetyCeilings[METER_CEILINGS[meter]];
+        if (!Number.isSafeInteger(includedLimit) || includedLimit < 0 || includedLimit > hardQuotaCeiling || quantity > hardQuotaCeiling) {
+          throw new UsageLedgerError(503, "entitlement_unavailable", "A valid server-side usage entitlement could not be resolved.");
+        }
+        const overageEnabled = entitlements.overage?.enabled === true;
+        const spendCapMicroUsd = requireSafeInteger(entitlements.overage?.spendCapMicroUsd ?? 0, "spend_cap_micro_usd");
+        const policyFingerprint = createHash("sha256").update(stableJson({
+          entitlementVersion: ENTITLEMENTS.version,
+          plan: entitlements.plan,
+          limits: entitlements.limits,
+          features: entitlements.features,
+          overageRatesMicroUsd: entitlements.overageRatesMicroUsd,
+          overage: { enabled: overageEnabled, spendCapMicroUsd }
+        })).digest("hex");
+        if (spendCapMicroUsd > ENTITLEMENTS.hardSafetyCeilings.maxOverageSpendMicroUsd
+          || (!overageEnabled && spendCapMicroUsd !== 0)) {
+          throw new UsageLedgerError(409, "invalid_overage_policy", "The workspace overage policy is invalid or exceeds the platform safety ceiling.");
+        }
+
+        await client.query(
+          `INSERT INTO searqon.usage_spend_periods
+            (organization_id, period_start, period_end, plan, policy_fingerprint, overage_enabled, spend_cap_micro_usd)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (organization_id, period_start) DO NOTHING`,
+          [organizationId, periodStart, periodEnd, entitlements.plan, policyFingerprint, overageEnabled, spendCapMicroUsd]
+        );
+        const spendLocked = await client.query(
+          `SELECT * FROM searqon.usage_spend_periods
+           WHERE organization_id = $1 AND period_start = $2 FOR UPDATE`,
+          [organizationId, periodStart]
+        );
+        const spendPeriod = spendLocked.rows[0];
+        if (!spendPeriod || new Date(spendPeriod.period_end).getTime() !== periodEnd.getTime()
+          || spendPeriod.plan !== entitlements.plan
+          || spendPeriod.policy_fingerprint !== policyFingerprint
+          || spendPeriod.overage_enabled !== overageEnabled
+          || numberValue(spendPeriod.spend_cap_micro_usd, "spend_cap_micro_usd") !== spendCapMicroUsd) {
+          throw new UsageLedgerError(409, "usage_policy_changed", "The usage spend policy for this billing period is fixed; apply changes at a new period boundary.");
+        }
+
+        await client.query(
+          `INSERT INTO searqon.usage_period_counters
+            (organization_id, meter, period_start, period_end, included_limit)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (organization_id, meter, period_start) DO NOTHING`,
+          [organizationId, meter, periodStart, periodEnd, includedLimit]
+        );
+        const locked = await client.query(
+          `SELECT * FROM searqon.usage_period_counters
+           WHERE organization_id = $1 AND meter = $2 AND period_start = $3 FOR UPDATE`,
+          [organizationId, meter, periodStart]
+        );
+        const counter = locked.rows[0];
+        if (!counter || new Date(counter.period_end).getTime() !== periodEnd.getTime()
+          || numberValue(counter.included_limit, "included_limit") !== includedLimit) {
+          throw new UsageLedgerError(409, "usage_policy_changed", "The usage policy for this billing period is fixed; apply changes at a new period boundary.");
+        }
+        const consumed = numberValue(counter.consumed_units, "consumed_units");
+        const reserved = numberValue(counter.reserved_units, "reserved_units");
+        if (consumed + reserved + quantity > hardQuotaCeiling) {
+          throw new UsageLedgerError(409, "platform_usage_ceiling", "The platform hard safety ceiling for this usage meter would be exceeded.");
+        }
+        if (consumed + reserved + quantity > includedLimit) {
+          throw new UsageLedgerError(409, "included_allowance_exhausted", "The included usage allowance is exhausted and this meter does not support overage.");
+        }
+
+        const operationResult = await operation(client);
+        const inserted = await client.query(
+          `INSERT INTO searqon.usage_reservations
+            (organization_id, created_by, meter, period_start, period_end, idempotency_key, requested_units,
+             included_reserved_units, overage_reserved_units, reserved_amount_micro_usd,
+             overage_rate_micro_usd_per_block, overage_block, status, actual_units,
+             charged_amount_micro_usd, expires_at, settled_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$7,0,0,0,1,'settled',$7,0,now(),now())
+           RETURNING *`,
+          [organizationId, userId, meter, periodStart, periodEnd, input.idempotencyKey, quantity]
+        );
+        await client.query(
+          `UPDATE searqon.usage_period_counters
+           SET consumed_units = consumed_units + $4, updated_at = now()
+           WHERE organization_id = $1 AND meter = $2 AND period_start = $3`,
+          [organizationId, meter, periodStart, quantity]
+        );
+        await appendLedgerEntry(client, {
+          organizationId, actorUserId: userId, reservationId: inserted.rows[0].id, meter, periodStart,
+          eventType: "settled", quantityDelta: quantity, amountDeltaMicroUsd: 0,
+          metadata: { mode: "atomic_consume", includedUnits: quantity, overageUnits: 0 }
+        });
+        return { usage: reservationRow(inserted.rows[0]), result: operationResult, idempotentReplay: false };
       });
     },
 
