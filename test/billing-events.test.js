@@ -77,6 +77,9 @@ test("rejects timestamps outside ISO-8601 UTC form and malformed trial expiry", 
   assert.throws(() => normalizeVerifiedBillingEvent({ ...base, verifiedAt: "yesterday" }),
     error => error.code === "invalid_verified_at");
   assert.throws(() => normalizeVerifiedBillingEvent({
+    ...base, receivedAt: "2026-02-31T10:00:00.000Z"
+  }), error => error.code === "invalid_received_at");
+  assert.throws(() => normalizeVerifiedBillingEvent({
     ...base, payload: { ...base.payload, status: "trialing", plan: "trial", trialEndsAt: "soon" }
   }), error => error.code === "invalid_trial_ends_at");
 });
