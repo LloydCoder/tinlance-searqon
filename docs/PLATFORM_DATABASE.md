@@ -72,6 +72,7 @@ Migration `0004_usage_ledger.sql` adds tenant-scoped PostgreSQL usage periods, r
 - Each usage period snapshots its included limit, overage opt-in and spend cap. A changed plan or overage policy cannot silently rewrite an active period; period policy changes require an explicit future migration/workflow.
 - Reservation creation locks the tenant/meter/period counter row with `SELECT ... FOR UPDATE`, splits included and overage units, and reserves both quota and overage spend before provider work can be dispatched.
 - Organization-scoped idempotency keys prevent retries from reserving twice. Reusing a key for a different meter, quantity or period is rejected.
+- Reservations expire after a bounded 15-minute default (configurable only within 30–3,600 seconds). Settlement checks expiry against the PostgreSQL clock. The bounded `releaseExpired` operation uses `FOR UPDATE SKIP LOCKED` to release abandoned reservations without double-releasing concurrent work.
 - Settlement is bounded by the reservation, uses the overage rate and block size stored on that reservation, commits actual usage and releases unused reserved quota/spend in the same transaction. A repeated settlement with the same actual quantity is idempotent; a different quantity is rejected.
 - Release returns reserved quota and spend without recording consumption. Only enumerated release reasons are accepted.
 - Usage ledger events are append-only at the database trigger layer. Mutable counters and reservation state are transactionally updated with their corresponding immutable events.
