@@ -117,11 +117,17 @@ test("Free workspaces receive one manual assessment per UTC billing month", { sk
     await owner.query("INSERT INTO searqon.organizations (id,name,slug) VALUES ($1,'Free Meter',$2)", [organization,"free-meter-"+user.replaceAll("-","")]);
     await owner.query("INSERT INTO searqon.memberships (organization_id,user_id,role) VALUES ($1,$2,'owner')", [organization,user]);
 
-    const project = await service.createProject(user, {
-      organizationId: organization,
-      name: "Free quota project",
-      targetUrl: "https://example.com"
-    });
+    const projectAttempts = await Promise.allSettled([
+      service.createProject(user, { organizationId: organization, name: "Free quota project A", targetUrl: "https://example.com" }),
+      service.createProject(user, { organizationId: organization, name: "Free quota project B", targetUrl: "https://example.org" })
+    ]);
+    assert.equal(projectAttempts.filter(item => item.status === "fulfilled").length, 1);
+    assert.equal(projectAttempts.filter(item => item.status === "rejected" && item.reason.code === "project_limit_reached").length, 1);
+    const project = projectAttempts.find(item => item.status === "fulfilled").value;
+    await assert.rejects(
+      service.createProject(user, { organizationId: organization, name: "Free quota project C", targetUrl: "https://example.net" }),
+      error => error.code === "project_limit_reached" && error.statusCode === 409
+    );
     const document = {
       contentType: "text/html",
       content: "<html lang=\"en\"><head><title>Example page title</title><meta name=\"description\" content=\"A useful description for an example page.\"></head><body><h1>Example page</h1></body></html>"
