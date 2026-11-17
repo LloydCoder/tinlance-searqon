@@ -172,6 +172,9 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         }
 
         const entitlements = await getEntitlements(client, organizationId);
+        if (!entitlements || !ENTITLEMENTS.plans[entitlements.plan]) {
+          throw new UsageLedgerError(503, "entitlement_unavailable", "A valid server-side subscription plan could not be resolved.");
+        }
         const includedLimit = entitlements?.limits?.[limitKey];
         const hardQuotaCeiling = ENTITLEMENTS.hardSafetyCeilings[METER_CEILINGS[meter]];
         if (!Number.isSafeInteger(includedLimit) || includedLimit < 0 || includedLimit > hardQuotaCeiling || quantity > hardQuotaCeiling) {
@@ -326,6 +329,13 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         const requested = numberValue(reservation.requested_units, "requested_units");
         if (actualUnits > requested) throw new UsageLedgerError(409, "reservation_underfunded", "Actual usage exceeds the reserved quantity; reserve the additional usage before settlement.");
 
+        const spendLocked = await client.query(
+          `SELECT * FROM searqon.usage_spend_periods
+           WHERE organization_id = $1 AND period_start = $2 FOR UPDATE`,
+          [organizationId, reservation.period_start]
+        );
+        const spendPeriod = spendLocked.rows[0];
+        if (!spendPeriod) throw new UsageLedgerError(500, "usage_spend_period_missing", "The spend-control record for this reservation is missing.");
         const locked = await client.query(
           `SELECT * FROM searqon.usage_period_counters
            WHERE organization_id = $1 AND meter = $2 AND period_start = $3 FOR UPDATE`,
@@ -348,11 +358,17 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           `UPDATE searqon.usage_period_counters
            SET consumed_units = consumed_units + $4,
                reserved_units = reserved_units - $5,
-               overage_reserved_micro_usd = overage_reserved_micro_usd - $6,
-               overage_spent_micro_usd = overage_spent_micro_usd + $7,
                updated_at = now()
            WHERE organization_id = $1 AND meter = $2 AND period_start = $3`,
-          [organizationId, reservation.meter, reservation.period_start, actualUnits, requested, reservedAmount, chargedAmountMicroUsd]
+          [organizationId, reservation.meter, reservation.period_start, actualUnits, requested]
+        );
+        await client.query(
+          `UPDATE searqon.usage_spend_periods
+           SET overage_reserved_micro_usd = overage_reserved_micro_usd - $3,
+               overage_spent_micro_usd = overage_spent_micro_usd + $4,
+               updated_at = now()
+           WHERE organization_id = $1 AND period_start = $2`,
+          [organizationId, reservation.period_start, reservedAmount, chargedAmountMicroUsd]
         );
         const updated = await client.query(
           `UPDATE searqon.usage_reservations
@@ -387,13 +403,23 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
 
         const requested = numberValue(reservation.requested_units, "requested_units");
         const reservedAmount = numberValue(reservation.reserved_amount_micro_usd, "reserved_amount_micro_usd");
+        const spendLocked = await client.query(
+          `SELECT organization_id FROM searqon.usage_spend_periods
+           WHERE organization_id = $1 AND period_start = $2 FOR UPDATE`,
+          [organizationId, reservation.period_start]
+        );
+        if (!spendLocked.rows[0]) throw new UsageLedgerError(500, "usage_spend_period_missing", "The spend-control record for this reservation is missing.");
         await client.query(
           `UPDATE searqon.usage_period_counters
-           SET reserved_units = reserved_units - $4,
-               overage_reserved_micro_usd = overage_reserved_micro_usd - $5,
-               updated_at = now()
+           SET reserved_units = reserved_units - $4, updated_at = now()
            WHERE organization_id = $1 AND meter = $2 AND period_start = $3`,
-          [organizationId, reservation.meter, reservation.period_start, requested, reservedAmount]
+          [organizationId, reservation.meter, reservation.period_start, requested]
+        );
+        await client.query(
+          `UPDATE searqon.usage_spend_periods
+           SET overage_reserved_micro_usd = overage_reserved_micro_usd - $3, updated_at = now()
+           WHERE organization_id = $1 AND period_start = $2`,
+          [organizationId, reservation.period_start, reservedAmount]
         );
         const updated = await client.query(
           `UPDATE searqon.usage_reservations
@@ -428,6 +454,12 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         );
         const released = [];
         for (const reservation of expired.rows) {
+          const spendLocked = await client.query(
+            `SELECT organization_id FROM searqon.usage_spend_periods
+             WHERE organization_id = $1 AND period_start = $2 FOR UPDATE`,
+            [organizationId, reservation.period_start]
+          );
+          if (!spendLocked.rows[0]) throw new UsageLedgerError(500, "usage_spend_period_missing", "The spend-control record for an expired reservation is missing.");
           const locked = await client.query(
             `SELECT * FROM searqon.usage_period_counters
              WHERE organization_id = $1 AND meter = $2 AND period_start = $3 FOR UPDATE`,
@@ -438,11 +470,15 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           const reservedAmount = numberValue(reservation.reserved_amount_micro_usd, "reserved_amount_micro_usd");
           await client.query(
             `UPDATE searqon.usage_period_counters
-             SET reserved_units = reserved_units - $4,
-                 overage_reserved_micro_usd = overage_reserved_micro_usd - $5,
-                 updated_at = now()
+             SET reserved_units = reserved_units - $4, updated_at = now()
              WHERE organization_id = $1 AND meter = $2 AND period_start = $3`,
-            [organizationId, reservation.meter, reservation.period_start, requested, reservedAmount]
+            [organizationId, reservation.meter, reservation.period_start, requested]
+          );
+          await client.query(
+            `UPDATE searqon.usage_spend_periods
+             SET overage_reserved_micro_usd = overage_reserved_micro_usd - $3, updated_at = now()
+             WHERE organization_id = $1 AND period_start = $2`,
+            [organizationId, reservation.period_start, reservedAmount]
           );
           const updated = await client.query(
             `UPDATE searqon.usage_reservations
@@ -471,7 +507,11 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
       return withUserTransaction(database.pool, userId, async client => {
         await requireUsageWriter(client, organizationId, userId);
         const result = await client.query(
-          "SELECT * FROM searqon.usage_period_counters WHERE organization_id = $1 AND meter = $2 AND period_start = $3",
+          `SELECT c.*, s.overage_enabled, s.spend_cap_micro_usd, s.overage_spent_micro_usd, s.overage_reserved_micro_usd
+           FROM searqon.usage_period_counters c
+           JOIN searqon.usage_spend_periods s
+             ON s.organization_id = c.organization_id AND s.period_start = c.period_start
+           WHERE c.organization_id = $1 AND c.meter = $2 AND c.period_start = $3`,
           [organizationId, meter, start]
         );
         if (!result.rows[0]) throw new UsageLedgerError(404, "usage_period_not_found", "The requested usage period was not found.");
