@@ -97,7 +97,7 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
     assert.ok(attemptOne);
     const retried = await queue.retry(workerId,attemptOne.id,attemptOne.leaseToken,{errorCode:"upstream_timeout",retryDelaySeconds:0});
     assert.equal(retried.job.status,"queued");
-    const attemptTwo = (await queue.claim(workerId,{limit:1,leaseSeconds:30})).find(job => job.id === retryJob.job.id);
+    const attemptTwo = (await queue.claim(workerId,{limit:1,leaseSeconds:30,jobTypes:["site_crawl"]})).find(job => job.id === retryJob.job.id);
     assert.equal(attemptTwo.attempts,2);
     const exhausted = await queue.retry(workerId,attemptTwo.id,attemptTwo.leaseToken,{errorCode:"upstream_timeout",retryDelaySeconds:0});
     assert.equal(exhausted.job.status,"failed");
@@ -108,7 +108,7 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
     const firstLease = (await queue.claim(workerId,{limit:1,leaseSeconds:30,jobTypes:["geo_sampling"]})).find(job => job.id === recoveredJob.job.id);
     assert.ok(firstLease);
     await owner.query("UPDATE searqon.jobs SET lease_expires_at = now() - interval '1 second' WHERE id = $1",[firstLease.id]);
-    const recovered = (await queue.claim(workerId,{limit:1,leaseSeconds:30})).find(job => job.id === recoveredJob.job.id);
+    const recovered = (await queue.claim(workerId,{limit:1,leaseSeconds:30,jobTypes:["geo_sampling"]})).find(job => job.id === recoveredJob.job.id);
     assert.equal(recovered.attempts,2);
     assert.notEqual(recovered.leaseToken,firstLease.leaseToken);
     assert.equal((await queue.complete(workerId,recovered.id,firstLease.leaseToken)).accepted,false);
@@ -117,7 +117,7 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
     const deadJob = await queue.enqueue(userA,orgA,{
       jobType:"scheduled_report",payload:{reportId:randomUUID()},idempotencyKey:"queue-dead-0001",maxAttempts:1
     });
-    const deadLease = (await queue.claim(workerId,{limit:1,leaseSeconds:30})).find(job => job.id === deadJob.job.id);
+    const deadLease = (await queue.claim(workerId,{limit:1,leaseSeconds:30,jobTypes:["scheduled_report"]})).find(job => job.id === deadJob.job.id);
     await owner.query("UPDATE searqon.jobs SET lease_expires_at = now() - interval '1 second' WHERE id = $1",[deadLease.id]);
     const afterDeadLease = await queue.claim(workerId,{limit:10,leaseSeconds:30,jobTypes:["alert_delivery"]});
     assert.equal(afterDeadLease.some(job => job.id === deadJob.job.id),false);
