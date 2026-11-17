@@ -90,6 +90,37 @@ test('overage charges only newly consumed units, never the full cumulative exces
   assert.equal(result.amountMicroUsd, 2000000);
 });
 
+test('trial answer-check allowance is a lifetime cap and never resets monthly', () => {
+  const trial = resolveEntitlements({
+    subscription: { status: 'trialing', trialEndsAt: '2026-11-20T00:00:00.000Z' },
+    now: Date.parse('2026-11-17T00:00:00.000Z')
+  });
+  const result = authorizeUsage({ entitlements: trial, meter: 'ai_answer_checks', used: 500, requested: 1 });
+  assert.equal(result.allowed, false);
+  assert.equal(result.reason, 'included_allowance_exhausted');
+});
+
+test('platform hard ceiling bounds customer-authorized overage spend', () => {
+  const growth = resolveEntitlements({ subscription: { status: 'active', plan: 'growth' } });
+  assert.throws(() => authorizeUsage({
+    entitlements: growth, meter: 'ai_answer_checks', used: 6000, requested: 1,
+    overage: { enabled: true, spendCapMicroUsd: ENTITLEMENTS.hardSafetyCeilings.maxOverageSpendMicroUsd + 1, spentMicroUsd: 0 }
+  }), /platform hard safety ceiling/);
+});
+
+test('enterprise overrides cannot bypass any configured quota ceiling', () => {
+  const subscription = { status: 'active', plan: 'enterprise' };
+  const now = Date.parse('2026-11-17T00:00:00.000Z');
+  assert.throws(() => resolveEntitlements({
+    subscription, now,
+    approvedOverrides: {
+      contractStatus: 'active', approvedBy: 'billing-admin',
+      validFrom: '2026-01-01T00:00:00.000Z', validUntil: '2027-01-01T00:00:00.000Z',
+      limits: { scheduledReportsPerMonth: 10001 }
+    }
+  }), /hard safety ceiling/);
+});
+
 test('overage cannot exceed customer spend cap', () => {
   const growth = resolveEntitlements({ subscription: { status: 'active', plan: 'growth' } });
   const result = authorizeUsage({
