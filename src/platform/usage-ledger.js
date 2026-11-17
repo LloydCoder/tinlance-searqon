@@ -209,6 +209,9 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
 
         const consumed = numberValue(counter.consumed_units, "consumed_units");
         const reserved = numberValue(counter.reserved_units, "reserved_units");
+        if (consumed + reserved + quantity > hardQuotaCeiling) {
+          throw new UsageLedgerError(409, "platform_usage_ceiling", "The platform hard safety ceiling for this usage meter would be exceeded.");
+        }
         const availableIncluded = Math.max(0, includedLimit - consumed - reserved);
         const includedReservedUnits = Math.min(quantity, availableIncluded);
         const overageReservedUnits = quantity - includedReservedUnits;
