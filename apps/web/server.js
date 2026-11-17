@@ -8,6 +8,7 @@ import { createAuthService } from "../../src/platform/auth.js";
 import { createEmailSender } from "../../src/platform/email.js";
 import { createWorkspaceService } from "../../src/platform/workspaces.js";
 import { createRecommendationService } from "../../src/platform/recommendations.js";
+import { createGeoObservationService } from "../../src/platform/geo-observations.js";
 
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
@@ -211,10 +212,11 @@ async function serveStatic(pathname, response, headOnly = false, acceptsHtml = f
   }
 }
 
-export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null } = {}) {
+export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null, geoObservationService = null } = {}) {
   const auth = authService ?? (database ? createAuthService({ database, emailSender: createEmailSender() }) : null);
   const workspace = workspaceService ?? (database ? createWorkspaceService({ database }) : null);
   const recommendations = recommendationService ?? (database ? createRecommendationService({ database }) : null);
+  const geoObservations = geoObservationService ?? (database ? createGeoObservationService({ database }) : null);
   const server = createServer(async (request, response) => {
     applySecurityHeaders(response);
     let url;
@@ -330,6 +332,69 @@ export function createAppServer({ database = null, authService = null, workspace
       } catch (error) {
         const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
         sendJson(response, status, { error: { code: status < 500 ? (error.code ?? "invalid_request") : "workspace_error", message: status < 500 ? error.message : "The workspace request could not be completed." } });
+      }
+      return;
+    }
+
+    const projectGeoObservationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/geo\/observations$/);
+    if (projectGeoObservationsRoute) {
+      const projectId = projectGeoObservationsRoute[1];
+      if (request.method !== "GET" && request.method !== "POST") {
+        response.setHeader("allow","GET, POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use GET or POST."}});
+        return;
+      }
+      if (!auth || !geoObservations) {
+        sendJson(response,503,{error:{code:"geo_observations_unavailable",message:"The authenticated GEO observation service is not configured."}});
+        return;
+      }
+      if (request.method === "POST" && !isSameOrigin(request,auth.publicOrigin)) {
+        sendJson(response,403,{error:{code:"origin_rejected",message:"The request origin is not allowed."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in to access GEO observations."}});
+          return;
+        }
+        if (request.method === "GET") {
+          const rawLimit = url.searchParams.get("limit");
+          const limit = rawLimit === null ? 50 : Number(rawLimit);
+          sendJson(response,200,{observations:await geoObservations.list(profile.user.id,projectId,{limit})});
+          return;
+        }
+        if (!requireJsonContentType(request,response)) return;
+        const body = await readJsonBody(request,MAX_BODY_BYTES);
+        sendJson(response,201,await geoObservations.submit(profile.user.id,projectId,body));
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status < 500 ? (error.code ?? "invalid_request") : "geo_observation_error",message:status < 500 ? error.message : "The GEO observation request could not be completed."}});
+      }
+      return;
+    }
+
+    const geoEvidenceRoute = url.pathname.match(/^\/api\/v1\/geo-observations\/([^/]+)\/evidence$/);
+    if (geoEvidenceRoute) {
+      if (request.method !== "GET") {
+        response.setHeader("allow","GET");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use GET."}});
+        return;
+      }
+      if (!auth || !geoObservations) {
+        sendJson(response,503,{error:{code:"geo_observations_unavailable",message:"The authenticated GEO observation service is not configured."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in to access GEO evidence."}});
+          return;
+        }
+        sendJson(response,200,await geoObservations.getEvidence(profile.user.id,geoEvidenceRoute[1]));
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status < 500 ? (error.code ?? "invalid_request") : "geo_observation_error",message:status < 500 ? error.message : "The GEO evidence request could not be completed."}});
       }
       return;
     }
