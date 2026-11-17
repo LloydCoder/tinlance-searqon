@@ -76,7 +76,13 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
 
     const release = await ledger.release(userA, orgA, second.id, { reason: "cancelled_before_dispatch" });
     assert.equal(release.status, "released");
-    assert.equal((await ledger.getPeriod(userA, orgA, "ai_answer_checks", periodStart)).consumedUnits, 3);
+    await owner.query("UPDATE searqon.usage_reservations SET expires_at = now() - interval '1 second' WHERE id = $1", [third.id]);
+    const expired = await ledger.releaseExpired(userA, orgA, { now: new Date() });
+    assert.equal(expired.releasedCount, 1);
+    assert.equal(expired.reservations[0].id, third.id);
+    const usageAfterRelease = await ledger.getPeriod(userA, orgA, "ai_answer_checks", periodStart);
+    assert.equal(usageAfterRelease.consumedUnits, 3);
+    assert.equal(usageAfterRelease.reservedUnits, 0);
 
     await assert.rejects(
       ledger.getPeriod(userB, orgB, "ai_answer_checks", periodStart),
@@ -91,7 +97,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
       "SELECT event_type, quantity_delta FROM searqon.usage_ledger_entries WHERE organization_id = $1 ORDER BY id",
       [orgA]
     );
-    assert.deepEqual(ledgerEntries.rows.map(row => row.event_type), ["reserved","reserved","reserved","settled","released"]);
+    assert.deepEqual(ledgerEntries.rows.map(row => row.event_type), ["reserved","reserved","reserved","settled","released","released"]);
     await assert.rejects(
       owner.query("UPDATE searqon.usage_ledger_entries SET event_type = 'tampered' WHERE organization_id = $1", [orgA]),
       error => error.code === "55000"
