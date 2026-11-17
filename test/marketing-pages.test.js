@@ -96,7 +96,7 @@ test("shared marketing styles preserve the brand palette and responsive layout",
 
 test("all internal links and static assets referenced by public pages resolve", async () => {
   await withServer(async base => {
-    const pages = ["/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/", "/security/", "/about/", "/contact/", "/privacy/", "/terms/", "/auth/login/", "/auth/register/"];
+    const pages = ["/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/", "/security/", "/about/", "/contact/", "/privacy/", "/terms/", "/auth/login/", "/auth/register/", "/404.html"];
     const references = new Set();
     for (const page of pages) {
       const response = await fetch(base + page);
