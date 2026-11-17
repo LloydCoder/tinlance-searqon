@@ -95,6 +95,16 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     assert.equal(afterRepeat.occurrenceCount,2);
     assert.equal(afterRepeat.latestAssessmentId,repeated.id);
 
+    const methodologyMismatch = await assess(project.id,htmlMissing);
+    await owner.query(
+      "UPDATE searqon.assessments SET report=jsonb_set(report,'{rulesVersion}',to_jsonb('test-methodology-change'::text)) WHERE id=$1",
+      [methodologyMismatch.id]
+    );
+    await assert.rejects(
+      service.verify(userA,recommendation.id,methodologyMismatch.id),
+      error => error.code === "verification_methodology_mismatch"
+    );
+
     const stillPresent = await assess(project.id,htmlMissing);
     const failedVerification = await service.verify(userA,recommendation.id,stillPresent.id);
     assert.equal(failedVerification.status,"not_resolved");
