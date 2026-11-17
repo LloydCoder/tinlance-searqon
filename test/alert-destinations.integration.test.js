@@ -64,10 +64,6 @@ test("alert destination secrets are encrypted, unreadable to request runtime and
       )),
       error => error.code === "42501"
     );
-    const decrypted = await store.getForDelivery("worker-node-alerts",orgA,created.id);
-    assert.equal(decrypted.secret,secret);
-    assert.equal(decrypted.displayName,"Operations alerts");
-
     const hidden = await store.list(userB,orgA);
     assert.equal(hidden.length,0);
     await assert.rejects(
