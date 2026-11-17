@@ -26,7 +26,7 @@ html,body{max-width:100%;overflow-x:clip}
 .nav-shell{width:min(1340px,calc(100% - 64px))}
 .hero{padding-top:56px;padding-bottom:30px}
 .hero-kicker,.hero-footnote,.dashboard-caption{display:none}
-.hero h1{font-size:clamp(39px,4.1vw,50px);line-height:1.12;max-width:1120px;margin:0 auto 18px;letter-spacing:-.045em}
+.hero h1{font-size:clamp(39px,4.1vw,50px);font-weight:400;line-height:1.12;max-width:1120px;margin:0 auto 18px;letter-spacing:-.045em}
 .hero-copy{font-size:16px;max-width:790px}
 .hero-actions{margin-top:23px}
 .dashboard-wrap{max-width:920px}
