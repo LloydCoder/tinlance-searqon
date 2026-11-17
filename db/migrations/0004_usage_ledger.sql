@@ -10,17 +10,11 @@ CREATE TABLE searqon.usage_period_counters (
   included_limit bigint NOT NULL CHECK (included_limit >= 0),
   consumed_units bigint NOT NULL DEFAULT 0 CHECK (consumed_units >= 0),
   reserved_units bigint NOT NULL DEFAULT 0 CHECK (reserved_units >= 0),
-  overage_enabled boolean NOT NULL DEFAULT false,
-  spend_cap_micro_usd bigint NOT NULL DEFAULT 0 CHECK (spend_cap_micro_usd >= 0),
-  overage_spent_micro_usd bigint NOT NULL DEFAULT 0 CHECK (overage_spent_micro_usd >= 0),
-  overage_reserved_micro_usd bigint NOT NULL DEFAULT 0 CHECK (overage_reserved_micro_usd >= 0),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (organization_id, meter, period_start),
   CONSTRAINT usage_period_bounds CHECK (period_end > period_start),
   CONSTRAINT usage_period_identity UNIQUE (organization_id, meter, period_start, period_end),
-  CONSTRAINT usage_period_spend_cap_ceiling CHECK (spend_cap_micro_usd <= 100000000000),
-  CONSTRAINT usage_period_overage_policy CHECK (overage_enabled OR spend_cap_micro_usd = 0),
   CONSTRAINT usage_period_meter_ceiling CHECK (
     CASE meter
       WHEN 'ai_answer_checks' THEN included_limit <= 1000000
@@ -37,14 +31,28 @@ CREATE TABLE searqon.usage_period_counters (
       WHEN 'api_requests' THEN consumed_units + reserved_units <= 5000000
     END
   ),
-  CONSTRAINT usage_period_spend_within_cap CHECK (
-    overage_spent_micro_usd + overage_reserved_micro_usd <= spend_cap_micro_usd
-  ),
   CONSTRAINT usage_period_units_safe CHECK (
     consumed_units <= 9007199254740991
     AND reserved_units <= 9007199254740991
     AND consumed_units + reserved_units <= 9007199254740991
   )
+);
+
+CREATE TABLE searqon.usage_spend_periods (
+  organization_id uuid NOT NULL REFERENCES searqon.organizations(id) ON DELETE RESTRICT,
+  period_start timestamptz NOT NULL,
+  period_end timestamptz NOT NULL,
+  overage_enabled boolean NOT NULL DEFAULT false,
+  spend_cap_micro_usd bigint NOT NULL DEFAULT 0 CHECK (spend_cap_micro_usd BETWEEN 0 AND 100000000000),
+  overage_spent_micro_usd bigint NOT NULL DEFAULT 0 CHECK (overage_spent_micro_usd >= 0),
+  overage_reserved_micro_usd bigint NOT NULL DEFAULT 0 CHECK (overage_reserved_micro_usd >= 0),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (organization_id, period_start),
+  CONSTRAINT usage_spend_period_bounds CHECK (period_end > period_start),
+  CONSTRAINT usage_spend_period_identity UNIQUE (organization_id, period_start, period_end),
+  CONSTRAINT usage_spend_period_cap CHECK (overage_spent_micro_usd + overage_reserved_micro_usd <= spend_cap_micro_usd),
+  CONSTRAINT usage_spend_period_policy CHECK (overage_enabled OR spend_cap_micro_usd = 0)
 );
 
 CREATE TABLE searqon.usage_reservations (
@@ -89,6 +97,10 @@ CREATE TABLE searqon.usage_reservations (
     FOREIGN KEY (organization_id, meter, period_start, period_end)
     REFERENCES searqon.usage_period_counters (organization_id, meter, period_start, period_end)
     ON DELETE RESTRICT,
+  CONSTRAINT usage_reservation_spend_period_fk
+    FOREIGN KEY (organization_id, period_start, period_end)
+    REFERENCES searqon.usage_spend_periods (organization_id, period_start, period_end)
+    ON DELETE RESTRICT,
   CONSTRAINT usage_reservation_idempotency_unique UNIQUE (organization_id, idempotency_key),
   CONSTRAINT usage_reservation_org_id_unique UNIQUE (organization_id, id)
 );
@@ -130,12 +142,27 @@ CREATE TRIGGER usage_ledger_entries_no_update
   BEFORE UPDATE OR DELETE ON searqon.usage_ledger_entries
   FOR EACH ROW EXECUTE FUNCTION searqon.reject_usage_ledger_mutation();
 
+ALTER TABLE searqon.usage_spend_periods ENABLE ROW LEVEL SECURITY;
+ALTER TABLE searqon.usage_spend_periods FORCE ROW LEVEL SECURITY;
 ALTER TABLE searqon.usage_period_counters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE searqon.usage_period_counters FORCE ROW LEVEL SECURITY;
 ALTER TABLE searqon.usage_reservations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE searqon.usage_reservations FORCE ROW LEVEL SECURITY;
 ALTER TABLE searqon.usage_ledger_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE searqon.usage_ledger_entries FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY usage_spend_member_access ON searqon.usage_spend_periods
+  FOR ALL
+  USING (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = usage_spend_periods.organization_id
+      AND m.user_id = searqon.current_user_id()
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = usage_spend_periods.organization_id
+      AND m.user_id = searqon.current_user_id()
+  ));
 
 CREATE POLICY usage_period_member_access ON searqon.usage_period_counters
   FOR ALL
@@ -178,8 +205,9 @@ CREATE POLICY usage_ledger_member_insert ON searqon.usage_ledger_entries
       AND m.user_id = searqon.current_user_id()
   ));
 
-REVOKE ALL PRIVILEGES ON searqon.usage_period_counters, searqon.usage_reservations, searqon.usage_ledger_entries FROM PUBLIC, searqon_app;
+REVOKE ALL PRIVILEGES ON searqon.usage_spend_periods, searqon.usage_period_counters, searqon.usage_reservations, searqon.usage_ledger_entries FROM PUBLIC, searqon_app;
 REVOKE ALL ON FUNCTION searqon.reject_usage_ledger_mutation() FROM PUBLIC;
+GRANT SELECT, INSERT, UPDATE ON searqon.usage_spend_periods TO searqon_app;
 GRANT SELECT, INSERT, UPDATE ON searqon.usage_period_counters TO searqon_app;
 GRANT SELECT, INSERT, UPDATE ON searqon.usage_reservations TO searqon_app;
 GRANT SELECT, INSERT ON searqon.usage_ledger_entries TO searqon_app;
