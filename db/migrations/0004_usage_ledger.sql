@@ -18,6 +18,17 @@ CREATE TABLE searqon.usage_period_counters (
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (organization_id, meter, period_start),
   CONSTRAINT usage_period_bounds CHECK (period_end > period_start),
+  CONSTRAINT usage_period_identity UNIQUE (organization_id, meter, period_start, period_end),
+  CONSTRAINT usage_period_spend_cap_ceiling CHECK (spend_cap_micro_usd <= 100000000000),
+  CONSTRAINT usage_period_overage_policy CHECK (overage_enabled OR spend_cap_micro_usd = 0),
+  CONSTRAINT usage_period_meter_ceiling CHECK (
+    CASE meter
+      WHEN 'ai_answer_checks' THEN included_limit <= 1000000
+      WHEN 'crawl_pages' THEN included_limit <= 5000000
+      WHEN 'keyword_months' THEN included_limit <= 1000000
+      WHEN 'api_requests' THEN included_limit <= 5000000
+    END
+  ),
   CONSTRAINT usage_period_spend_within_cap CHECK (
     overage_spent_micro_usd + overage_reserved_micro_usd <= spend_cap_micro_usd
   ),
@@ -49,6 +60,15 @@ CREATE TABLE searqon.usage_reservations (
   created_at timestamptz NOT NULL DEFAULT now(),
   settled_at timestamptz,
   CONSTRAINT usage_reservation_period_bounds CHECK (period_end > period_start),
+  CONSTRAINT usage_reservation_meter_ceiling CHECK (
+    CASE meter
+      WHEN 'ai_answer_checks' THEN requested_units <= 1000000
+      WHEN 'crawl_pages' THEN requested_units <= 5000000
+      WHEN 'keyword_months' THEN requested_units <= 1000000
+      WHEN 'api_requests' THEN requested_units <= 5000000
+    END
+  ),
+  CONSTRAINT usage_reservation_amount_ceiling CHECK (reserved_amount_micro_usd <= 100000000000),
   CONSTRAINT usage_reservation_split CHECK (
     included_reserved_units + overage_reserved_units = requested_units
   ),
@@ -58,8 +78,8 @@ CREATE TABLE searqon.usage_reservations (
     OR (status = 'released' AND actual_units IS NULL AND charged_amount_micro_usd IS NULL AND settled_at IS NOT NULL)
   ),
   CONSTRAINT usage_reservation_counter_fk
-    FOREIGN KEY (organization_id, meter, period_start)
-    REFERENCES searqon.usage_period_counters (organization_id, meter, period_start)
+    FOREIGN KEY (organization_id, meter, period_start, period_end)
+    REFERENCES searqon.usage_period_counters (organization_id, meter, period_start, period_end)
     ON DELETE RESTRICT,
   CONSTRAINT usage_reservation_idempotency_unique UNIQUE (organization_id, idempotency_key),
   CONSTRAINT usage_reservation_org_id_unique UNIQUE (organization_id, id)
