@@ -384,22 +384,20 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
     },
 
 
-    async releaseExpired(userId, organizationId, { limit = 100, now = new Date() } = {}) {
+    async releaseExpired(userId, organizationId, { limit = 100 } = {}) {
       requireUuid(userId, "user_id");
       requireUuid(organizationId, "organization_id");
       requireSafeInteger(limit, "limit", { minimum: 1 });
       if (limit > 500) throw new UsageLedgerError(400, "invalid_limit", "The expiry batch limit cannot exceed 500.");
-      const cutoff = now instanceof Date ? now : new Date(now);
-      if (!Number.isFinite(cutoff.getTime())) throw new UsageLedgerError(400, "invalid_now", "The expiry cutoff must be a valid timestamp.");
       return withUserTransaction(database.pool, userId, async client => {
         await requireUsageWriter(client, organizationId, userId);
         const expired = await client.query(
           `SELECT * FROM searqon.usage_reservations
-           WHERE organization_id = $1 AND status = 'reserved' AND expires_at <= $2
+           WHERE organization_id = $1 AND status = 'reserved' AND expires_at <= now()
            ORDER BY expires_at, id
-           LIMIT $3
+           LIMIT $2
            FOR UPDATE SKIP LOCKED`,
-          [organizationId, cutoff, limit]
+          [organizationId, limit]
         );
         const released = [];
         for (const reservation of expired.rows) {
