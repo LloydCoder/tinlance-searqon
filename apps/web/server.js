@@ -7,6 +7,7 @@ import { createDatabase } from "../../src/platform/database.js";
 import { createAuthService } from "../../src/platform/auth.js";
 import { createEmailSender } from "../../src/platform/email.js";
 import { createWorkspaceService } from "../../src/platform/workspaces.js";
+import { createRecommendationService } from "../../src/platform/recommendations.js";
 
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
@@ -210,9 +211,10 @@ async function serveStatic(pathname, response, headOnly = false, acceptsHtml = f
   }
 }
 
-export function createAppServer({ database = null, authService = null, workspaceService = null } = {}) {
+export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null } = {}) {
   const auth = authService ?? (database ? createAuthService({ database, emailSender: createEmailSender() }) : null);
   const workspace = workspaceService ?? (database ? createWorkspaceService({ database }) : null);
+  const recommendations = recommendationService ?? (database ? createRecommendationService({ database }) : null);
   const server = createServer(async (request, response) => {
     applySecurityHeaders(response);
     let url;
@@ -328,6 +330,85 @@ export function createAppServer({ database = null, authService = null, workspace
       } catch (error) {
         const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
         sendJson(response, status, { error: { code: status < 500 ? (error.code ?? "invalid_request") : "workspace_error", message: status < 500 ? error.message : "The workspace request could not be completed." } });
+      }
+      return;
+    }
+
+    const projectRecommendationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendations$/);
+    if (projectRecommendationsRoute) {
+      const projectId = projectRecommendationsRoute[1];
+      if (request.method !== "GET" && request.method !== "POST") {
+        response.setHeader("allow", "GET, POST");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or POST." } });
+        return;
+      }
+      if (!auth || !recommendations) {
+        sendJson(response, 503, { error: { code: "recommendations_unavailable", message: "The authenticated recommendation service is not configured." } });
+        return;
+      }
+      if (request.method === "POST" && !isSameOrigin(request, auth.publicOrigin)) {
+        sendJson(response, 403, { error: { code: "origin_rejected", message: "The request origin is not allowed." } });
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response, 401, { error: { code: "unauthenticated", message: "Sign in to manage recommendations." } });
+          return;
+        }
+        if (request.method === "GET") {
+          sendJson(response, 200, { recommendations: await recommendations.list(profile.user.id, projectId) });
+          return;
+        }
+        if (!requireJsonContentType(request, response)) return;
+        const body = await readJsonBody(request, MAX_AUTH_BODY_BYTES);
+        const result = await recommendations.syncFromAssessment(profile.user.id, projectId, body?.assessmentId);
+        sendJson(response, 200, result);
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response, status, { error: { code: status < 500 ? (error.code ?? "invalid_request") : "recommendations_error", message: status < 500 ? error.message : "The recommendation request could not be completed." } });
+      }
+      return;
+    }
+
+    const recommendationActionRoute = url.pathname.match(/^\/api\/v1\/recommendations\/([^/]+)(?:\/(status|verify|events))?$/);
+    if (recommendationActionRoute) {
+      const recommendationId = recommendationActionRoute[1];
+      const action = recommendationActionRoute[2] ?? "events";
+      const expectedMethod = action === "events" ? "GET" : "POST";
+      if (request.method !== expectedMethod) {
+        response.setHeader("allow", expectedMethod);
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use " + expectedMethod + "." } });
+        return;
+      }
+      if (!auth || !recommendations) {
+        sendJson(response, 503, { error: { code: "recommendations_unavailable", message: "The authenticated recommendation service is not configured." } });
+        return;
+      }
+      if (expectedMethod === "POST" && !isSameOrigin(request, auth.publicOrigin)) {
+        sendJson(response, 403, { error: { code: "origin_rejected", message: "The request origin is not allowed." } });
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response, 401, { error: { code: "unauthenticated", message: "Sign in to manage recommendations." } });
+          return;
+        }
+        if (action === "events") {
+          sendJson(response, 200, { events: await recommendations.history(profile.user.id, recommendationId) });
+          return;
+        }
+        if (!requireJsonContentType(request, response)) return;
+        const body = await readJsonBody(request, MAX_AUTH_BODY_BYTES);
+        if (action === "status") {
+          sendJson(response, 200, { recommendation: await recommendations.transition(profile.user.id, recommendationId, body?.status) });
+        } else {
+          sendJson(response, 200, { recommendation: await recommendations.verify(profile.user.id, recommendationId, body?.assessmentId) });
+        }
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response, status, { error: { code: status < 500 ? (error.code ?? "invalid_request") : "recommendations_error", message: status < 500 ? error.message : "The recommendation request could not be completed." } });
       }
       return;
     }

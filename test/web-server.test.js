@@ -409,3 +409,80 @@ test("authenticated production assessment writes reject cross-origin requests", 
     else process.env.NODE_ENV = previous;
   }
 });
+
+
+test("recommendation APIs enforce authentication, same-origin writes and explicit lifecycle operations", async () => {
+  let origin;
+  const calls = [];
+  const authService = {
+    get publicOrigin() { return origin; },
+    async getProfile(token) {
+      if (token !== "R".repeat(43)) return null;
+      return { user: { id: "51000000-0000-4000-8000-000000000001" }, organizations: [] };
+    }
+  };
+  const recommendationService = {
+    async list(userId, projectId) {
+      calls.push(["list",userId,projectId]);
+      return [{ id: "rec-1", status: "open" }];
+    },
+    async syncFromAssessment(userId, projectId, assessmentId) {
+      calls.push(["sync",userId,projectId,assessmentId]);
+      return { counts: { created: 1, updated: 0, replayed: 0 } };
+    },
+    async transition(userId, recommendationId, status) {
+      calls.push(["transition",userId,recommendationId,status]);
+      return { id: recommendationId, status };
+    },
+    async verify(userId, recommendationId, assessmentId) {
+      calls.push(["verify",userId,recommendationId,assessmentId]);
+      return { id: recommendationId, status: "verified" };
+    },
+    async history(userId, recommendationId) {
+      calls.push(["history",userId,recommendationId]);
+      return [{ id: 1, eventType: "created" }];
+    }
+  };
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const unauthorized = await fetch(base + "/api/v1/projects/project-1/recommendations");
+    assert.equal(unauthorized.status,401);
+
+    const cookie = "searqon_session=" + "R".repeat(43);
+    const list = await fetch(base + "/api/v1/projects/project-1/recommendations",{headers:{cookie}});
+    assert.equal(list.status,200);
+    assert.equal((await list.json()).recommendations[0].id,"rec-1");
+
+    const crossOrigin = await fetch(base + "/api/v1/projects/project-1/recommendations",{
+      method:"POST",headers:{cookie,origin:"https://attacker.example","content-type":"application/json"},
+      body:JSON.stringify({assessmentId:"assessment-1"})
+    });
+    assert.equal(crossOrigin.status,403);
+
+    const sync = await fetch(base + "/api/v1/projects/project-1/recommendations",{
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},
+      body:JSON.stringify({assessmentId:"assessment-1"})
+    });
+    assert.equal(sync.status,200);
+    assert.equal((await sync.json()).counts.created,1);
+
+    const status = await fetch(base + "/api/v1/recommendations/rec-1/status",{
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},
+      body:JSON.stringify({status:"accepted"})
+    });
+    assert.equal(status.status,200);
+    assert.equal((await status.json()).recommendation.status,"accepted");
+
+    const verify = await fetch(base + "/api/v1/recommendations/rec-1/verify",{
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},
+      body:JSON.stringify({assessmentId:"assessment-2"})
+    });
+    assert.equal(verify.status,200);
+    assert.equal((await verify.json()).recommendation.status,"verified");
+
+    const history = await fetch(base + "/api/v1/recommendations/rec-1/events",{headers:{cookie}});
+    assert.equal(history.status,200);
+    assert.equal((await history.json()).events[0].eventType,"created");
+    assert.deepEqual(calls.map(item=>item[0]),["list","sync","transition","verify","history"]);
+  },{authService,recommendationService});
+});
