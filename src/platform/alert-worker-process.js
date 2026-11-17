@@ -95,13 +95,16 @@ export async function assertAlertWorkerRole(pool, workerId) {
     const result = await client.query(
       `SELECT
         has_table_privilege(current_user,'searqon.jobs','SELECT') AS "jobsSelect",
-        has_column_privilege(current_user,'searqon.jobs','status','UPDATE') AS "jobsUpdate",
+        (SELECT bool_and(has_column_privilege(current_user,'searqon.jobs',column_name,'UPDATE'))
+         FROM unnest(ARRAY['status','attempts','scheduled_at','lease_owner','lease_token','lease_expires_at','finished_at','result_sha256','last_error_code','updated_at']) AS column_name) AS "jobsUpdate",
         has_table_privilege(current_user,'searqon.job_events','SELECT') AS "eventsSelect",
         has_table_privilege(current_user,'searqon.job_events','INSERT') AS "eventsInsert",
+        has_sequence_privilege(current_user,'searqon.job_events_id_seq','USAGE') AS "eventsSequence",
         has_table_privilege(current_user,'searqon.alert_destinations','SELECT') AS "destinationsSelect",
         has_table_privilege(current_user,'searqon.geo_alert_events','SELECT') AS "alertEventsSelect",
         has_table_privilege(current_user,'searqon.alert_delivery_outbox','SELECT') AS "outboxSelect",
-        has_column_privilege(current_user,'searqon.alert_delivery_outbox','status','UPDATE') AS "outboxUpdate"`
+        (SELECT bool_and(has_column_privilege(current_user,'searqon.alert_delivery_outbox',column_name,'UPDATE'))
+         FROM unnest(ARRAY['status','provider_receipt_id','last_error_code','delivered_at','updated_at']) AS column_name) AS "outboxUpdate"`
     );
     const privileges = result.rows?.[0];
     if (!privileges || Object.values(privileges).some(value => value !== true)) {
@@ -146,7 +149,7 @@ export async function runAlertWorker({
   const config = parseAlertWorkerConfig(env);
   const database = await createDatabaseImpl({
     connectionString: config.databaseUrl,
-    maxConnections: config.concurrency + 2,
+    maxConnections: config.concurrency * 2 + 2,
     onPoolError: event => logger.error?.({ event: "alert_worker_database_pool_error", code: safeCode(event) })
   });
   try {
