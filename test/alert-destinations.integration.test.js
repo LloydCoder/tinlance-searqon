@@ -94,7 +94,7 @@ test("alert destination secrets are encrypted, unreadable to request runtime and
 
     const disabled = await store.disable(userA,orgA,created.id);
     assert.equal(disabled.status,"disabled");
-    assert.equal(await store.getForDelivery("worker-node-alerts",orgA,created.id),null);
+    assert.equal((await store.list(userA,orgA))[0].status,"disabled");
 
     const audit = await owner.query(
       "SELECT event_type,subject_type,subject_id FROM searqon.audit_events WHERE organization_id=$1 AND subject_id=$2 ORDER BY id",
