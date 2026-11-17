@@ -1,0 +1,88 @@
+.pricing-page{--price-ink:#12203A;--price-amber:#E8A33D;--price-slate:#4A5670;--price-paper:#FFFEFA}
+.pricing-hero{padding:84px 0 68px;max-width:980px}
+.pricing-overline{margin:18px 0 8px;font:500 10px/1.5 "DM Mono",ui-monospace,monospace;letter-spacing:.16em;color:var(--page-amber-deep)}
+.pricing-hero h1{font-size:clamp(46px,6vw,76px);font-weight:400;line-height:1.04;letter-spacing:-.06em;margin:12px 0 18px}
+.pricing-hero h1 em,.pricing-section h2 em,.pricing-trial-inner h2 em,.pricing-bottom h2 em{font-style:normal;color:#59657A}
+.pricing-intro{max-width:720px;color:var(--price-slate);font-size:18px;line-height:1.65}
+.pricing-status{display:flex;gap:13px;align-items:flex-start;padding:18px 20px;background:#EDE9E0;border:1px solid #D9D2C5;border-left:3px solid var(--price-amber);margin-top:26px;max-width:820px}
+.pricing-status-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:var(--page-amber-deep);margin-top:6px}
+.pricing-status strong{font-size:13px;letter-spacing:-.01em}
+.pricing-status p{font-size:12px;line-height:1.65;color:var(--price-slate);margin:5px 0 0}
+.pricing-hero-links{display:flex;flex-wrap:wrap;gap:11px;margin-top:24px}
+.pricing-button{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:47px;padding:0 18px;border-radius:6px;font-size:12px;font-weight:650}
+.pricing-button.primary{background:var(--price-ink);color:white;border:1px solid var(--price-ink)}
+.pricing-button.secondary{background:var(--price-paper);color:var(--price-ink);border:1px solid var(--page-mist)}
+.pricing-button:focus-visible,.pricing-card-link:focus-visible,details summary:focus-visible{outline:3px solid var(--page-amber-deep);outline-offset:3px}
+.pricing-section{padding:65px 0;border-top:1px solid var(--page-line)}
+.pricing-section-head{display:grid;grid-template-columns:1fr .75fr;gap:7%;align-items:end;margin-bottom:28px}
+.pricing-section-head h2,.pricing-section>h2,.pricing-trial-inner h2,.pricing-bottom h2{font-size:clamp(32px,4.3vw,49px);line-height:1.08;letter-spacing:-.05em;margin:10px 0 0}
+.pricing-section-head>p,.pricing-lead{font-size:14px;line-height:1.7;color:var(--price-slate);margin:0}
+.pricing-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch}
+.pricing-card{position:relative;display:flex;flex-direction:column;min-width:0;padding:23px 22px 20px;background:var(--price-paper);border:1px solid var(--page-line);border-radius:8px}
+.pricing-card.pricing-featured{border:1px solid #C99B52;box-shadow:0 9px 26px rgba(18,32,58,.07)}
+.pricing-popular{font:500 8px/1.4 "DM Mono",ui-monospace,monospace;letter-spacing:.1em;color:#80500D;background:#F3E8D4;padding:7px 9px;margin:-23px -22px 18px;border-radius:7px 7px 0 0}
+.pricing-tier{font:500 9px/1.5 "DM Mono",ui-monospace,monospace;letter-spacing:.12em;color:var(--page-amber-deep)}
+.pricing-card h3{font-size:24px;letter-spacing:-.04em;margin:10px 0 5px}
+.pricing-card-top>p{font-size:12px;line-height:1.6;color:var(--price-slate);min-height:58px;margin:0}
+.pricing-price{display:flex;align-items:baseline;gap:7px;margin-top:22px}
+.pricing-price strong{font-size:35px;letter-spacing:-.06em;line-height:1;font-weight:650;font-variant-numeric:tabular-nums}
+.pricing-price span{font-size:11px;color:var(--price-slate)}
+.pricing-billing{font-size:10px;line-height:1.5;color:var(--page-amber-deep);min-height:31px;margin:8px 0 15px}
+.pricing-card ul{list-style:none;padding:14px 0 0;margin:0;border-top:1px solid var(--page-line);flex:1}
+.pricing-card li{font-size:11px;line-height:1.55;color:var(--price-slate);padding:5px 0}
+.pricing-card li:before{content:"✓";font-weight:700;color:var(--page-amber-deep);margin-right:8px}
+.pricing-card-link{display:inline-block;margin-top:20px;padding-top:13px;border-top:1px solid var(--page-line);font-size:11px;font-weight:650;color:var(--page-amber-deep)}
+.pricing-card-link:hover{text-decoration:underline;text-underline-offset:3px;color:var(--price-ink)}
+.pricing-enterprise .pricing-price strong{font-size:29px}
+.pricing-footnote{font-size:11px;line-height:1.65;color:var(--price-slate);margin:17px 0 0}
+.pricing-trial-band{background:#12203A;color:#F6F3EC;padding:66px 0}
+.pricing-trial-inner{display:grid;grid-template-columns:.8fr 1.2fr;gap:9%;align-items:start}
+.pricing-trial-inner .page-eyebrow{color:var(--price-amber)}
+.pricing-trial-inner h2{margin:12px 0 14px}
+.pricing-trial-inner h2 em{color:#D7DCE5}
+.pricing-trial-inner>div:first-child>p{font-size:13px;line-height:1.7;color:#C6CCD6;max-width:360px}
+.pricing-trial-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.pricing-trial-facts>div{padding:17px 15px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.13)}
+.pricing-trial-facts>div strong{display:block;font-size:26px;letter-spacing:-.05em;color:#F0B95E}
+.pricing-trial-facts>div span{display:block;font-size:10px;line-height:1.45;color:#D4D9E1;margin-top:4px}
+.pricing-trial-facts ul{grid-column:1/-1;list-style:none;padding:14px 0 0;margin:4px 0 0;border-top:1px solid rgba(255,255,255,.16)}
+.pricing-trial-facts li{font-size:12px;line-height:1.65;color:#D4D9E1;padding:4px 0}
+.pricing-trial-facts li:before{content:"—";color:#F0B95E;margin-right:9px}
+.pricing-table-wrap{overflow:auto;margin-top:22px;border:1px solid var(--page-line);border-radius:8px;background:var(--price-paper);overscroll-behavior-inline:contain}
+.pricing-table{width:100%;min-width:850px;border-collapse:collapse;text-align:left}
+.pricing-table th,.pricing-table td{padding:13px 14px;border-bottom:1px solid var(--page-line);vertical-align:middle;font-size:11px;line-height:1.5}
+.pricing-table thead th{position:sticky;top:0;background:#EDE9E0;font:500 9px/1.45 "DM Mono",ui-monospace,monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--price-ink);white-space:nowrap}
+.pricing-table tbody th{font-weight:650;color:var(--price-ink);min-width:205px}
+.pricing-table td{color:var(--price-slate);font-variant-numeric:tabular-nums}
+.pricing-table td:not(:first-child){text-align:center}
+.pricing-table tr:last-child th,.pricing-table tr:last-child td{border-bottom:0}
+.feature-table td{font-size:14px;text-align:center!important;color:#2E7651;font-weight:650}
+.feature-table td:empty{color:var(--price-slate)}
+.pricing-callout{padding:19px 21px;background:#EDE9E0;border-left:3px solid var(--price-amber);margin-top:22px}
+.pricing-callout strong{display:block;font-size:13px;margin-bottom:5px}
+.pricing-callout p{font-size:12px;line-height:1.65;color:var(--price-slate);margin:0}
+.pricing-guardrails{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:25px}
+.pricing-guardrails article{border-top:1px solid var(--page-line);padding-top:13px}
+.pricing-guardrails article>span{font:500 9px "DM Mono",ui-monospace,monospace;color:var(--page-amber-deep)}
+.pricing-guardrails h3{font-size:14px;margin:12px 0 5px}
+.pricing-guardrails p{font-size:11px;line-height:1.6;color:var(--price-slate);margin:0}
+.pricing-definitions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px;margin-top:24px}
+.pricing-definitions article{padding:18px 0;border-top:1px solid var(--page-line)}
+.pricing-definitions h3{font-size:14px;margin:0 0 6px}
+.pricing-definitions p{font-size:12px;line-height:1.7;color:var(--price-slate);margin:0}
+.pricing-faq details{border-top:1px solid var(--page-line);padding:17px 0}
+.pricing-faq details:last-child{border-bottom:1px solid var(--page-line)}
+.pricing-faq summary{font-size:13px;font-weight:650;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px}
+.pricing-faq summary::-webkit-details-marker{display:none}
+.pricing-faq summary:after{content:"+";font-size:18px;font-weight:400;color:var(--page-amber-deep)}
+.pricing-faq details[open] summary:after{content:"−"}
+.pricing-faq details p{max-width:820px;font-size:12px;line-height:1.7;color:var(--price-slate);margin:12px 0 0}
+.pricing-bottom{display:flex;align-items:end;justify-content:space-between;gap:35px;padding:62px 0 75px}
+.pricing-bottom>div:first-child{max-width:580px}
+.pricing-bottom h2{margin:10px 0 12px}
+.pricing-bottom>div:first-child>p{font-size:13px;line-height:1.7;color:var(--price-slate);margin:0}
+.pricing-bottom-actions{display:flex;flex-wrap:wrap;gap:10px}
+@media(max-width:1000px){.pricing-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.pricing-trial-inner{gap:5%}.pricing-section-head{gap:4%}}
+@media(max-width:720px){.pricing-hero{padding:58px 0 48px}.pricing-hero h1{font-size:clamp(39px,10vw,56px)}.pricing-intro{font-size:15px}.pricing-section{padding:48px 0}.pricing-section-head{grid-template-columns:1fr;gap:14px}.pricing-section-head h2,.pricing-section>h2,.pricing-trial-inner h2,.pricing-bottom h2{font-size:36px}.pricing-cards{grid-template-columns:1fr;gap:11px}.pricing-card{padding:21px}.pricing-popular{margin:-21px -21px 17px}.pricing-card-top>p{min-height:0}.pricing-trial-band{padding:48px 0}.pricing-trial-inner{grid-template-columns:1fr;gap:22px}.pricing-trial-facts{gap:7px}.pricing-trial-facts>div{padding:12px 10px}.pricing-trial-facts>div strong{font-size:22px}.pricing-trial-facts>div span{font-size:9px}.pricing-guardrails{grid-template-columns:1fr;gap:14px}.pricing-definitions{grid-template-columns:1fr}.pricing-bottom{align-items:flex-start;flex-direction:column;padding:48px 0 55px}.pricing-bottom-actions{width:100%}.pricing-button{min-height:44px}}
+@media(max-width:360px){.pricing-hero h1{font-size:36px}.pricing-trial-facts>div strong{font-size:19px}.pricing-table{min-width:810px}}
+@media(prefers-reduced-motion:reduce){.pricing-page *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
