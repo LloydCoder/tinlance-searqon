@@ -182,3 +182,23 @@ test("worker cancellation interrupts a provider response body read", async () =>
   setTimeout(() => controller.abort(), 20);
   await assert.rejects(pending, error => error.code === "dispatch_aborted");
 });
+
+
+test("Teams Workflows receives the documented Adaptive Card envelope", async () => {
+  const seen = [];
+  const workflowUrl = "https://" + "tenant.logic.azure.com/workflows/demo?api-version=2016-06-01&sig=fixture";
+  const sender = createAlertSender({
+    resolver: async hostname => {
+      assert.equal(hostname, "tenant.logic.azure.com");
+      return [{ address: "13.107.42.14", family: 4 }];
+    },
+    requestImpl: transport({ status: 202, body: "" }, seen)
+  });
+  const result = await sender.send({ channel: "teams", secret: workflowUrl, event: EVENT });
+  const body = JSON.parse(seen[0].body);
+  assert.equal(result.accepted, true);
+  assert.equal(body.type, "message");
+  assert.equal(body.attachments[0].contentType, "application/vnd.microsoft.card.adaptive");
+  assert.equal(body.attachments[0].contentUrl, null);
+  assert.equal(body.attachments[0].content.version, "1.4");
+});
