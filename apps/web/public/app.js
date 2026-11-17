@@ -84,11 +84,17 @@ if (form) {
     const source = form.elements.source.value.trim();
     const contentType = form.elements.contentType.value;
     const content = form.elements.content.value;
+    const contentBytes = new TextEncoder().encode(content).byteLength;
     resultPanel.hidden = true;
     resultPanel.replaceChildren();
     status.className = "form-status";
     if (!content.trim()) {
       status.textContent = "Paste a document before starting the assessment.";
+      status.classList.add("error");
+      return;
+    }
+    if (contentBytes > 2 * 1024 * 1024) {
+      status.textContent = "The document exceeds the 2 MiB limit. Reduce the content and try again.";
       status.classList.add("error");
       return;
     }
@@ -98,19 +104,33 @@ if (form) {
     try {
       const response = await fetch("/api/v1/assessments", {
         method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
         headers: { "content-type": "application/json", "accept": "application/json" },
         body: JSON.stringify({ source: source || "user-supplied-document", contentType, content })
       });
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload?.error?.message ?? "The assessment could not be completed.");
+        const error = new Error(payload?.error?.message ?? "The assessment could not be completed.");
+        error.status = response.status;
+        throw error;
       }
       renderAssessment(payload);
       status.textContent = "Assessment complete. Review the findings and their stated limitations.";
       status.classList.add("success");
     } catch (error) {
-      status.textContent = error instanceof Error ? error.message : "A network error prevented the assessment.";
       status.classList.add("error");
+      if (error?.status === 401) {
+        status.replaceChildren(document.createTextNode("Hosted assessments require a workspace. "));
+        const register = element("a", "", "Create a workspace");
+        register.href = "/auth/register/";
+        status.append(register, document.createTextNode(" or "));
+        const login = element("a", "", "sign in");
+        login.href = "/auth/login/";
+        status.append(login, document.createTextNode(" to continue."));
+      } else {
+        status.textContent = error instanceof Error ? error.message : "A network error prevented the assessment.";
+      }
     } finally {
       submit.disabled = false;
       submit.innerHTML = 'Analyze document <span aria-hidden="true">↗</span>';
