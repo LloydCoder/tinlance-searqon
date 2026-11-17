@@ -41,7 +41,7 @@ test("usage reservation validates meter, quantity, idempotency key and billing p
   await assert.rejects(ledger.reserve(userId, organizationId, { ...base, idempotencyKey: "short" }),
     error => error instanceof UsageLedgerError && error.code === "invalid_idempotency_key");
   await assert.rejects(ledger.getPeriod(userId, organizationId, "ai_answer_checks", "not-a-date"),
-    error => error instanceof UsageLedgerError && error.code === "invalid_period");
+    error => error instanceof UsageLedgerError && error.code === "invalid_period_start");
   assert.equal(connects(), 0);
 });
 
