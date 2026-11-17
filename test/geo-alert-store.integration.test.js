@@ -163,6 +163,9 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
     const deliveryJob = claimed.find(job=>job.jobType==="alert_delivery");
     assert.ok(deliveryJob);
     const deliveryId = deliveryJob.payload.deliveryId;
+    assert.equal(await destinationStore.getDelivery(workerId,deliveryId,deliveryJob.id,randomUUID()),null);
+    const rejectedMark = await destinationStore.markDelivered(workerId,deliveryId,deliveryJob.id,randomUUID(),{providerReceiptId:"stale-worker"});
+    assert.equal(rejectedMark.accepted,false);
     const delivery = await destinationStore.getDelivery(workerId,deliveryId,deliveryJob.id,deliveryJob.leaseToken);
     assert.equal(delivery.status,"queued");
     assert.equal(delivery.destination.secret,"https://hooks.slack.com/services/T000/B000/alert-delivery-secret");
