@@ -40,6 +40,12 @@ test("workspace projects and persisted assessments enforce tenant and role bound
       "INSERT INTO searqon.memberships (organization_id,user_id,role) VALUES ($1,$2,'owner'),($3,$4,'owner'),($1,$5,'viewer')",
       [orgA,userA,orgB,userB,viewer]
     );
+    await owner.query(
+      `INSERT INTO searqon.subscriptions
+        (organization_id,provider,provider_customer_id,provider_subscription_id,status,plan,billing_interval,current_period_start,current_period_end)
+       VALUES ($1,'manual','customer-workspace-a','subscription-workspace-a','active','growth','month','2026-11-01T00:00:00Z','2026-12-01T00:00:00Z')`,
+      [orgA]
+    );
 
     const project = await service.createProject(userA, {
       organizationId: orgA, name: "Primary website", targetUrl: "https://example.com/docs?token=private#section"
