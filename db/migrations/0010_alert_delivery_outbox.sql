@@ -35,7 +35,16 @@ CREATE INDEX alert_delivery_outbox_job_idx
 ALTER TABLE searqon.geo_alert_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE searqon.geo_alert_events FORCE ROW LEVEL SECURITY;
 CREATE POLICY geo_alert_events_worker_read ON searqon.geo_alert_events
-  FOR SELECT TO searqon_worker USING (true);
+  FOR SELECT TO searqon_worker USING (EXISTS (
+    SELECT 1
+    FROM searqon.alert_delivery_outbox o
+    JOIN searqon.jobs j ON j.id=o.job_id AND j.organization_id=o.organization_id
+    WHERE o.event_id=geo_alert_events.id
+      AND o.organization_id=geo_alert_events.organization_id
+      AND j.status='leased'
+      AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_expires_at > now()
+  ));
 
 ALTER TABLE searqon.alert_delivery_outbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE searqon.alert_delivery_outbox FORCE ROW LEVEL SECURITY;
@@ -55,9 +64,43 @@ CREATE POLICY alert_delivery_outbox_writer_insert ON searqon.alert_delivery_outb
       AND m.role IN ('owner','admin','analyst')
   ));
 CREATE POLICY alert_delivery_outbox_worker_read ON searqon.alert_delivery_outbox
-  FOR SELECT TO searqon_worker USING (true);
+  FOR SELECT TO searqon_worker USING (EXISTS (
+    SELECT 1 FROM searqon.jobs j
+    WHERE j.id=alert_delivery_outbox.job_id
+      AND j.organization_id=alert_delivery_outbox.organization_id
+      AND j.status='leased'
+      AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_expires_at > now()
+  ));
 CREATE POLICY alert_delivery_outbox_worker_update ON searqon.alert_delivery_outbox
-  FOR UPDATE TO searqon_worker USING (true) WITH CHECK (true);
+  FOR UPDATE TO searqon_worker USING (EXISTS (
+    SELECT 1 FROM searqon.jobs j
+    WHERE j.id=alert_delivery_outbox.job_id
+      AND j.organization_id=alert_delivery_outbox.organization_id
+      AND j.status='leased'
+      AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_expires_at > now()
+  )) WITH CHECK (EXISTS (
+    SELECT 1 FROM searqon.jobs j
+    WHERE j.id=alert_delivery_outbox.job_id
+      AND j.organization_id=alert_delivery_outbox.organization_id
+      AND j.status='leased'
+      AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_expires_at > now()
+  ));
+
+DROP POLICY alert_destinations_worker_read ON searqon.alert_destinations;
+CREATE POLICY alert_destinations_worker_read ON searqon.alert_destinations
+  FOR SELECT TO searqon_worker USING (EXISTS (
+    SELECT 1
+    FROM searqon.alert_delivery_outbox o
+    JOIN searqon.jobs j ON j.id=o.job_id AND j.organization_id=o.organization_id
+    WHERE o.destination_id=alert_destinations.id
+      AND o.organization_id=alert_destinations.organization_id
+      AND j.status='leased'
+      AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_expires_at > now()
+  ));
 
 REVOKE ALL PRIVILEGES ON searqon.alert_delivery_outbox FROM PUBLIC,searqon_app,searqon_worker;
 GRANT SELECT,INSERT ON searqon.alert_delivery_outbox TO searqon_app;
