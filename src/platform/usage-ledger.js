@@ -150,13 +150,22 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
       if (typeof input.idempotencyKey !== "string" || !IDEMPOTENCY_KEY.test(input.idempotencyKey)) {
         throw new UsageLedgerError(400, "invalid_idempotency_key", "A valid idempotency key between 8 and 128 safe characters is required.");
       }
-      const { periodStart, periodEnd } = ensurePeriod(input.periodStart, input.periodEnd);
 
       return withUserTransaction(database.pool, userId, async client => {
         await requireUsageWriter(client, organizationId, userId);
         // Serialize the idempotency namespace before checking or creating a reservation.
         // Hash collisions only serialize unrelated requests; they cannot weaken correctness.
         await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [organizationId + ":" + input.idempotencyKey]);
+        const entitlements = await getEntitlements(client, organizationId);
+        if (!entitlements || !ENTITLEMENTS.plans[entitlements.plan]) {
+          throw new UsageLedgerError(503, "entitlement_unavailable", "A valid server-side subscription plan could not be resolved.");
+        }
+        // Billing-period boundaries must come from canonical server-side subscription state,
+        // never from request parameters that a customer could vary to reset quota.
+        const { periodStart, periodEnd } = ensurePeriod(
+          entitlements.billingPeriod?.start,
+          entitlements.billingPeriod?.end
+        );
         const existing = await client.query(
           "SELECT * FROM searqon.usage_reservations WHERE organization_id = $1 AND idempotency_key = $2",
           [organizationId, input.idempotencyKey]
@@ -169,11 +178,6 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
             && numberValue(row.requested_units, "requested_units") === quantity;
           if (!matches) throw new UsageLedgerError(409, "idempotency_key_conflict", "The idempotency key was already used for a different usage request.");
           return reservationRow(row, true);
-        }
-
-        const entitlements = await getEntitlements(client, organizationId);
-        if (!entitlements || !ENTITLEMENTS.plans[entitlements.plan]) {
-          throw new UsageLedgerError(503, "entitlement_unavailable", "A valid server-side subscription plan could not be resolved.");
         }
         const includedLimit = entitlements?.limits?.[limitKey];
         const hardQuotaCeiling = ENTITLEMENTS.hardSafetyCeilings[METER_CEILINGS[meter]];
