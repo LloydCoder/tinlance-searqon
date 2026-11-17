@@ -17,7 +17,8 @@
     "dev:web": "node apps/web/server.js",
     "db:migrate:local": "node src/platform/migrate.js",
     "db:migrate": "node src/platform/migrate.js",
-    "start:web": "node apps/web/server.js"
+    "start:web": "node apps/web/server.js",
+    "start:alert-worker": "node src/platform/alert-worker-process.js"
   },
   "dependencies": {
     "pg": "8.23.1"
