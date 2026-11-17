@@ -174,7 +174,9 @@ REVOKE ALL ON FUNCTION searqon.reject_job_event_mutation() FROM PUBLIC;
 REVOKE ALL ON FUNCTION searqon.protect_job_identity() FROM PUBLIC;
 GRANT SELECT, INSERT ON searqon.jobs TO searqon_app;
 GRANT SELECT, INSERT ON searqon.job_events TO searqon_app;
-GRANT SELECT, UPDATE ON searqon.jobs TO searqon_worker;
+GRANT SELECT ON searqon.jobs TO searqon_worker;
+GRANT UPDATE (status,attempts,scheduled_at,lease_owner,lease_token,lease_expires_at,finished_at,result_sha256,last_error_code,updated_at)
+  ON searqon.jobs TO searqon_worker;
 GRANT SELECT, INSERT ON searqon.job_events TO searqon_worker;
 GRANT USAGE ON SEQUENCE searqon.job_events_id_seq TO searqon_app,searqon_worker;
 GRANT USAGE ON SCHEMA searqon TO searqon_worker;
