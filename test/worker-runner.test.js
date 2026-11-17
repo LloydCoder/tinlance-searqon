@@ -14,7 +14,7 @@ function fakeQueue(jobs = [job]) {
   const calls = { claim:[], complete:[], retry:[], extend:[] };
   return {
     calls,
-    async claim(workerId, options) { calls.claim.push({workerId,options}); return jobs; },
+    async claim(workerId, options) { calls.claim.push({workerId,options}); return Array.isArray(options.jobTypes) ? jobs.filter(item => options.jobTypes.includes(item.jobType)) : jobs; },
     async complete(workerId,id,token,options) { calls.complete.push({workerId,id,token,options}); return {accepted:true}; },
     async retry(workerId,id,token,options) { calls.retry.push({workerId,id,token,options}); return {accepted:true,job:{status:"queued"}}; },
     async extendLease(workerId,id,token,options) { calls.extend.push({workerId,id,token,options}); return {extended:true}; }
@@ -39,6 +39,7 @@ test("worker runner executes registered handlers and completes with a digest onl
   const result = await runner.runOnce();
   assert.deepEqual(result,{claimed:1,completed:1,retried:0,failed:0,leaseLost:0,runnerErrors:0});
   assert.equal(queue.calls.claim[0].options.limit,4);
+  assert.deepEqual(queue.calls.claim[0].options.jobTypes,["alert_delivery"]);
   assert.equal(queue.calls.complete.length,1);
   assert.match(queue.calls.complete[0].options.resultSha256,/^[a-f0-9]{64}$/);
   assert.equal("result" in queue.calls.complete[0].options,false);
@@ -57,12 +58,14 @@ test("handler errors use bounded machine error codes and exponential retry delay
   assert.equal(JSON.stringify(queue.calls.retry[0]).includes("private error detail"),false);
 });
 
-test("unregistered job handlers fail closed and retry without executing a side effect", async () => {
+test("workers with no registered handlers claim no jobs", async () => {
   const queue = fakeQueue();
   const runner = createWorkerRunner({queue,workerId:"worker-node-01",handlers:{}});
   const result = await runner.runOnce();
-  assert.equal(result.retried,1);
-  assert.equal(queue.calls.retry[0].options.errorCode,"handler_unavailable");
+  assert.equal(result.claimed,0);
+  assert.equal(result.retried,0);
+  assert.deepEqual(queue.calls.claim[0].options.jobTypes,[]);
+  assert.equal(queue.calls.retry.length,0);
   assert.equal(queue.calls.complete.length,0);
 });
 

@@ -56,3 +56,14 @@ test("worker methods fail closed when a dedicated worker database pool is not co
   await assert.rejects(queue.complete("worker-node-01","20000000-0000-4000-8000-000000000001","30000000-0000-4000-8000-000000000001"),
     error => error.code === "worker_unavailable");
 });
+
+
+test("claim validates an explicit allowlist of supported job types before database access", async () => {
+  const { queue, connects } = fixture();
+  const worker = "worker-node-01";
+  await assert.rejects(queue.claim(worker,{jobTypes:"alert_delivery"}), error => error.code === "invalid_job_types");
+  await assert.rejects(queue.claim(worker,{jobTypes:["unknown"]}), error => error.code === "invalid_job_types");
+  await assert.rejects(queue.claim(worker,{jobTypes:["alert_delivery","alert_delivery"]}), error => error.code === "invalid_job_types");
+  await assert.rejects(queue.claim(worker,{jobTypes:Array(7).fill("alert_delivery")}), error => error.code === "invalid_job_types");
+  assert.equal(connects(),0);
+});

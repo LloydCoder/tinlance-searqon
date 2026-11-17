@@ -29,6 +29,16 @@ function requireWorkerId(value) {
   return value;
 }
 
+function requireJobTypes(value) {
+  if (value === undefined || value === null) return null;
+  if (!Array.isArray(value) || value.length > JOB_TYPES.size
+    || value.some(type => typeof type !== "string" || !JOB_TYPES.has(type))
+    || new Set(value).size !== value.length) {
+    throw new JobQueueError(400,"invalid_job_types","Worker job types must be a unique list of supported job types.");
+  }
+  return [...value];
+}
+
 function requireInteger(value, field, min, max) {
   if (!Number.isSafeInteger(value) || value < min || value > max) {
     throw new JobQueueError(400,"invalid_"+field,field+" must be an integer between "+min+" and "+max+".");
@@ -207,17 +217,20 @@ export function createJobQueue({ database, workerPool = null } = {}) {
       });
     },
 
-    async claim(workerId, { limit = 10, leaseSeconds = 60 } = {}) {
+    async claim(workerId, { limit = 10, leaseSeconds = 60, jobTypes } = {}) {
       requireWorkerId(workerId);
       requireInteger(limit,"claim_limit",1,100);
       requireInteger(leaseSeconds,"lease_seconds",5,3600);
+      const allowedJobTypes = requireJobTypes(jobTypes);
       return withWorkerTransaction(workerPool,workerId,async client => {
         const exhausted = await client.query(
           `UPDATE searqon.jobs
            SET status='failed',lease_owner=NULL,lease_token=NULL,lease_expires_at=NULL,
                last_error_code='max_attempts_exceeded',finished_at=now(),updated_at=now()
            WHERE status='leased' AND lease_expires_at <= now() AND attempts >= max_attempts
-           RETURNING *`
+             AND ($1::text[] IS NULL OR job_type = ANY($1::text[]))
+           RETURNING *`,
+          [allowedJobTypes]
         );
         for (const row of exhausted.rows) await appendWorkerEvent(client,row,workerId,"failed",{reason:"max_attempts_exceeded"});
 
@@ -228,6 +241,7 @@ export function createJobQueue({ database, workerPool = null } = {}) {
              WHERE attempts < max_attempts
                AND ((status='queued' AND scheduled_at <= now())
                  OR (status='leased' AND lease_expires_at <= now()))
+               AND ($4::text[] IS NULL OR job_type = ANY($4::text[]))
              ORDER BY priority DESC,scheduled_at,created_at,id
              FOR UPDATE SKIP LOCKED
              LIMIT $1
@@ -241,7 +255,7 @@ export function createJobQueue({ database, workerPool = null } = {}) {
              RETURNING j.*,c.previous_status
            )
            SELECT * FROM updated ORDER BY priority DESC,scheduled_at,created_at,id`,
-          [limit,workerId,leaseSeconds]
+          [limit,workerId,leaseSeconds,allowedJobTypes]
         );
         for (const row of claimed.rows) {
           if (row.previous_status === "leased") await appendWorkerEvent(client,row,workerId,"lease_expired",{reclaimed:true});
