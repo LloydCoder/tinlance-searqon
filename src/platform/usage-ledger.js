@@ -234,12 +234,12 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
             (organization_id, meter, period_start, period_end, idempotency_key, requested_units,
              included_reserved_units, overage_reserved_units, reserved_amount_micro_usd,
              overage_rate_micro_usd_per_block, overage_block, expires_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, now() + ($12 * interval '1 second'))
            ON CONFLICT (organization_id, idempotency_key) DO NOTHING
            RETURNING *`,
           [organizationId, meter, periodStart, periodEnd, input.idempotencyKey, quantity,
             includedReservedUnits, overageReservedUnits, reservedAmountMicroUsd,
-            overageRateMicroUsdPerBlock, overageBlock, new Date(Date.now() + reservationTtlSeconds * 1000)]
+            overageRateMicroUsdPerBlock, overageBlock, reservationTtlSeconds]
         );
         if (!inserted.rows[0]) {
           const raced = await client.query(
@@ -293,6 +293,9 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           return reservationRow(reservation, true);
         }
         if (reservation.status !== "reserved") throw new UsageLedgerError(409, "reservation_not_active", "Only an active usage reservation can be settled.");
+        if (new Date(reservation.expires_at).getTime() <= Date.now()) {
+          throw new UsageLedgerError(409, "reservation_expired", "The usage reservation expired; release it and create a new reservation before dispatch.");
+        }
         const requested = numberValue(reservation.requested_units, "requested_units");
         if (actualUnits > requested) throw new UsageLedgerError(409, "reservation_underfunded", "Actual usage exceeds the reserved quantity; reserve the additional usage before settlement.");
 
