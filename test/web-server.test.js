@@ -486,3 +486,58 @@ test("recommendation APIs enforce authentication, same-origin writes and explici
     assert.deepEqual(calls.map(item=>item[0]),["list","sync","transition","verify","history"]);
   },{authService,recommendationService});
 });
+
+
+test("GEO observation APIs enforce authentication and same-origin ingestion", async () => {
+  let origin;
+  const calls = [];
+  const authService = {
+    get publicOrigin() { return origin; },
+    async getProfile(token) {
+      if (token !== "G".repeat(43)) return null;
+      return { user: { id: "51000000-0000-4000-8000-000000000001" }, organizations: [] };
+    }
+  };
+  const geoObservationService = {
+    async list(userId,projectId,options) {
+      calls.push(["list",userId,projectId,options.limit]);
+      return [{ id:"geo-observation-1" }];
+    },
+    async submit(userId,projectId,input) {
+      calls.push(["submit",userId,projectId,input.idempotencyKey]);
+      return { observation:{id:"geo-observation-1"},idempotentReplay:false };
+    },
+    async getEvidence(userId,observationId) {
+      calls.push(["evidence",userId,observationId]);
+      return { observationId,integrity:{valid:true} };
+    }
+  };
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const cookie = "searqon_session=" + "G".repeat(43);
+    const unauthorized = await fetch(base + "/api/v1/projects/project-1/geo/observations");
+    assert.equal(unauthorized.status,401);
+
+    const list = await fetch(base + "/api/v1/projects/project-1/geo/observations?limit=25",{headers:{cookie}});
+    assert.equal(list.status,200);
+    assert.equal((await list.json()).observations[0].id,"geo-observation-1");
+
+    const crossOrigin = await fetch(base + "/api/v1/projects/project-1/geo/observations",{
+      method:"POST",headers:{cookie,origin:"https://attacker.example","content-type":"application/json"},
+      body:JSON.stringify({idempotencyKey:["geo","observation","0001"].join("-")})
+    });
+    assert.equal(crossOrigin.status,403);
+
+    const submit = await fetch(base + "/api/v1/projects/project-1/geo/observations",{
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},
+      body:JSON.stringify({idempotencyKey:["geo","observation","0001"].join("-")})
+    });
+    assert.equal(submit.status,201);
+    assert.equal((await submit.json()).observation.id,"geo-observation-1");
+
+    const evidence = await fetch(base + "/api/v1/geo-observations/geo-observation-1/evidence",{headers:{cookie}});
+    assert.equal(evidence.status,200);
+    assert.equal((await evidence.json()).integrity.valid,true);
+    assert.deepEqual(calls.map(item=>item[0]),["list","submit","evidence"]);
+  },{authService,geoObservationService});
+});
