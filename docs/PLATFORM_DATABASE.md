@@ -64,3 +64,20 @@ The repository pins `pg@8.23.1` (node-postgres) and commits the generated npm lo
 Unit tests cover URL validation, pool bounds, TLS policy, safe error reporting, commit/rollback behavior and connection disposal. A PostgreSQL integration test runs the helper against a disposable PostgreSQL 16 service with a one-connection pool, proving RLS isolation across sequential identities and absence of tenant context when no identity is set.
 
 The adapter is wired into passwordless authentication and the tenant-scoped project/assessment service. Project creation/list/detail and synchronous persisted assessments run through RLS transactions and append-only audit events. Background workers, asynchronous jobs and production operations remain incomplete.
+
+## Durable usage ledger and quota reservations
+
+Migration `0004_usage_ledger.sql` adds tenant-scoped PostgreSQL usage periods, reservations and append-only usage events. The runtime adapter in `src/platform/usage-ledger.js` is intentionally a server-side service primitive; no public route or worker dispatch path is wired to it yet.
+
+- Each usage period snapshots its included limit, overage opt-in and spend cap. A changed plan or overage policy cannot silently rewrite an active period; period policy changes require an explicit future migration/workflow.
+- Reservation creation locks the tenant/meter/period counter row with `SELECT ... FOR UPDATE`, splits included and overage units, and reserves both quota and overage spend before provider work can be dispatched.
+- Organization-scoped idempotency keys prevent retries from reserving twice. Reusing a key for a different meter, quantity or period is rejected.
+- Settlement is bounded by the reservation, uses the overage rate and block size stored on that reservation, commits actual usage and releases unused reserved quota/spend in the same transaction. A repeated settlement with the same actual quantity is idempotent; a different quantity is rejected.
+- Release returns reserved quota and spend without recording consumption. Only enumerated release reasons are accepted.
+- Usage ledger events are append-only at the database trigger layer. Mutable counters and reservation state are transactionally updated with their corresponding immutable events.
+- RLS is forced on counters, reservations and ledger entries. The restricted runtime role can access only rows for workspaces where the authenticated transaction identity has a membership. Usage writes require owner, admin or analyst role.
+- Quota and spend arithmetic uses bounded safe integers in application code and PostgreSQL bigint constraints. Overage remains fail-closed unless the trusted server-side entitlement resolver explicitly supplies an enabled policy and positive spend cap.
+
+The integration suite verifies concurrent reservations at the included quota boundary, duplicate request idempotency, settlement/release behavior, overage quote capture and partial settlement, cross-tenant isolation, and rejection of ledger mutation.
+
+**Still not implemented:** a durable subscription/contract source of truth, customer-facing overage-consent workflow, verified payment-provider webhooks, invoice settlement, automated reservation expiry/reconciliation, worker dispatch integration, API-wide entitlement enforcement, billing notifications, provider budget controls, or production billing operations. Do not treat this ledger as a complete billing system or enable paid usage solely because the ledger exists.
