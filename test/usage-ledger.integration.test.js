@@ -131,7 +131,7 @@ test("PostgreSQL usage ledger prices only reserved overage and releases unused r
     getEntitlements: async () => ({
       ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }),
       limits: { ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }).limits, aiAnswerChecksPerMonth: 3 },
-      overage: { enabled: true, spendCapMicroUsd: 100_000 }
+      overage: { enabled: true, spendCapMicroUsd: 45_000 }
     })
   });
   try {
@@ -145,6 +145,13 @@ test("PostgreSQL usage ledger prices only reserved overage and releases unused r
     assert.equal(reservation.includedReservedUnits, 3);
     assert.equal(reservation.overageReservedUnits, 2);
     assert.equal(reservation.reservedAmountMicroUsd, 40_000);
+    await assert.rejects(
+      ledger.reserve(user, organization, {
+        meter: "keyword_months", quantity: 1001, periodStart, periodEnd,
+        idempotencyKey: "overage-cross-meter-01"
+      }),
+      error => error.code === "overage_spend_cap_exhausted"
+    );
 
     const settled = await ledger.settle(user, organization, reservation.id, { actualUnits: 4 });
     assert.equal(settled.chargedAmountMicroUsd, 20_000);
