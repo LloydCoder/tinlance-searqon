@@ -59,6 +59,7 @@ function numberValue(value, field) {
 function reservationRow(row, idempotentReplay = false) {
   return {
     id: row.id,
+    createdBy: row.created_by,
     meter: row.meter,
     periodStart: row.period_start,
     periodEnd: row.period_end,
@@ -127,12 +128,12 @@ async function requireUsageWriter(client, organizationId, userId) {
   if (!WRITERS.has(role)) throw new UsageLedgerError(403, "insufficient_role", "Your workspace role cannot reserve or settle billable usage.");
 }
 
-async function appendLedgerEntry(client, { organizationId, reservationId, meter, periodStart, eventType, quantityDelta, amountDeltaMicroUsd, metadata = {} }) {
+async function appendLedgerEntry(client, { organizationId, actorUserId, reservationId, meter, periodStart, eventType, quantityDelta, amountDeltaMicroUsd, metadata = {} }) {
   await client.query(
     `INSERT INTO searqon.usage_ledger_entries
-      (organization_id, reservation_id, meter, period_start, event_type, quantity_delta, amount_delta_micro_usd, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
-    [organizationId, reservationId, meter, periodStart, eventType, quantityDelta, amountDeltaMicroUsd, JSON.stringify(metadata)]
+      (organization_id, actor_user_id, reservation_id, meter, period_start, event_type, quantity_delta, amount_delta_micro_usd, metadata)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)`,
+    [organizationId, actorUserId, reservationId, meter, periodStart, eventType, quantityDelta, amountDeltaMicroUsd, JSON.stringify(metadata)]
   );
 }
 
@@ -283,13 +284,13 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
 
         const inserted = await client.query(
           `INSERT INTO searqon.usage_reservations
-            (organization_id, meter, period_start, period_end, idempotency_key, requested_units,
+            (organization_id, created_by, meter, period_start, period_end, idempotency_key, requested_units,
              included_reserved_units, overage_reserved_units, reserved_amount_micro_usd,
              overage_rate_micro_usd_per_block, overage_block, expires_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, now() + ($12 * interval '1 second'))
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now() + ($13 * interval '1 second'))
            ON CONFLICT (organization_id, idempotency_key) DO NOTHING
            RETURNING *`,
-          [organizationId, meter, periodStart, periodEnd, input.idempotencyKey, quantity,
+          [organizationId, userId, meter, periodStart, periodEnd, input.idempotencyKey, quantity,
             includedReservedUnits, overageReservedUnits, reservedAmountMicroUsd,
             overageRateMicroUsdPerBlock, overageBlock, reservationTtlSeconds]
         );
@@ -321,7 +322,7 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         );
         const row = inserted.rows[0];
         await appendLedgerEntry(client, {
-          organizationId, reservationId: row.id, meter, periodStart,
+          organizationId, actorUserId: userId, reservationId: row.id, meter, periodStart,
           eventType: "reserved", quantityDelta: quantity, amountDeltaMicroUsd: reservedAmountMicroUsd,
           metadata: { includedUnits: includedReservedUnits, overageUnits: overageReservedUnits }
         });
@@ -403,7 +404,7 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           [organizationId, reservationId, actualUnits, chargedAmountMicroUsd]
         );
         await appendLedgerEntry(client, {
-          organizationId, reservationId, meter: reservation.meter, periodStart: reservation.period_start,
+          organizationId, actorUserId: userId, reservationId, meter: reservation.meter, periodStart: reservation.period_start,
           eventType: "settled", quantityDelta: actualUnits, amountDeltaMicroUsd: chargedAmountMicroUsd,
           metadata: { releasedUnits: requested - actualUnits, releasedAmountMicroUsd: reservedAmount - chargedAmountMicroUsd }
         });
@@ -454,7 +455,7 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           [organizationId, reservationId, reason]
         );
         await appendLedgerEntry(client, {
-          organizationId, reservationId, meter: reservation.meter, periodStart: reservation.period_start,
+          organizationId, actorUserId: userId, reservationId, meter: reservation.meter, periodStart: reservation.period_start,
           eventType: "released", quantityDelta: 0, amountDeltaMicroUsd: 0,
           metadata: { releasedUnits: requested, releasedAmountMicroUsd: reservedAmount, reason }
         });
@@ -514,7 +515,7 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           );
           if (updated.rows[0]) {
             await appendLedgerEntry(client, {
-              organizationId, reservationId: reservation.id, meter: reservation.meter, periodStart: reservation.period_start,
+              organizationId, actorUserId: userId, reservationId: reservation.id, meter: reservation.meter, periodStart: reservation.period_start,
               eventType: "released", quantityDelta: 0, amountDeltaMicroUsd: 0,
               metadata: { releasedUnits: requested, releasedAmountMicroUsd: reservedAmount, reason: "reservation_expired" }
             });
