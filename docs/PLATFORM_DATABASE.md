@@ -110,3 +110,14 @@ The CI PostgreSQL job applies the migration and checks subscription constraints,
 - Forced RLS hides another tenant's subscription row. The runtime role has SELECT-only access and cannot mutate subscription state.
 
 The resolver is a tested source for the usage-ledger entitlement callback, but it is not yet wired into every billable API or worker path. Subscription creation/update, provider webhook processing, overage consent, invoicing and end-to-end billing enforcement remain future work.
+
+
+## Atomic fixed-quota consumption
+
+Migration `0006_extended_usage_meters.sql` extends the durable usage ledger with `manual_assessments` and `supplied_geo_observations`. These meters have hard platform ceilings and do not support overage.
+
+`createUsageLedger().consume(userId, organizationId, input, operation)` performs quota validation, usage counter mutation, reservation/settlement record creation, immutable usage-event insertion and the supplied database operation inside one tenant-scoped PostgreSQL transaction. If the operation throws, the quota and all operation writes roll back together. An idempotency key cannot consume the same allowance twice; a committed replay returns the prior usage receipt without rerunning the operation.
+
+The workspace assessment service now uses this primitive for manual assessments. Assessment persistence, analyzer result/failure recording, audit event and quota consumption commit atomically. A failed analyzer attempt is recorded and consumes one manual-assessment unit; a database/transaction failure rolls back both the assessment write and usage charge. The analyzer is local and synchronous; the atomic callback must not perform external network or provider side effects.
+
+The PostgreSQL integration suite verifies concurrent quota boundaries, rollback on callback failure, idempotent replay, RLS and the Free plan's one-assessment monthly allowance. Other published entitlements (AI answer checks, crawling, keywords, API requests, scheduled reports, project/team counts and GEO observation limits) are not thereby enforced end-to-end; each product operation must be wired to the appropriate meter before those limits are represented as operational.
