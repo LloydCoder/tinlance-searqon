@@ -334,7 +334,7 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const projectRecommendationsRoute = url.pathname.match(/^\\/api\\/v1\\/projects\\/([^/]+)\\/recommendations$/);
+    const projectRecommendationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendations$/);
     if (projectRecommendationsRoute) {
       const projectId = projectRecommendationsRoute[1];
       if (request.method !== "GET" && request.method !== "POST") {
@@ -371,7 +371,7 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const recommendationActionRoute = url.pathname.match(/^\\/api\\/v1\\/recommendations\\/([^/]+)(?:\\/(status|verify|events))?$/);
+    const recommendationActionRoute = url.pathname.match(/^\/api\/v1\/recommendations\/([^/]+)(?:\/(status|verify|events))?$/);
     if (recommendationActionRoute) {
       const recommendationId = recommendationActionRoute[1];
       const action = recommendationActionRoute[2] ?? "events";
