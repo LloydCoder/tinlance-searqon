@@ -46,7 +46,7 @@ Searqon is an Apache-2.0 open-source toolkit developed by Tinlance. It provides 
 - MCP analysis is passive; Searqon does not connect to an MCP server or invoke tools during scanning.
 - The hosted workspace foundation is not a generally available production SaaS. Billing, quotas, background jobs, full retention/deletion workflows, backups, monitoring and production deployment are incomplete.
 - The local evidence ledger is not encrypted, cross-process coordinated, remotely replicated or WORM-immutable.
-- Searqon does not guarantee search rankings, AI citations, recommendations or agent adoption. AgEO is a proposed Searqon discipline, not a universal industry standard.
+- Searqon does not guarantee search rankings, AI citations, recommendations or agent adoption. Agent readiness is a Searqon product discipline, not a universal industry standard.
 
 ## Developer documentation
 
