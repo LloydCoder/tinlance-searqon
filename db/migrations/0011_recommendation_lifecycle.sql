@@ -56,7 +56,8 @@ CREATE TABLE searqon.recommendations (
   CONSTRAINT recommendations_source_latest_distinct CHECK (
     verification_assessment_id IS NULL OR verification_assessment_id <> latest_assessment_id
   ),
-  CONSTRAINT recommendations_org_project_key_unique UNIQUE (organization_id, project_id, finding_key)
+  CONSTRAINT recommendations_org_project_key_unique UNIQUE (organization_id, project_id, finding_key),
+  CONSTRAINT recommendations_org_id_unique UNIQUE (organization_id, id)
 );
 CREATE INDEX recommendations_project_status_idx
   ON searqon.recommendations (organization_id, project_id, status, priority DESC, updated_at DESC);
@@ -68,6 +69,7 @@ CREATE TABLE searqon.recommendation_events (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   organization_id uuid NOT NULL,
   recommendation_id uuid NOT NULL,
+  project_id uuid NOT NULL,
   actor_user_id uuid NOT NULL REFERENCES searqon.app_users(id) ON DELETE RESTRICT,
   event_type text NOT NULL CHECK (event_type IN (
     'created','finding_reobserved','reopened','status_changed',
@@ -83,8 +85,8 @@ CREATE TABLE searqon.recommendation_events (
     FOREIGN KEY (organization_id, recommendation_id)
     REFERENCES searqon.recommendations (organization_id, id) ON DELETE RESTRICT,
   CONSTRAINT recommendation_events_assessment_fk
-    FOREIGN KEY (organization_id, assessment_id)
-    REFERENCES searqon.assessments (organization_id, id) ON DELETE RESTRICT
+    FOREIGN KEY (organization_id, project_id, assessment_id)
+    REFERENCES searqon.assessments (organization_id, project_id, id) ON DELETE RESTRICT
 );
 CREATE INDEX recommendation_events_history_idx
   ON searqon.recommendation_events (organization_id, recommendation_id, occurred_at DESC, id DESC);
