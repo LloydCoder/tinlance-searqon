@@ -24,7 +24,10 @@ test("public marketing routes are real pages with a shared accessible navigation
       ["/docs/", "Documentation"],
       ["/pricing/", "Pricing and early access"],
       ["/security/", "Security and trust"],
-      ["/about/", "About Searqon"],\n      ["/contact/", "Talk to the team"],\n      ["/privacy/", "Privacy, explained"],\n      ["/terms/", "Use the tools"]
+      ["/about/", "About Searqon"],
+      ["/contact/", "Talk to the team"],
+      ["/privacy/", "Privacy, explained"],
+      ["/terms/", "Use the tools"]
     ];
     for (const [path, heading] of routes) {
       const response = await fetch(base + path);
