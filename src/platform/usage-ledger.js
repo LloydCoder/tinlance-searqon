@@ -7,6 +7,12 @@ const METERS = Object.freeze({
   keyword_months: "trackedKeywords",
   api_requests: "apiRequestsPerMonth"
 });
+const METER_CEILINGS = Object.freeze({
+  ai_answer_checks: "aiAnswerChecksPerMonth",
+  crawl_pages: "crawlPagesPerMonth",
+  keyword_months: "trackedKeywords",
+  api_requests: "apiRequestsPerMonth"
+});
 const WRITERS = new Set(["owner", "admin", "analyst"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
@@ -64,6 +70,7 @@ function reservationRow(row, idempotentReplay = false) {
     chargedAmountMicroUsd: row.charged_amount_micro_usd === null ? null : numberValue(row.charged_amount_micro_usd, "charged_amount_micro_usd"),
     createdAt: row.created_at,
     settledAt: row.settled_at,
+    expiresAt: row.expires_at,
     idempotentReplay
   };
 }
@@ -120,12 +127,15 @@ async function appendLedgerEntry(client, { organizationId, reservationId, meter,
   );
 }
 
-export function createUsageLedger({ database, getEntitlements } = {}) {
+export function createUsageLedger({ database, getEntitlements, reservationTtlSeconds = 900 } = {}) {
   if (!database?.pool || typeof database.pool.connect !== "function") {
     throw new TypeError("A PostgreSQL database pool is required.");
   }
   if (typeof getEntitlements !== "function") {
     throw new TypeError("A trusted server-side entitlement resolver is required.");
+  }
+  if (!Number.isSafeInteger(reservationTtlSeconds) || reservationTtlSeconds < 30 || reservationTtlSeconds > 3600) {
+    throw new RangeError("reservationTtlSeconds must be between 30 and 3600.");
   }
 
   return Object.freeze({
@@ -160,7 +170,8 @@ export function createUsageLedger({ database, getEntitlements } = {}) {
 
         const entitlements = await getEntitlements(client, organizationId);
         const includedLimit = entitlements?.limits?.[limitKey];
-        if (!Number.isSafeInteger(includedLimit) || includedLimit < 0) {
+        const hardQuotaCeiling = ENTITLEMENTS.hardSafetyCeilings[METER_CEILINGS[meter]];
+        if (!Number.isSafeInteger(includedLimit) || includedLimit < 0 || includedLimit > hardQuotaCeiling || quantity > hardQuotaCeiling) {
           throw new UsageLedgerError(503, "entitlement_unavailable", "A valid server-side usage entitlement could not be resolved.");
         }
         const overageEnabled = entitlements.overage?.enabled === true;
@@ -222,13 +233,13 @@ export function createUsageLedger({ database, getEntitlements } = {}) {
           `INSERT INTO searqon.usage_reservations
             (organization_id, meter, period_start, period_end, idempotency_key, requested_units,
              included_reserved_units, overage_reserved_units, reserved_amount_micro_usd,
-             overage_rate_micro_usd_per_block, overage_block)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+             overage_rate_micro_usd_per_block, overage_block, expires_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
            ON CONFLICT (organization_id, idempotency_key) DO NOTHING
            RETURNING *`,
           [organizationId, meter, periodStart, periodEnd, input.idempotencyKey, quantity,
             includedReservedUnits, overageReservedUnits, reservedAmountMicroUsd,
-            overageRateMicroUsdPerBlock, overageBlock]
+            overageRateMicroUsdPerBlock, overageBlock, new Date(Date.now() + reservationTtlSeconds * 1000)]
         );
         if (!inserted.rows[0]) {
           const raced = await client.query(
@@ -366,6 +377,61 @@ export function createUsageLedger({ database, getEntitlements } = {}) {
           metadata: { releasedUnits: requested, releasedAmountMicroUsd: reservedAmount, reason }
         });
         return reservationRow(updated.rows[0]);
+      });
+    },
+
+
+    async releaseExpired(userId, organizationId, { limit = 100, now = new Date() } = {}) {
+      requireUuid(userId, "user_id");
+      requireUuid(organizationId, "organization_id");
+      requireSafeInteger(limit, "limit", { minimum: 1 });
+      if (limit > 500) throw new UsageLedgerError(400, "invalid_limit", "The expiry batch limit cannot exceed 500.");
+      const cutoff = now instanceof Date ? now : new Date(now);
+      if (!Number.isFinite(cutoff.getTime())) throw new UsageLedgerError(400, "invalid_now", "The expiry cutoff must be a valid timestamp.");
+      return withUserTransaction(database.pool, userId, async client => {
+        await requireUsageWriter(client, organizationId, userId);
+        const expired = await client.query(
+          `SELECT * FROM searqon.usage_reservations
+           WHERE organization_id = $1 AND status = 'reserved' AND expires_at <= $2
+           ORDER BY expires_at, id
+           FOR UPDATE SKIP LOCKED
+           LIMIT $3`,
+          [organizationId, cutoff, limit]
+        );
+        const released = [];
+        for (const reservation of expired.rows) {
+          const locked = await client.query(
+            `SELECT * FROM searqon.usage_period_counters
+             WHERE organization_id = $1 AND meter = $2 AND period_start = $3 FOR UPDATE`,
+            [organizationId, reservation.meter, reservation.period_start]
+          );
+          if (!locked.rows[0]) throw new UsageLedgerError(500, "usage_counter_missing", "The usage counter for an expired reservation is missing.");
+          const requested = numberValue(reservation.requested_units, "requested_units");
+          const reservedAmount = numberValue(reservation.reserved_amount_micro_usd, "reserved_amount_micro_usd");
+          await client.query(
+            `UPDATE searqon.usage_period_counters
+             SET reserved_units = reserved_units - $4,
+                 overage_reserved_micro_usd = overage_reserved_micro_usd - $5,
+                 updated_at = now()
+             WHERE organization_id = $1 AND meter = $2 AND period_start = $3`,
+            [organizationId, reservation.meter, reservation.period_start, requested, reservedAmount]
+          );
+          const updated = await client.query(
+            `UPDATE searqon.usage_reservations
+             SET status = 'released', release_reason = 'reservation_expired', settled_at = now()
+             WHERE organization_id = $1 AND id = $2 AND status = 'reserved' RETURNING *`,
+            [organizationId, reservation.id]
+          );
+          if (updated.rows[0]) {
+            await appendLedgerEntry(client, {
+              organizationId, reservationId: reservation.id, meter: reservation.meter, periodStart: reservation.period_start,
+              eventType: "released", quantityDelta: 0, amountDeltaMicroUsd: 0,
+              metadata: { releasedUnits: requested, releasedAmountMicroUsd: reservedAmount, reason: "reservation_expired" }
+            });
+            released.push(reservationRow(updated.rows[0]));
+          }
+        }
+        return { releasedCount: released.length, reservations: released };
       });
     },
 
