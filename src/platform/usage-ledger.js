@@ -171,10 +171,13 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         }
         // Billing-period boundaries must come from canonical server-side subscription state,
         // never from request parameters that a customer could vary to reset quota.
-        const { periodStart, periodEnd } = ensurePeriod(
-          entitlements.billingPeriod?.start,
-          entitlements.billingPeriod?.end
-        );
+        let period;
+        try {
+          period = ensurePeriod(entitlements.billingPeriod?.start, entitlements.billingPeriod?.end);
+        } catch {
+          throw new UsageLedgerError(503, "billing_period_unavailable", "The canonical subscription billing period could not be resolved.");
+        }
+        const { periodStart, periodEnd } = period;
         const existing = await client.query(
           "SELECT * FROM searqon.usage_reservations WHERE organization_id = $1 AND idempotency_key = $2",
           [organizationId, input.idempotencyKey]
