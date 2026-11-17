@@ -108,5 +108,8 @@ GRANT SELECT ON searqon.alert_delivery_outbox TO searqon_worker;
 GRANT UPDATE (status,provider_receipt_id,last_error_code,delivered_at,updated_at)
   ON searqon.alert_delivery_outbox TO searqon_worker;
 GRANT SELECT ON searqon.geo_alert_events TO searqon_worker;
+REVOKE UPDATE ON searqon.jobs FROM searqon_worker;
+GRANT UPDATE (status,attempts,scheduled_at,lease_owner,lease_token,lease_expires_at,finished_at,result_sha256,last_error_code,updated_at)
+  ON searqon.jobs TO searqon_worker;
 
 COMMIT;
