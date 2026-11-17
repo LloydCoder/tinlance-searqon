@@ -92,6 +92,9 @@ function validateComparison(input) {
   const baselineAt = timestamp(report.baselineAt,"baseline_at");
   const currentAt = timestamp(report.currentAt,"current_at");
   const evaluatedAt = timestamp(report.evaluatedAt,"evaluated_at");
+  if (currentAt.getTime() < baselineAt.getTime() || evaluatedAt.getTime() < currentAt.getTime()) {
+    throw new GeoAlertStoreError(400,"invalid_timestamp_order","Current capture and evaluation times must not precede the baseline/current capture.");
+  }
   if (!report.policy || !Number.isSafeInteger(report.policy.cooldownSeconds)
     || report.policy.cooldownSeconds < 0 || report.policy.cooldownSeconds > MAX_COOLDOWN_SECONDS) {
     throw new GeoAlertStoreError(400,"invalid_cooldown","Cooldown must be between zero and 30 days.");
@@ -180,7 +183,9 @@ export function createGeoAlertStore({ database, now = () => new Date() } = {}) {
   if (!database?.pool || typeof database.pool.connect !== "function") {
     throw new TypeError("A PostgreSQL database pool is required.");
   }
-  if (typeof now !== "function" || !(now() instanceof Date) || !Number.isFinite(now().getTime())) {
+  if (typeof now !== "function") throw new TypeError("A trusted server clock returning a valid Date is required.");
+  const initialClockValue = now();
+  if (!(initialClockValue instanceof Date) || !Number.isFinite(initialClockValue.getTime())) {
     throw new TypeError("A trusted server clock returning a valid Date is required.");
   }
 
