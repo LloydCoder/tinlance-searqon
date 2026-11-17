@@ -1,8 +1,14 @@
 # Vercel deployment
 
-**Status:** Deployment adapter implemented; production activation requires the external database and transactional-email configuration listed below.
+**Status:** Deployment adapter implemented; production activation requires an eligible Vercel plan, the external database and transactional-email configuration listed below.
 
 Searqon uses one repository. The Vercel project must be linked to `LloydCoder/tinlance-searqon` with the repository root as its Root Directory and `main` as its Production Branch. Do not create a second cloud repository or move the application into a separate source repository.
+
+## Plan eligibility and cost control
+
+Vercel Hobby is restricted to personal, non-commercial use. Searqon is intended as a commercial B2B product, so its production deployment requires Vercel Pro or Enterprise. The current Vercel pricing page lists Pro at USD $20/month plus any applicable usage and taxes. Confirm current terms and pricing before activation.
+
+Do not create a commercial Searqon deployment under Hobby, start a paid plan or trial, add a payment method, or accept usage charges without explicit budget approval. The current connected Vercel team is on Hobby; deployment is blocked until an eligible plan is approved or the hosting target is changed.
 
 ## Runtime shape
 
@@ -54,6 +60,7 @@ Do not execute migrations automatically on every serverless cold start.
 
 ## Acceptance checks
 
+- [ ] Commercially eligible Vercel plan and budget approved.
 - [ ] Vercel deployment is READY for the intended main commit.
 - [ ] Homepage, every public page, sitemap, robots.txt, llms.txt, icons and static assets return expected content and MIME types.
 - [ ] `/api/v1/health` returns 200.
