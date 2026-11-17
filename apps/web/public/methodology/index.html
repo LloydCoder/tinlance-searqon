@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12203A">
+  <meta name="description" content="Learn how Searqon scopes assessments, classifies observations, preserves evidence and communicates uncertainty.">
+  <link rel="canonical" href="https://searqon.tinlance.com/evidence-before-conclusions/">
+  <title>Evidence before conclusions — Searqon</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/pages.css">
+  <script src="/pages.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="page-header">
+    <div class="page-nav-shell">
+      <a class="page-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+      <button class="page-nav-toggle" type="button" aria-expanded="false" aria-controls="page-primary-nav" aria-label="Open navigation"><span></span><span></span></button>
+      <nav class="page-primary-nav" id="page-primary-nav" aria-label="Main navigation">
+        <a href="/product/">Product</a><a href="/solutions/">Solutions</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a>
+      </nav>
+      <a class="page-cta" href="/auth/register/">Get started <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+  <main id="main">
+  <section class="page-shell page-hero"><div class="page-kicker">METHOD & EVIDENCE</div><h1>Evidence before conclusions.<br><em>Method before metrics.</em></h1><p>Every assessment has a scope, input class, method and boundary. Results should be repeatable and inspectable—not presented as an unexplained score.</p></section>
+  <section class="page-shell page-section"><div class="page-split"><div><div class="page-eyebrow">ASSESSMENT SEQUENCE</div><h2>What happens<br><em>to an input.</em></h2></div><div class="page-list">
+    <article class="page-list-item"><span>01</span><div><h3>Declare scope</h3><p>Identify the supplied document or explicitly authorized public URL. A source label is not a permission grant.</p></div></article>
+    <article class="page-list-item"><span>02</span><div><h3>Validate acquisition</h3><p>For remote single-page scans, apply URL, DNS, redirect, robots and bounded-fetch controls. Broader crawling and browser execution are not implied.</p></div></article>
+    <article class="page-list-item"><span>03</span><div><h3>Preserve evidence</h3><p>Record source identifiers, timestamps, content digests and methodology metadata. A digest is not, by itself, proof of immutable storage.</p></div></article>
+    <article class="page-list-item"><span>04</span><div><h3>Run deterministic rules</h3><p>Analyze the supplied content with versioned rules. Report findings, coverage and limitations without inventing universal scores.</p></div></article>
+    <article class="page-list-item"><span>05</span><div><h3>Interpret observations</h3><p>GEO observations remain classified by source type. Consumer-facing observations and direct model API responses are not treated as interchangeable.</p></div></article>
+    <article class="page-list-item"><span>06</span><div><h3>Review and verify</h3><p>Recommendations and correction proposals require human review. Automated publishing, model-weight changes and guaranteed ranking outcomes are not claimed.</p></div></article>
+  </div></div></section>
+  <section class="page-shell page-section"><div class="page-eyebrow">OBSERVATION CLASSES</div><h2>Context changes<br><em>what evidence means.</em></h2>
+    <div class="page-table-wrap"><table class="page-table"><thead><tr><th>Class</th><th>Meaning</th><th>Interpretation</th></tr></thead><tbody>
+      <tr><td>crawl</td><td>Bounded page acquisition</td><td>Evidence about the fetched page and fetch context.</td></tr>
+      <tr><td>first_party</td><td>Owner-supplied or first-party source</td><td>Evidence whose origin and attestation should remain explicit.</td></tr>
+      <tr><td>consumer_observation</td><td>Observed output from a consumer-facing AI product</td><td>Must not be conflated with direct API responses.</td></tr>
+      <tr><td>model_api</td><td>Response from an approved model API</td><td>Depends on provider, model, prompt, region and configuration.</td></tr>
+      <tr><td>derived</td><td>Computed from other observations</td><td>Must retain links to its inputs and method.</td></tr>
+      <tr><td>estimate</td><td>Explicitly estimated value</td><td>Must remain labelled as an estimate, never a measured fact.</td></tr>
+    </tbody></table></div>
+  </section>
+  <section class="page-shell page-section"><div class="page-callout"><strong>Important limitation</strong><p>Current GEO analysis and citation alerts operate on caller-supplied observations. They do not collect live provider data or scrape consumer AI interfaces. Synthetic fixtures verify software behavior, not market accuracy.</p></div></section>
+  </main>
+  <footer class="page-footer">
+    <div class="page-footer-inner">
+      <a class="page-footer-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+      <nav class="page-footer-links" aria-label="Footer navigation">
+        <a href="/methodology/">Methodology</a><a href="/security/">Security</a><a href="/docs/">Documentation</a><a href="https://github.com/LloydCoder/tinlance-searqon">GitHub</a>
+      </nav>
+      <span class="page-footer-note">SEARQON BY TINLANCE · EARLY ALPHA</span>
+    </div>
+  </footer>
+</body>
+</html>
