@@ -4,6 +4,7 @@ BEGIN;
 CREATE TABLE searqon.alert_delivery_outbox (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES searqon.organizations(id) ON DELETE RESTRICT,
+  created_by uuid NOT NULL REFERENCES searqon.app_users(id) ON DELETE RESTRICT,
   event_id uuid NOT NULL,
   destination_id uuid NOT NULL,
   job_id uuid NOT NULL,
@@ -45,7 +46,9 @@ CREATE POLICY alert_delivery_outbox_member_read ON searqon.alert_delivery_outbox
       AND m.user_id = searqon.current_user_id()
   ));
 CREATE POLICY alert_delivery_outbox_writer_insert ON searqon.alert_delivery_outbox
-  FOR INSERT TO searqon_app WITH CHECK (EXISTS (
+  FOR INSERT TO searqon_app WITH CHECK (
+    created_by = searqon.current_user_id()
+    AND EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = alert_delivery_outbox.organization_id
       AND m.user_id = searqon.current_user_id()
