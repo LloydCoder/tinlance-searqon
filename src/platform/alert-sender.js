@@ -222,7 +222,32 @@ export function createAlertSender({
           response.destroy?.();
           throw new AlertDispatchError(502, "provider_redirect", "Alert provider redirects are not followed.", { retryable: false });
         }
-        const responseBody = await readResponse(response, maxResponseBytes);
+        let bodyTimer;
+        let abortBody;
+        let responseBody;
+        try {
+          responseBody = await Promise.race([
+            readResponse(response, maxResponseBytes),
+            new Promise((_, reject) => {
+              bodyTimer = setTimeout(() => {
+                const error = new AlertDispatchError(504, "provider_timeout", "The alert provider response timed out.", { retryable: true });
+                response.destroy?.(error);
+                reject(error);
+              }, timeoutMs);
+            }),
+            new Promise((_, reject) => {
+              abortBody = () => {
+                const error = new AlertDispatchError(499, "dispatch_aborted", "Alert dispatch was cancelled.");
+                response.destroy?.(error);
+                reject(error);
+              };
+              signal?.addEventListener("abort", abortBody, { once: true });
+            })
+          ]);
+        } finally {
+          clearTimeout(bodyTimer);
+          if (abortBody) signal?.removeEventListener("abort", abortBody);
+        }
         if (status === 429 || status >= 500) {
           throw new AlertDispatchError(503, "provider_unavailable", "The alert provider is temporarily unavailable.", { retryable: true });
         }
