@@ -211,9 +211,9 @@ async function enqueueAlertDeliveries(client,organizationId,userId,eventRow) {
     );
     await client.query(
       `INSERT INTO searqon.alert_delivery_outbox
-        (id,organization_id,event_id,destination_id,job_id,status)
-       VALUES ($1,$2,$3,$4,$5,'queued')`,
-      [deliveryId,organizationId,eventRow.id,destination.id,job.rows[0].id]
+        (id,organization_id,created_by,event_id,destination_id,job_id,status)
+       VALUES ($1,$2,$3,$4,$5,$6,'queued')`,
+      [deliveryId,organizationId,userId,eventRow.id,destination.id,job.rows[0].id]
     );
     deliveries.push({
       id:deliveryId,jobId:job.rows[0].id,destinationId:destination.id,
