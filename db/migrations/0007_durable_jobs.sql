@@ -85,7 +85,7 @@ CREATE OR REPLACE FUNCTION searqon.protect_job_identity()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog
-AS $
+AS $job_guard$
 BEGIN
   IF ROW(NEW.id,NEW.organization_id,NEW.created_by,NEW.job_type,NEW.payload_version,NEW.payload,
          NEW.payload_sha256,NEW.max_attempts,NEW.idempotency_key,NEW.created_at)
@@ -102,7 +102,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END
-$;
+$job_guard$;
 CREATE TRIGGER jobs_protect_identity
   BEFORE UPDATE ON searqon.jobs
   FOR EACH ROW EXECUTE FUNCTION searqon.protect_job_identity();
