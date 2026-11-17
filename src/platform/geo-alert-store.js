@@ -179,6 +179,50 @@ async function persistSnapshot(client, organizationId, userId, snapshotId, captu
   return { id:row.id, digest:row.payload_sha256, idempotentReplay:true };
 }
 
+async function enqueueAlertDeliveries(client,organizationId,userId,eventRow) {
+  const destinations = await client.query(
+    `SELECT id,channel FROM searqon.alert_destinations
+     WHERE organization_id=$1 AND status='enabled'
+     ORDER BY id FOR SHARE`,
+    [organizationId]
+  );
+  const deliveries = [];
+  for (const destination of destinations.rows) {
+    const deliveryId = randomUUID();
+    const jobId = randomUUID();
+    const payload = { deliveryId };
+    const serializedPayload = stableJson(payload);
+    const payloadSha256 = createHash("sha256").update(serializedPayload).digest("hex");
+    const idempotencyKey = "alert-delivery:"+eventRow.event_id+":"+destination.id;
+    const job = await client.query(
+      `INSERT INTO searqon.jobs
+        (id,organization_id,created_by,job_type,payload_version,payload,payload_sha256,status,priority,max_attempts,scheduled_at,idempotency_key)
+       VALUES ($1,$2,$3,'alert_delivery',1,$4::jsonb,$5,'queued',70,5,now(),$6)
+       RETURNING id,organization_id,attempts`,
+      [jobId,organizationId,userId,JSON.stringify(payload),payloadSha256,idempotencyKey]
+    );
+    await client.query(
+      `INSERT INTO searqon.job_events
+        (job_id,organization_id,event_type,actor_kind,actor_user_id,worker_id,attempt,metadata)
+       VALUES ($1,$2,'queued','user',$3,NULL,0,$4::jsonb)`,
+      [jobId,organizationId,userId,JSON.stringify({
+        jobType:"alert_delivery",deliveryId,eventId:eventRow.event_id,destinationId:destination.id
+      })]
+    );
+    await client.query(
+      `INSERT INTO searqon.alert_delivery_outbox
+        (id,organization_id,event_id,destination_id,job_id,status)
+       VALUES ($1,$2,$3,$4,$5,'queued')`,
+      [deliveryId,organizationId,eventRow.id,destination.id,job.rows[0].id]
+    );
+    deliveries.push({
+      id:deliveryId,jobId:job.rows[0].id,destinationId:destination.id,
+      channel:destination.channel,status:"queued"
+    });
+  }
+  return deliveries;
+}
+
 export function createGeoAlertStore({ database, now = () => new Date() } = {}) {
   if (!database?.pool || typeof database.pool.connect !== "function") {
     throw new TypeError("A PostgreSQL database pool is required.");
@@ -225,7 +269,8 @@ export function createGeoAlertStore({ database, now = () => new Date() } = {}) {
             }
             events.push({
               id:row.id,eventId:row.event_id,alertId:item.alertId,state:row.state,
-              suppressedUntil:row.suppressed_until,suppressionReason:row.suppression_reason,idempotentReplay:true
+              suppressedUntil:row.suppressed_until,suppressionReason:row.suppression_reason,
+              deliveries:[],idempotentReplay:true
             });
             continue;
           }
@@ -263,6 +308,7 @@ export function createGeoAlertStore({ database, now = () => new Date() } = {}) {
               state,suppressedUntil,suppressionReason,JSON.stringify(item.alert),item.payloadSha256,userId]
           );
           const row = inserted.rows[0];
+          let deliveries = [];
           if (state === "emitted") {
             const cooldownUntil = new Date(storedAt.getTime()+comparison.cooldownSeconds*1000);
             await client.query(
@@ -277,10 +323,12 @@ export function createGeoAlertStore({ database, now = () => new Date() } = {}) {
                  updated_at=now()`,
               [organizationId,item.dedupeKey,row.id,storedAt,comparison.evaluatedAt,cooldownUntil]
             );
+            deliveries = await enqueueAlertDeliveries(client,organizationId,userId,row);
           }
           events.push({
             id:row.id,eventId:row.event_id,alertId:item.alertId,state:row.state,
-            suppressedUntil:row.suppressed_until,suppressionReason:row.suppression_reason,idempotentReplay:false
+            suppressedUntil:row.suppressed_until,suppressionReason:row.suppression_reason,
+            deliveries,idempotentReplay:false
           });
         }
 
@@ -291,7 +339,8 @@ export function createGeoAlertStore({ database, now = () => new Date() } = {}) {
           summary:{
             emitted:events.filter(event => event.state === "emitted" && !event.idempotentReplay).length,
             suppressed:events.filter(event => event.state === "suppressed" && !event.idempotentReplay).length,
-            idempotentReplays:events.filter(event => event.idempotentReplay).length
+            idempotentReplays:events.filter(event => event.idempotentReplay).length,
+            queuedDeliveries:events.reduce((sum,event)=>sum+event.deliveries.length,0)
           }
         };
       });
