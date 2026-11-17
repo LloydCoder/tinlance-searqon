@@ -196,7 +196,7 @@ function renderRecommendations(project, recommendations) {
   heading.append(
     node("div","eyebrow","RECOMMENDATIONS"),
     node("h4","","Prioritized work"),
-    node("p","muted-copy","Turn a specific finding into an owned action, then verify it against a later comparable assessment.")
+    node("p","muted-copy","Turn a specific finding into a tracked action, then verify it against a later comparable assessment.")
   );
   if (canWrite) {
     const generate = actionButton("Generate from latest assessment ↗",async () => {
@@ -262,6 +262,9 @@ function renderRecommendations(project, recommendations) {
         actions.append(actionButton("Start work",() => changeStatus("in_progress","moved to in progress")));
         actions.append(actionButton("Dismiss",() => changeStatus("dismissed","dismissed")));
       } else if (recommendation.status === "in_progress" || recommendation.status === "not_resolved") {
+        if (recommendation.status === "not_resolved") {
+          actions.append(actionButton("Resume work",() => changeStatus("in_progress","moved back to in progress")));
+        }
         actions.append(actionButton("Dismiss",() => changeStatus("dismissed","dismissed")));
         const baseline = assessmentCache.find(item => item.id === recommendation.latestAssessmentId);
         const candidate = baseline && assessmentCache.find(item =>
