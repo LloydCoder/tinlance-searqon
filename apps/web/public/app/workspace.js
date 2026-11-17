@@ -16,6 +16,7 @@ let organizations = [];
 let activeOrganization = null;
 let projects = [];
 let selectedProject = null;
+let assessmentCache = [];
 
 function setStatus(message, tone = "") {
   status.textContent = message;
@@ -145,11 +146,12 @@ async function loadAssessmentHistory(project) {
   const history = document.querySelector("#assessment-history");
   history.replaceChildren();
   const result = await api("/api/v1/projects/" + encodeURIComponent(project.id) + "/assessments");
-  if (!result.assessments.length) {
+  assessmentCache = Array.isArray(result.assessments) ? result.assessments : [];
+  if (!assessmentCache.length) {
     history.append(node("p", "muted-copy", "No assessments have been recorded for this project."));
     return;
   }
-  for (const assessment of result.assessments) {
+  for (const assessment of assessmentCache) {
     const button = node("button", "history-item");
     button.type = "button";
     const date = assessment.completedAt ? new Date(assessment.completedAt).toLocaleString() : "In progress";
@@ -160,6 +162,156 @@ async function loadAssessmentHistory(project) {
     });
     history.append(button);
   }
+}
+
+function actionButton(label, onClick, disabled = false) {
+  const button = node("button","button button-light button-small",label);
+  button.type = "button";
+  button.disabled = disabled;
+  if (!disabled) button.addEventListener("click",onClick);
+  return button;
+}
+
+async function loadRecommendationHistory(recommendationId, target) {
+  target.replaceChildren();
+  const result = await api("/api/v1/recommendations/" + encodeURIComponent(recommendationId) + "/events");
+  if (!result.events.length) {
+    target.append(node("p","muted-copy","No lifecycle events have been recorded."));
+    return;
+  }
+  const list = node("ol","recommendation-event-list");
+  for (const event of result.events) {
+    const item = node("li","",event.eventType.replaceAll("_"," ") + " · " + new Date(event.occurredAt).toLocaleString());
+    list.append(item);
+  }
+  target.append(list);
+}
+
+function renderRecommendations(project, recommendations) {
+  const panel = document.querySelector("#recommendations-panel");
+  if (!panel) return;
+  panel.replaceChildren();
+  const canWrite = ["owner","admin","analyst"].includes(activeOrganization?.role);
+  const heading = node("div","recommendation-heading");
+  heading.append(
+    node("div","eyebrow","RECOMMENDATIONS"),
+    node("h4","","Prioritized work"),
+    node("p","muted-copy","Turn a specific finding into an owned action, then verify it against a later comparable assessment.")
+  );
+  if (canWrite) {
+    const generate = actionButton("Generate from latest assessment ↗",async () => {
+      const latest = assessmentCache.find(item => item.status === "succeeded");
+      if (!latest) {
+        setStatus("Run a successful assessment before generating recommendations.","error");
+        return;
+      }
+      generate.disabled = true;
+      try {
+        const result = await api("/api/v1/projects/" + encodeURIComponent(project.id) + "/recommendations",{
+          method:"POST",body:JSON.stringify({assessmentId:latest.id})
+        });
+        setStatus("Recommendations synchronized: " + result.counts.created + " new, " + result.counts.updated + " updated.","success");
+        await loadRecommendations(project);
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "Recommendation generation failed.","error");
+      } finally {
+        generate.disabled = false;
+      }
+    });
+    heading.append(generate);
+  }
+  panel.append(heading);
+  panel.append(node("p","recommendation-disclaimer","Verification checks whether the original deterministic finding is absent in a later successful assessment of the same content type and discipline. It is not a full quality certification."));
+  if (!recommendations.length) {
+    panel.append(node("p","muted-copy","No recommendations yet. Generate them from a successful assessment to create an evidence-linked worklist."));
+    return;
+  }
+  const list = node("div","recommendation-list");
+  for (const recommendation of recommendations) {
+    const card = node("article","recommendation-card");
+    const top = node("div","recommendation-card-top");
+    top.append(
+      node("span","recommendation-dimension",recommendation.dimension),
+      node("span","recommendation-severity " + recommendation.severity,recommendation.severity),
+      node("span","recommendation-state " + recommendation.status,recommendation.status.replaceAll("_"," "))
+    );
+    card.append(top);
+    card.append(node("h5","",recommendation.title));
+    card.append(node("p","recommendation-description",recommendation.description));
+    card.append(node("p","recommendation-action",recommendation.recommendedAction));
+    const meta = node("p","recommendation-meta","Priority " + recommendation.priority + " · Seen " + recommendation.occurrenceCount + " time" + (recommendation.occurrenceCount === 1 ? "" : "s"));
+    card.append(meta);
+    if (canWrite) {
+      const actions = node("div","recommendation-actions");
+      const changeStatus = async (status,label) => {
+        try {
+          await api("/api/v1/recommendations/" + encodeURIComponent(recommendation.id) + "/status",{
+            method:"POST",body:JSON.stringify({status})
+          });
+          setStatus("Recommendation " + label + ".","success");
+          await loadRecommendations(project);
+        } catch (error) {
+          setStatus(error instanceof Error ? error.message : "Recommendation update failed.","error");
+        }
+      };
+      if (recommendation.status === "open") {
+        actions.append(actionButton("Accept",() => changeStatus("accepted","accepted")));
+        actions.append(actionButton("Start work",() => changeStatus("in_progress","moved to in progress")));
+        actions.append(actionButton("Dismiss",() => changeStatus("dismissed","dismissed")));
+      } else if (recommendation.status === "accepted") {
+        actions.append(actionButton("Start work",() => changeStatus("in_progress","moved to in progress")));
+        actions.append(actionButton("Dismiss",() => changeStatus("dismissed","dismissed")));
+      } else if (recommendation.status === "in_progress" || recommendation.status === "not_resolved") {
+        actions.append(actionButton("Dismiss",() => changeStatus("dismissed","dismissed")));
+        const baseline = assessmentCache.find(item => item.id === recommendation.latestAssessmentId);
+        const candidate = baseline && assessmentCache.find(item =>
+          item.status === "succeeded" && item.id !== baseline.id
+          && new Date(item.completedAt) > new Date(baseline.completedAt)
+          && item.report?.evidence?.contentType === baseline.report?.evidence?.contentType
+          && item.report?.assessments?.[recommendation.dimension]?.status !== "not_assessed"
+        );
+        actions.append(actionButton(
+          candidate ? "Verify against later assessment" : "Run a later assessment to verify",
+          async () => {
+            try {
+              await api("/api/v1/recommendations/" + encodeURIComponent(recommendation.id) + "/verify",{
+                method:"POST",body:JSON.stringify({assessmentId:candidate.id})
+              });
+              setStatus("Recommendation verification recorded.","success");
+              await loadRecommendations(project);
+            } catch (error) {
+              setStatus(error instanceof Error ? error.message : "Recommendation verification failed.","error");
+            }
+          },
+          !candidate
+        ));
+      } else if (recommendation.status === "dismissed" || recommendation.status === "verified") {
+        actions.append(actionButton("Reopen",() => changeStatus("open","reopened")));
+      }
+      card.append(actions);
+    }
+    const history = node("details","recommendation-history");
+    const summary = node("summary","","View evidence and lifecycle history");
+    const events = node("div","recommendation-events");
+    summary.addEventListener("click",() => {
+      if (!history.dataset.loaded) {
+        history.dataset.loaded = "true";
+        loadRecommendationHistory(recommendation.id,events).catch(error => events.append(node("p","muted-copy",error.message)));
+      }
+    });
+    history.append(summary,events);
+    card.append(history);
+    list.append(card);
+  }
+  panel.append(list);
+}
+
+async function loadRecommendations(project) {
+  const panel = document.querySelector("#recommendations-panel");
+  if (!panel) return;
+  panel.replaceChildren(node("p","muted-copy","Loading recommendations…"));
+  const result = await api("/api/v1/projects/" + encodeURIComponent(project.id) + "/recommendations");
+  renderRecommendations(project,Array.isArray(result.recommendations) ? result.recommendations : []);
 }
 
 function renderProjectDetail(project) {
@@ -233,11 +385,15 @@ function renderProjectDetail(project) {
   history.id = "assessment-history";
   history.append(node("h4", "", "Assessment history"));
   projectDetail.append(history);
-  loadAssessmentHistory(project).catch(error => setStatus(error.message, "error"));
+  const recommendations = node("section","recommendation-panel");
+  recommendations.id = "recommendations-panel";
+  projectDetail.append(recommendations);
+  loadAssessmentHistory(project).then(() => loadRecommendations(project)).catch(error => setStatus(error.message, "error"));
 }
 
 function selectProject(project) {
   selectedProject = project;
+  assessmentCache = [];
   renderProjects();
   renderProjectDetail(project);
 }
@@ -279,6 +435,7 @@ async function loadWorkspace() {
 document.querySelector("#organization-select")?.addEventListener("change", async event => {
   activeOrganization = organizations.find(item => item.id === event.target.value) ?? null;
   selectedProject = null;
+  assessmentCache = [];
   organizationName.textContent = activeOrganization?.name ?? "Workspace";
   organizationRole.textContent = activeOrganization?.role ?? "Member";
   projectDetail.replaceChildren(node("p", "muted-copy", "Select a project to review its assessments."));
