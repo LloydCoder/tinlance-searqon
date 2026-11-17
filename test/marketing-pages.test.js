@@ -89,3 +89,23 @@ test("shared marketing styles preserve the brand palette and responsive layout",
     assert.match(page.headers.get("content-security-policy"), /fonts\.googleapis\.com/);
   });
 });
+
+
+test("all internal links and static assets referenced by public pages resolve", async () => {
+  await withServer(async base => {
+    const pages = ["/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/", "/security/", "/about/", "/contact/", "/privacy/", "/terms/", "/auth/login/", "/auth/register/"];
+    const references = new Set();
+    for (const page of pages) {
+      const response = await fetch(base + page);
+      assert.equal(response.status, 200, page);
+      const html = await response.text();
+      for (const match of html.matchAll(/(?:href|src)="(\/[^\"#?]*)"/g)) {
+        references.add(match[1]);
+      }
+    }
+    for (const path of references) {
+      const response = await fetch(base + path);
+      assert.equal(response.status, 200, "broken internal reference " + path);
+    }
+  });
+});
