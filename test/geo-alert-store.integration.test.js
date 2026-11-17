@@ -127,6 +127,14 @@ test("GEO alert snapshots, events and cooldowns persist idempotently under tenan
       )),
       error => error.code === "42501"
     );
+    await assert.rejects(
+      owner.query("UPDATE searqon.geo_alert_events SET state='suppressed' WHERE id=$1",[first.events[0].id]),
+      error => error.code === "55000"
+    );
+    await assert.rejects(
+      owner.query("DELETE FROM searqon.geo_alert_snapshots WHERE organization_id=$1 AND snapshot_id='baseline-1'",[orgA]),
+      error => error.code === "55000"
+    );
     const cooldown = await owner.query(
       "SELECT last_evaluated_at,cooldown_until FROM searqon.geo_alert_cooldowns WHERE organization_id=$1 AND dedupe_key=$2",
       [orgA,"a".repeat(64)]
