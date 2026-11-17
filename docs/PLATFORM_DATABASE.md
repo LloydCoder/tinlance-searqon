@@ -159,3 +159,12 @@ Migration `0008_geo_alert_state.sql` persists supplied aggregate snapshots, immu
 `createGeoAlertStore().recordComparison(userId, organizationId, { report, baseline, current })` stores bounded snapshots by stable ID and SHA-256 digest, verifies alert-to-snapshot references, and serializes each dedupe key with a transaction-scoped advisory lock. Alert IDs are idempotent; a repeated ID with changed content is rejected. Cooldowns use the trusted server clock rather than caller-supplied evaluation timestamps, and out-of-order evaluations are suppressed so an older comparison cannot roll cooldown state backwards. Events distinguish emitted from suppressed outcomes and retain the suppression reason. Snapshot/event rows are append-only and forced-RLS tenant scoped.
 
 This persists comparisons over caller-supplied observations only. No AI provider collection, consumer-interface automation, destination encryption, delivery outbox, webhook dispatch, retry worker, scheduler or monitoring is enabled. Customer/provider-labelled false-positive evaluation remains an external gate.
+
+
+## Encrypted alert destinations
+
+Migration `0009_encrypted_alert_destinations.sql` adds tenant-scoped Slack, Microsoft Teams and PagerDuty destination records. Credentials are encrypted before database insertion with AES-256-GCM, a 96-bit nonce, authentication tag, versioned 256-bit keyring and associated data binding the ciphertext to organization, destination, channel and key version. The database stores only ciphertext and a plaintext digest for integrity checking.
+
+The request role has column-level privileges to create destinations and read non-secret metadata, but cannot SELECT ciphertext, nonce, tag or secret digest. The separate worker role can read encrypted destination rows; the destination service authenticates/decrypts them only for delivery code. Creation and disable actions append audit events. Slack and Teams webhook URLs are restricted to official HTTPS host patterns; PagerDuty accepts a bounded routing key.
+
+Key material is injected by the operator and snapshotted in memory by the store. No key is generated, stored or managed by the database. Production key provisioning, rotation, backup/recovery, KMS/HSM integration, DNS pinning, egress controls, outbound senders, delivery outbox and end-to-end dispatch are not yet implemented. No webhook is contacted by this feature.
