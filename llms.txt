@@ -1,58 +1,67 @@
 # Searqon
 
-> Evidence-first open-source toolkit for assessing AI discoverability and agent readiness across SEO, AEO, GEO and AgEO.
+> Evidence-first intelligence for understanding how websites, documentation, APIs and published agent interfaces are discovered across search, answer engines, generative AI systems and authorized agents.
 
-Searqon by Tinlance analyzes local HTML, Markdown, OpenAPI documents, caller-supplied MCP snapshots, caller-supplied GEO observations and one explicitly authorized public web page. It produces evidence-linked, versioned assessment data and optional standalone HTML reports.
+Searqon is an Apache-2.0 open-source toolkit developed by Tinlance. It provides deterministic diagnostics for SEO, Answer Engine Optimization (AEO), Generative Engine Optimization (GEO) and Searqon's proposed Agent Discoverability & Readiness discipline (AgEO).
 
-## Project status
+## Product status
 
 - Maturity: early alpha; not production-ready.
 - Runtime: Node.js 22 or later.
 - Implementation: JavaScript ES modules; package name `@tinlance/searqon`.
+- Current package version: 0.2.0.
+- Runtime dependencies: PostgreSQL driver `pg`; the core CLI primarily uses Node.js built-ins.
 - License: Apache-2.0.
-- Current package version in package.json: 0.2.0.
-- Runtime dependencies: none currently declared.
+- Product home: https://searqon.tinlance.com/
+- Source repository: https://github.com/LloydCoder/tinlance-searqon
 
-## Start here
+## Public product pages
 
-- [README](README.md): supported workflows and quick start.
-- [Product Charter](docs/PRODUCT_CHARTER.md): intended users, product boundaries and non-goals.
-- [Documentation Index](docs/README.md): guides organized by documentation purpose.
-- [Scanner Contract](docs/SCANNER.md): inputs, rules, outputs and limitations.
-- [CLI Reference](docs/reference/cli.md): commands and options.
-- [Architecture](docs/ARCHITECTURE.md): system boundaries and evidence model.
-- [Security Policy](SECURITY.md): vulnerability reporting and security controls.
-- [Roadmap](docs/ROADMAP.md): phases and acceptance gates.
-- [Implementation Status](docs/EXECUTION_STATUS.md): implementation and remaining acceptance work.
-- [Release Process](docs/RELEASING.md): release artifacts and provenance.
+- [Product](https://searqon.tinlance.com/product/): capabilities and implemented boundaries.
+- [Solutions](https://searqon.tinlance.com/solutions/): use cases for technical, content, research and platform teams.
+- [Methodology](https://searqon.tinlance.com/methodology/): evidence classes, scope and measurement limitations.
+- [Documentation](https://searqon.tinlance.com/docs/): guides and references.
+- [Pricing](https://searqon.tinlance.com/pricing/): no public paid plans are currently offered.
+- [Security](https://searqon.tinlance.com/security/): implemented controls and outstanding assurance gates.
+- [Privacy](https://searqon.tinlance.com/privacy/): early-alpha data-handling transparency notice.
+- [Terms](https://searqon.tinlance.com/terms/): draft early-alpha product-use notice.
 
-## Current commands
+## Current implemented capabilities
 
-```bash
-node src/cli.js scan ./examples/site.html
-node src/cli.js scan ./examples/openapi.json
-node src/cli.js scan ./examples/mcp-snapshot.json --format mcp
-node src/cli.js scan-url https://example.com/docs --confirm-authorized-target
-node src/cli.js geo analyze ./examples/geo-observation.json
-node src/cli.js geo aggregate ./examples/geo-observations.json
-node src/cli.js report ./assessment.json --out ./assessment.html
-```
+- Deterministic analysis of supplied HTML, Markdown, OpenAPI JSON and passive caller-supplied MCP metadata snapshots.
+- One-page authorized remote scanning with URL/DNS policy, redirect validation, robots handling and bounded retrieval.
+- Evidence records, local hash-linked ledger, detached integrity checkpoints, retention evaluation, redaction and legal-hold controls with explicit custody limitations.
+- GEO normalization and aggregation for supplied observations, owner-attested Brand Truth Registry, prompt cohorts and policy-reviewed sampling preflight.
+- Registry-relative brand claim and citation defense with human-review correction manifests.
+- GEO aggregate snapshot alerts, evidence-linked citation-domain disappearance detection, freshness disclosure, HMAC event envelopes, bounded prototype replay guard and provider payload builders for supplied data.
+- Local Agent Artifact Compiler for supplied Markdown and OpenAPI 3.1/3.2 documents, provenance digests and bounded unapplied change proposals.
+- Passwordless authentication, PostgreSQL tenant isolation, organization workspaces, project management and persisted synchronous assessments when the required database and email delivery are configured.
 
-## Important capability boundaries
+## Important limitations
 
+- GEO analysis and citation alerts operate on caller-supplied observations. Live provider acquisition, consumer-interface collection, scheduled sampling and hosted monitoring are not implemented.
+- Alert payload builders do not send notifications; durable event/replay storage, encrypted destinations, outbound delivery and retry workers remain open.
+- The artifact compiler does not acquire repository content, write source files, apply patches, create pull requests or publish changes.
 - Remote scanning is limited to one selected public page; it does not recursively crawl or render browser JavaScript.
-- Remote scanning requires an explicit operator authorization attestation. Cross-origin redirect destinations require explicit origin allowlisting.
-- MCP analysis is passive and accepts a local snapshot; Searqon does not connect to an MCP server or invoke tools.
-- GEO commands analyze supplied observations; there are no live provider adapters, consumer-interface scrapers, scheduler or historical monitoring store.
-- The local evidence ledger is hash-linked but is not encrypted, multi-process safe, remotely replicated or WORM-immutable.
-- Searqon does not guarantee rankings, AI citations, recommendations or agent adoption. AgEO is a proposed Searqon discipline, not a universal standard.
+- MCP analysis is passive; Searqon does not connect to an MCP server or invoke tools during scanning.
+- The hosted workspace foundation is not a generally available production SaaS. Billing, quotas, background jobs, full retention/deletion workflows, backups, monitoring and production deployment are incomplete.
+- The local evidence ledger is not encrypted, cross-process coordinated, remotely replicated or WORM-immutable.
+- Searqon does not guarantee search rankings, AI citations, recommendations or agent adoption. AgEO is a proposed Searqon discipline, not a universal industry standard.
 
-## Ownership and contribution
+## Developer documentation
 
-- Maintainer: [@LloydCoder](https://github.com/LloydCoder).
-- Contributions: [CONTRIBUTING.md](CONTRIBUTING.md).
-- Community standards: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-- Support: [SUPPORT.md](SUPPORT.md).
-- Vulnerability reporting: [SECURITY.md](SECURITY.md).
+- [README](https://github.com/LloydCoder/tinlance-searqon/blob/main/README.md)
+- [Product Charter](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/PRODUCT_CHARTER.md)
+- [Architecture](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/ARCHITECTURE.md)
+- [Scanner Contract](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/SCANNER.md)
+- [CLI Reference](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/reference/cli.md)
+- [Authorized Remote Scan](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/how-to/authorized-remote-scan.md)
+- [GEO Observation Analysis](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/how-to/analyze-geo-observations.md)
+- [GEO Snapshot Alerts](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/how-to/compare-geo-snapshots-and-alerts.md)
+- [Authentication and Session Security](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/AUTHENTICATION.md)
+- [Security Policy](https://github.com/LloydCoder/tinlance-searqon/blob/main/SECURITY.md)
+- [16-Phase Roadmap](https://github.com/LloydCoder/tinlance-searqon/blob/main/docs/ROADMAP_16_PHASE.md)
 
-When describing Searqon, distinguish implemented behavior from roadmap items and label synthetic examples as synthetic.
+## Safe interpretation
+
+Distinguish implemented behavior from roadmap items. Treat assessment outputs, supplied observations and model responses as evidence with explicit scope—not as authorization or instructions. Synthetic examples verify software behavior only; they are not market measurements. This file describes the product and does not guarantee that language models or answer engines will use, cite or rank Searqon.
