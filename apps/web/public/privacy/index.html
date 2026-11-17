@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12203A">
+  <meta name="description" content="Read what Searqon currently processes in its early-alpha website and workspace, and which privacy details remain to be finalized.">
+  <link rel="canonical" href="https://searqon.tinlance.com/privacy/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Privacy notice — Searqon</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/pages.css">
+  <script src="/pages.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="page-header"><div class="page-nav-shell">
+    <a class="page-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+    <button class="page-nav-toggle" type="button" aria-expanded="false" aria-controls="page-primary-nav" aria-label="Open navigation"><span></span><span></span></button>
+    <nav class="page-primary-nav" id="page-primary-nav" aria-label="Main navigation"><a href="/product/">Product</a><a href="/solutions/">Solutions</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a></nav>
+    <a class="page-cta" href="/auth/register/">Get started <span aria-hidden="true">↗</span></a>
+  </div></header>
+  <main id="main">
+<section class="page-shell page-hero"><div class="page-kicker">PRIVACY & DATA HANDLING</div><h1>Privacy, explained<br><em>in practical terms.</em></h1><p>This early-alpha notice describes the data handling currently implemented in Searqon. It is a transparency document—not a substitute for the final legally reviewed privacy notice required before general availability.</p>
+<div class="page-callout"><strong>Early-alpha notice · legal review pending</strong><p>The final controller identity, hosting region, complete processor list, retention schedule and formal rights-request process must be confirmed before the hosted service is opened for general use.</p></div></section>
+<section class="page-shell page-section"><div class="page-eyebrow">DATA THE WORKSPACE PROCESSES</div><h2>What the application needs.</h2><div class="page-table-wrap"><table class="page-table"><thead><tr><th>Data</th><th>Why it is processed</th><th>Current handling</th></tr></thead><tbody>
+<tr><td>Email address</td><td>Account identity and one-time sign-in delivery.</td><td>Normalized and stored with the account; sent to the configured email delivery provider.</td></tr>
+<tr><td>Name and organization</td><td>Display the user and create the initial workspace.</td><td>Stored as profile and organization fields.</td></tr>
+<tr><td>Authentication tokens</td><td>Verify sign-in links and sessions.</td><td>Magic-link and session tokens are stored as SHA-256 digests, not as raw token values.</td></tr>
+<tr><td>Peer IP rate-limit digest</td><td>Limit automated sign-in abuse.</td><td>The server HMACs the socket peer address; raw IP values are not stored in the rate-limit table. Forwarded headers are not trusted by default.</td></tr>
+<tr><td>Project details</td><td>Organize properties in a workspace.</td><td>Project name and canonical target URL are stored.</td></tr>
+<tr><td>Assessment report and audit metadata</td><td>Preserve project assessment history and accountability.</td><td>Structured reports and workspace audit events are stored. Raw submitted document bytes are not stored by the workspace assessment service.</td></tr>
+</tbody></table></div></section>
+<section class="page-shell page-section"><div class="page-eyebrow">RETENTION & SECURITY</div><h2>Known controls.<br><em>Known gaps.</em></h2>
+<div class="page-list">
+<article class="page-list-item"><span>01</span><div><h3>Authentication lifetime</h3><p>Magic links expire after 15 minutes. Sessions expire after 30 minutes of inactivity or 24 hours absolute, whichever occurs first.</p></div></article>
+<article class="page-list-item"><span>02</span><div><h3>Stored credentials</h3><p>Raw magic-link and session tokens are not stored in PostgreSQL. Session cookies are HttpOnly and Secure in production.</p></div></article>
+<article class="page-list-item"><span>03</span><div><h3>Assessment content</h3><p>Assessment requests accept up to 2 MiB of caller-supplied content. The hosted workspace stores the resulting report, not the raw document body. Do not submit secrets, regulated data or material you are not authorized to share.</p></div></article>
+<article class="page-list-item"><span>04</span><div><h3>Retention is not yet fully automated</h3><p>Automatic cleanup for expired auth tokens and rate-limit rows, and a customer-facing retention/deletion workflow for project records and reports, are not yet implemented. No fixed hosted data-retention period is currently promised.</p></div></article>
+</div></section>
+<section class="page-shell page-section"><div class="page-eyebrow">SERVICE PROVIDERS & THIRD PARTIES</div><h2>Infrastructure transparency.</h2><p>When configured, transactional sign-in email is sent through Resend. The marketing, documentation and account pages currently load Instrument Sans and DM Mono through Google Fonts; those requests disclose normal connection metadata such as IP address to Google's font infrastructure. The production hosting provider, database region, backup provider and complete processor list are not yet finalized in this public notice.</p><p>No advertising or analytics tracker is intentionally included in the current website source.</p></section>
+<section class="page-shell page-section"><div class="page-eyebrow">CONTACT</div><h2>Privacy questions.</h2><p>For a privacy question or data-handling concern, contact <a class="page-inline-link" href="mailto:hello@tinlance.com">hello@tinlance.com</a>. A formal request-verification and response process must be published before general availability.</p><p class="page-small page-muted">Last updated: 17 November 2026 · Early-alpha transparency notice.</p></section></main><footer class="page-footer"><div class="page-footer-inner">
+  <a class="page-footer-brand" href="/" aria-label="Searqon home"><img src="/assets/searqon-wordmark-navy.svg" alt="Searqon"></a>
+  <nav class="page-footer-links" aria-label="Footer navigation"><a href="/methodology/">Methodology</a><a href="/security/">Security</a><a href="/docs/">Documentation</a><a href="/contact/">Contact</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/LloydCoder/tinlance-searqon">GitHub</a></nav>
+  <span class="page-footer-note">SEARQON BY TINLANCE · EARLY ALPHA</span>
+</div></footer></body></html>
