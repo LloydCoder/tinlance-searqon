@@ -33,6 +33,7 @@ CREATE TABLE searqon.usage_reservations (
   organization_id uuid NOT NULL,
   meter text NOT NULL CHECK (meter IN ('ai_answer_checks','crawl_pages','keyword_months','api_requests')),
   period_start timestamptz NOT NULL,
+  period_end timestamptz NOT NULL,
   idempotency_key text NOT NULL CHECK (idempotency_key ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$'),
   requested_units bigint NOT NULL CHECK (requested_units > 0),
   included_reserved_units bigint NOT NULL CHECK (included_reserved_units >= 0),
@@ -46,6 +47,7 @@ CREATE TABLE searqon.usage_reservations (
   release_reason text,
   created_at timestamptz NOT NULL DEFAULT now(),
   settled_at timestamptz,
+  CONSTRAINT usage_reservation_period_bounds CHECK (period_end > period_start),
   CONSTRAINT usage_reservation_split CHECK (
     included_reserved_units + overage_reserved_units = requested_units
   ),
