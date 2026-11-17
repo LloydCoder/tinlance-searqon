@@ -57,7 +57,8 @@ CREATE TABLE searqon.recommendations (
     verification_assessment_id IS NULL OR verification_assessment_id <> latest_assessment_id
   ),
   CONSTRAINT recommendations_org_project_key_unique UNIQUE (organization_id, project_id, finding_key),
-  CONSTRAINT recommendations_org_id_unique UNIQUE (organization_id, id)
+  CONSTRAINT recommendations_org_id_unique UNIQUE (organization_id, id),
+  CONSTRAINT recommendations_org_id_project_unique UNIQUE (organization_id, id, project_id)
 );
 CREATE INDEX recommendations_project_status_idx
   ON searqon.recommendations (organization_id, project_id, status, priority DESC, updated_at DESC);
@@ -82,8 +83,8 @@ CREATE TABLE searqon.recommendation_events (
     CHECK (jsonb_typeof(metadata) = 'object' AND octet_length(metadata::text) <= 8192),
   occurred_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT recommendation_events_recommendation_fk
-    FOREIGN KEY (organization_id, recommendation_id)
-    REFERENCES searqon.recommendations (organization_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (organization_id, recommendation_id, project_id)
+    REFERENCES searqon.recommendations (organization_id, id, project_id) ON DELETE RESTRICT,
   CONSTRAINT recommendation_events_assessment_fk
     FOREIGN KEY (organization_id, project_id, assessment_id)
     REFERENCES searqon.assessments (organization_id, project_id, id) ON DELETE RESTRICT
