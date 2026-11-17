@@ -42,7 +42,20 @@ function applySecurityHeaders(response) {
   response.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
   response.setHeader("cross-origin-resource-policy", "same-origin");
   if (process.env.NODE_ENV === "production") response.setHeader("strict-transport-security", "max-age=31536000; includeSubDomains");
-  response.setHeader("content-security-policy", "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' https://fonts.googleapis.com; script-src 'self'; connect-src 'self'; upgrade-insecure-requests");
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "base-uri 'none'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "img-src 'self' data:",
+    "font-src 'self' https://fonts.gstatic.com",
+    "style-src 'self' https://fonts.googleapis.com",
+    "script-src 'self'",
+    "connect-src 'self'"
+  ];
+  if (process.env.NODE_ENV === "production") contentSecurityPolicy.push("upgrade-insecure-requests");
+  response.setHeader("content-security-policy", contentSecurityPolicy.join("; "));
 }
 
 async function readJsonBody(request, maxBytes = MAX_BODY_BYTES) {
