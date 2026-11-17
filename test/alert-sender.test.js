@@ -28,7 +28,7 @@ function transport(response, seen = []) {
     request.write = chunk => { chunks.push(Buffer.from(chunk)); return true; };
     request.end = () => {
       seen[seen.length - 1].body = Buffer.concat(chunks).toString("utf8");
-      const incoming = Readable.from([Buffer.from(response.body ?? "")]);
+      const incoming = response.stream ?? Readable.from([Buffer.from(response.body ?? "")]);
       incoming.statusCode = response.status ?? 200;
       incoming.headers = response.headers ?? {};
       process.nextTick(() => callback(incoming));
@@ -142,4 +142,43 @@ test("dispatch validates event identity and honors cancellation before network a
     error => error.code === "dispatch_aborted"
   );
   assert.equal(requests, 0);
+});
+
+
+test("dispatch enforces a response-body byte ceiling", async () => {
+  const sender = createAlertSender({
+    resolver: publicResolver,
+    maxResponseBytes: 8,
+    requestImpl: transport({ status: 200, body: "provider response is too large" })
+  });
+  await assert.rejects(
+    sender.send({ channel: "slack", secret: SLACK, event: EVENT }),
+    error => error.code === "provider_response_too_large"
+  );
+});
+
+test("dispatch deadline covers a provider that never finishes its response body", async () => {
+  const stream = new Readable({ read() {} });
+  const sender = createAlertSender({
+    resolver: publicResolver,
+    timeoutMs: 100,
+    requestImpl: transport({ status: 200, stream })
+  });
+  await assert.rejects(
+    sender.send({ channel: "slack", secret: SLACK, event: EVENT }),
+    error => error.code === "provider_timeout"
+  );
+});
+
+test("worker cancellation interrupts a provider response body read", async () => {
+  const stream = new Readable({ read() {} });
+  const controller = new AbortController();
+  const sender = createAlertSender({
+    resolver: publicResolver,
+    timeoutMs: 1000,
+    requestImpl: transport({ status: 200, stream })
+  });
+  const pending = sender.send({ channel: "slack", secret: SLACK, event: EVENT, signal: controller.signal });
+  setTimeout(() => controller.abort(), 20);
+  await assert.rejects(pending, error => error.code === "dispatch_aborted");
 });
