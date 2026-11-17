@@ -171,6 +171,7 @@ CREATE POLICY job_events_worker_insert ON searqon.job_events
 
 REVOKE ALL PRIVILEGES ON searqon.jobs, searqon.job_events FROM PUBLIC, searqon_app, searqon_worker;
 REVOKE ALL ON FUNCTION searqon.reject_job_event_mutation() FROM PUBLIC;
+REVOKE ALL ON FUNCTION searqon.protect_job_identity() FROM PUBLIC;
 GRANT SELECT, INSERT ON searqon.jobs TO searqon_app;
 GRANT SELECT, INSERT ON searqon.job_events TO searqon_app;
 GRANT SELECT, UPDATE ON searqon.jobs TO searqon_worker;
