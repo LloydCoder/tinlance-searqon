@@ -369,6 +369,7 @@ function renderProjectDetail(project) {
       renderAssessmentResult(result.assessment, document.querySelector("#assessment-result"));
       content.value = "";
       await loadAssessmentHistory(project);
+      await loadRecommendations(project);
       setStatus("Assessment completed and saved to the selected project.", "success");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Assessment failed.", "error");
