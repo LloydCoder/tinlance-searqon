@@ -71,7 +71,7 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
     );
 
     const unmatched = await queue.enqueue(userA,orgA,{
-      jobType:"site_crawl",payload:{projectId:randomUUID()},idempotencyKey:"queue-unmatched-0001"
+      jobType:"assessment",payload:{projectId:randomUUID()},idempotencyKey:"queue-unmatched-0001"
     });
     const claimed = await queue.claim(workerId,{limit:1,leaseSeconds:30,jobTypes:["alert_delivery"]});
     assert.equal(claimed.length,1);
