@@ -21,7 +21,7 @@ Searqon is an Apache-2.0 open-source toolkit developed by Tinlance. It provides 
 - [Solutions](https://searqon.tinlance.com/solutions/): use cases for technical, content, research and platform teams.
 - [Methodology](https://searqon.tinlance.com/methodology/): evidence classes, scope and measurement limitations.
 - [Documentation](https://searqon.tinlance.com/docs/): guides and references.
-- [Pricing](https://searqon.tinlance.com/pricing/): no public paid plans are currently offered.
+- [Pricing](https://searqon.tinlance.com/pricing/): proposed six-tier hosted packages, published prices, quotas, trial and overage policy; paid subscriptions are not currently available for purchase.
 - [Security](https://searqon.tinlance.com/security/): implemented controls and outstanding assurance gates.
 - [Privacy](https://searqon.tinlance.com/privacy/): early-alpha data-handling transparency notice.
 - [Terms](https://searqon.tinlance.com/terms/): draft early-alpha product-use notice.
