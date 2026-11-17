@@ -121,3 +121,18 @@ Migration `0006_extended_usage_meters.sql` extends the durable usage ledger with
 The workspace assessment service now uses this primitive for manual assessments. Assessment persistence, analyzer result/failure recording, audit event and quota consumption commit atomically. A failed analyzer attempt is recorded and consumes one manual-assessment unit; a database/transaction failure rolls back both the assessment write and usage charge. The analyzer is local and synchronous; the atomic callback must not perform external network or provider side effects.
 
 The PostgreSQL integration suite verifies concurrent quota boundaries, rollback on callback failure, idempotent replay, RLS and the Free plan's one-assessment monthly allowance. Other published entitlements (AI answer checks, crawling, keywords, API requests, scheduled reports, project/team counts and GEO observation limits) are not thereby enforced end-to-end; each product operation must be wired to the appropriate meter before those limits are represented as operational.
+
+
+## Durable job queue and worker leases
+
+Migration `0007_durable_jobs.sql` adds tenant-scoped jobs, append-only job events and a dedicated `searqon_worker` database role.
+
+- Workspace owners/admins/analysts can enqueue allowlisted job types through the user-scoped transaction; they cannot claim, update or delete jobs.
+- Payloads are bounded to 16 KiB, hashed, versioned and rejected when nested keys look like credentials, cookies, tokens or secrets. Payloads must contain references/metadata, not credentials or raw source documents.
+- Per-workspace idempotency keys prevent duplicate enqueue. Reuse with a different payload or job policy is a conflict.
+- A worker must use a separate database pool/login and explicitly `SET LOCAL ROLE searqon_worker`. The worker role is NOLOGIN, NOINHERIT and NOBYPASSRLS; it has only job SELECT/UPDATE and job-event SELECT/INSERT permissions.
+- Claims use PostgreSQL row locks with `SKIP LOCKED`, bounded leases, a rotating UUID fencing token, and attempt limits. Stale workers cannot complete, retry or extend a job after its lease expires or token is replaced.
+- Expired leases are reclaimable; jobs that exhaust attempts become terminal failures. Result bodies are not stored, only a SHA-256 digest. Job events are append-only and bind tenant/job IDs plus authenticated worker identity.
+- Worker execution is not a model-authorized capability. Job handlers must independently authorize their operation and use bounded, isolated execution.
+
+This is durable queue infrastructure only. No worker process, scheduler, job handler, outbound alert delivery, encrypted destination store, retry SLO or hosted dispatch loop is deployed. The CI PostgreSQL job creates an isolated test worker login and exercises tenant isolation, idempotency, lease fencing/recovery, retries and immutable events.
