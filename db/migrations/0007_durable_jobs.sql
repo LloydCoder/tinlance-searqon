@@ -62,7 +62,7 @@ CREATE TABLE searqon.job_events (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   job_id uuid NOT NULL,
   organization_id uuid NOT NULL REFERENCES searqon.organizations(id) ON DELETE RESTRICT,
-  event_type text NOT NULL CHECK (event_type IN ('queued','leased','retry_scheduled','succeeded','failed','cancelled','lease_expired')),
+  event_type text NOT NULL CHECK (event_type IN ('queued','leased','retry_scheduled','succeeded','failed','cancelled','lease_expired','lease_extended')),
   actor_kind text NOT NULL CHECK (actor_kind IN ('user','worker')),
   actor_user_id uuid REFERENCES searqon.app_users(id) ON DELETE RESTRICT,
   worker_id text CHECK (worker_id IS NULL OR worker_id ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{2,63}$'),
@@ -80,6 +80,32 @@ CREATE TABLE searqon.job_events (
 );
 CREATE INDEX job_events_job_idx ON searqon.job_events (job_id, id);
 CREATE INDEX job_events_org_idx ON searqon.job_events (organization_id, created_at DESC, id DESC);
+
+CREATE OR REPLACE FUNCTION searqon.protect_job_identity()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog
+AS $
+BEGIN
+  IF ROW(NEW.id,NEW.organization_id,NEW.created_by,NEW.job_type,NEW.payload_version,NEW.payload,
+         NEW.payload_sha256,NEW.max_attempts,NEW.idempotency_key,NEW.created_at)
+     IS DISTINCT FROM
+     ROW(OLD.id,OLD.organization_id,OLD.created_by,OLD.job_type,OLD.payload_version,OLD.payload,
+         OLD.payload_sha256,OLD.max_attempts,OLD.idempotency_key,OLD.created_at) THEN
+    RAISE EXCEPTION 'job identity and payload are immutable' USING ERRCODE = '55000';
+  END IF;
+  IF OLD.status IN ('succeeded','failed','cancelled') AND NEW.status IS DISTINCT FROM OLD.status THEN
+    RAISE EXCEPTION 'terminal jobs cannot transition' USING ERRCODE = '55000';
+  END IF;
+  IF NEW.attempts < OLD.attempts OR NEW.attempts > OLD.attempts + 1 THEN
+    RAISE EXCEPTION 'job attempt count must be monotonic and increment by at most one' USING ERRCODE = '55000';
+  END IF;
+  RETURN NEW;
+END
+$;
+CREATE TRIGGER jobs_protect_identity
+  BEFORE UPDATE ON searqon.jobs
+  FOR EACH ROW EXECUTE FUNCTION searqon.protect_job_identity();
 
 CREATE OR REPLACE FUNCTION searqon.reject_job_event_mutation()
 RETURNS trigger
