@@ -153,7 +153,7 @@ async function appendAudit(client,organizationId,userId,eventType,destinationId,
   );
 }
 
-async function withWorkerTransaction(pool,workerId,operation) {
+async function withWorkerTransaction(pool,workerId,leaseToken,operation) {
   if (!pool || typeof pool.connect !== "function") {
     throw new AlertDestinationError(503,"worker_unavailable","A dedicated worker database pool is not configured.");
   }
@@ -162,6 +162,7 @@ async function withWorkerTransaction(pool,workerId,operation) {
     await client.query("BEGIN");
     await client.query("SET LOCAL ROLE searqon_worker");
     await client.query("SELECT set_config('searqon.worker_id',$1,true)",[workerId]);
+    await client.query("SELECT set_config('searqon.lease_token',$1,true)",[leaseToken]);
     const result = await operation(client);
     await client.query("COMMIT");
     return result;
@@ -247,7 +248,7 @@ export function createAlertDestinationStore({database,workerPool=null,encryption
       requireUuid(deliveryId,"delivery_id");
       requireUuid(jobId,"job_id");
       requireUuid(leaseToken,"lease_token");
-      return withWorkerTransaction(workerPool,workerId,async client => {
+      return withWorkerTransaction(workerPool,workerId,leaseToken,async client => {
         const result = await client.query(
           `SELECT o.id,o.organization_id,o.status,o.event_id,o.destination_id,o.job_id,
                   e.state AS event_state,e.payload AS event_payload,
