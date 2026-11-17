@@ -365,6 +365,9 @@ export function createRecommendationService({ database } = {}) {
         }
         const before = baseline.report;
         const after = verification.report;
+        if (before?.rulesVersion !== after?.rulesVersion) {
+          throw new RecommendationError(409,"verification_methodology_mismatch","Verification requires matching assessment methodology versions.");
+        }
         if (!before?.evidence?.contentType || before.evidence.contentType !== after?.evidence?.contentType
           || !after?.assessments?.[current.dimension]
           || after.assessments[current.dimension].status === "not_assessed") {
