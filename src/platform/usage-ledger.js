@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { withUserTransaction } from "./database.js";
 import { ENTITLEMENTS, quoteOverage } from "./entitlements.js";
 
@@ -98,6 +99,14 @@ function ensurePeriod(start, end) {
   return { periodStart, periodEnd };
 }
 
+function stableJson(value) {
+  if (Array.isArray(value)) return "[" + value.map(stableJson).join(",") + "]";
+  if (value && typeof value === "object") {
+    return "{" + Object.keys(value).sort().map(key => JSON.stringify(key) + ":" + stableJson(value[key])).join(",") + "}";
+  }
+  return JSON.stringify(value);
+}
+
 function quoteStoredRate(quantity, rate, block) {
   if (quantity === 0) return 0;
   if (!Number.isSafeInteger(rate) || rate <= 0 || !Number.isSafeInteger(block) || block <= 0) {
@@ -186,6 +195,14 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         }
         const overageEnabled = entitlements.overage?.enabled === true;
         const spendCapMicroUsd = requireSafeInteger(entitlements.overage?.spendCapMicroUsd ?? 0, "spend_cap_micro_usd");
+        const policyFingerprint = createHash("sha256").update(stableJson({
+          entitlementVersion: ENTITLEMENTS.version,
+          plan: entitlements.plan,
+          limits: entitlements.limits,
+          features: entitlements.features,
+          overageRatesMicroUsd: entitlements.overageRatesMicroUsd,
+          overage: { enabled: overageEnabled, spendCapMicroUsd }
+        })).digest("hex");
         if (spendCapMicroUsd > ENTITLEMENTS.hardSafetyCeilings.maxOverageSpendMicroUsd) {
           throw new UsageLedgerError(409, "platform_spend_ceiling", "The workspace spend cap exceeds the platform safety ceiling.");
         }
@@ -195,10 +212,10 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
 
         await client.query(
           `INSERT INTO searqon.usage_spend_periods
-            (organization_id, period_start, period_end, overage_enabled, spend_cap_micro_usd)
-           VALUES ($1, $2, $3, $4, $5)
+            (organization_id, period_start, period_end, plan, policy_fingerprint, overage_enabled, spend_cap_micro_usd)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
            ON CONFLICT (organization_id, period_start) DO NOTHING`,
-          [organizationId, periodStart, periodEnd, overageEnabled, spendCapMicroUsd]
+          [organizationId, periodStart, periodEnd, entitlements.plan, policyFingerprint, overageEnabled, spendCapMicroUsd]
         );
         const spendLocked = await client.query(
           `SELECT * FROM searqon.usage_spend_periods
@@ -207,6 +224,8 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         );
         const spendPeriod = spendLocked.rows[0];
         if (!spendPeriod || new Date(spendPeriod.period_end).getTime() !== periodEnd.getTime()
+          || spendPeriod.plan !== entitlements.plan
+          || spendPeriod.policy_fingerprint !== policyFingerprint
           || spendPeriod.overage_enabled !== overageEnabled
           || numberValue(spendPeriod.spend_cap_micro_usd, "spend_cap_micro_usd") !== spendCapMicroUsd) {
           throw new UsageLedgerError(409, "usage_policy_changed", "The usage spend policy for this billing period is fixed; apply changes at a new period boundary.");
