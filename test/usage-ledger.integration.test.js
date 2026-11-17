@@ -68,6 +68,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
     );
     assert.equal(new Date(first.periodStart).toISOString(), periodStart);
     assert.equal(new Date(first.periodEnd).toISOString(), periodEnd);
+    assert.equal(first.createdBy, userA);
     assert.equal(first.includedReservedUnits, 5);
     const changedPolicy = createUsageLedger({
       database,
@@ -127,10 +128,11 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
     );
 
     const ledgerEntries = await owner.query(
-      "SELECT event_type, quantity_delta FROM searqon.usage_ledger_entries WHERE organization_id = $1 ORDER BY id",
+      "SELECT event_type, quantity_delta, actor_user_id FROM searqon.usage_ledger_entries WHERE organization_id = $1 ORDER BY id",
       [orgA]
     );
     assert.deepEqual(ledgerEntries.rows.map(row => row.event_type), ["reserved","reserved","reserved","settled","released","released"]);
+    assert.ok(ledgerEntries.rows.every(row => row.actor_user_id === userA), "every immutable usage event must identify its authenticated actor");
     await assert.rejects(
       owner.query("UPDATE searqon.usage_ledger_entries SET event_type = 'tampered' WHERE organization_id = $1", [orgA]),
       error => error.code === "55000"
