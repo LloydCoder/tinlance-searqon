@@ -1,15 +1,21 @@
 const navToggle = document.querySelector(".nav-toggle");
 const primaryNav = document.querySelector("#primary-nav");
 if (navToggle && primaryNav) {
-  navToggle.addEventListener("click", () => {
-    const open = navToggle.getAttribute("aria-expanded") !== "true";
+  const setNavigationOpen = open => {
     navToggle.setAttribute("aria-expanded", String(open));
+    navToggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
     primaryNav.classList.toggle("open", open);
+  };
+  navToggle.addEventListener("click", () => {
+    setNavigationOpen(navToggle.getAttribute("aria-expanded") !== "true");
   });
   primaryNav.addEventListener("click", event => {
-    if (event.target.closest("a")) {
-      navToggle.setAttribute("aria-expanded", "false");
-      primaryNav.classList.remove("open");
+    if (event.target.closest("a")) setNavigationOpen(false);
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && navToggle.getAttribute("aria-expanded") === "true") {
+      setNavigationOpen(false);
+      navToggle.focus();
     }
   });
 }
