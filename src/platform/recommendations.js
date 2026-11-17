@@ -270,7 +270,9 @@ export function createRecommendationService({ database } = {}) {
             continue;
           }
           const reopen = existing.status === "verified";
-          const nextStatus = reopen ? "open" : existing.status;
+          const resume = existing.status === "not_resolved";
+          const clearVerification = reopen || resume;
+          const nextStatus = reopen ? "open" : resume ? "in_progress" : existing.status;
           const updatedResult = await client.query(
             `UPDATE searqon.recommendations
              SET latest_assessment_id=$2,status=$3,occurrence_count=LEAST(occurrence_count+1,1000000),
@@ -280,7 +282,7 @@ export function createRecommendationService({ database } = {}) {
                  verified_at=CASE WHEN $4 THEN NULL ELSE verified_at END,
                  updated_at=now()
              WHERE id=$1 RETURNING *`,
-            [existing.id,assessmentId,nextStatus,reopen]
+            [existing.id,assessmentId,nextStatus,clearVerification]
           );
           const row = updatedResult.rows[0];
           await appendEvent(client,{organizationId,projectId,recommendationId:row.id,actorUserId:userId,
@@ -319,7 +321,7 @@ export function createRecommendationService({ database } = {}) {
           throw new RecommendationError(409,"invalid_status_transition","The requested recommendation status transition is not allowed.");
         }
         const updated = await client.query(
-          "UPDATE searqon.recommendations SET status=$2,updated_at=now() WHERE id=$1 RETURNING *",
+          `UPDATE searqon.recommendations SET status=$2,verification_assessment_id=NULL,verification_result=NULL,verified_at=NULL,updated_at=now() WHERE id=$1 RETURNING *`,
           [recommendationId,nextStatus]
         );
         const row = updated.rows[0];
@@ -343,7 +345,9 @@ export function createRecommendationService({ database } = {}) {
         if (!current) throw new RecommendationError(404,"recommendation_not_found","The requested recommendation was not found.");
         const organizationId = await requireProjectMembership(client,userId,current.project_id,true);
         if (organizationId !== current.organization_id) throw new RecommendationError(404,"recommendation_not_found","The requested recommendation was not found.");
-        if (current.status === "dismissed") throw new RecommendationError(409,"recommendation_dismissed","Dismissed recommendations cannot be verified.");
+        if (!["accepted","in_progress","not_resolved"].includes(current.status)) {
+          throw new RecommendationError(409,"recommendation_not_ready","Accept or start a recommendation before requesting verification.");
+        }
         const assessments = await client.query(
           `SELECT id,status,report,completed_at FROM searqon.assessments
            WHERE organization_id=$1 AND project_id=$2 AND id=ANY($3::uuid[])`,
