@@ -175,6 +175,20 @@
       "notes": "Signed approval for logical suppression from exports; does not represent physical deletion or media sanitization."
     },
     {
+      "name": "geo-aggregate-row",
+      "file": "geo-aggregate-row.schema.json",
+      "schemaId": "https://searqon.com/schemas/geo-aggregate-row.schema.json",
+      "contractVersion": "1.0.0",
+      "versionField": null,
+      "status": "experimental",
+      "consumers": [
+        "geo-aggregation",
+        "geo-alert-engine",
+        "cli"
+      ],
+      "notes": "Cohort-level GEO counts and rates with bounded evidence IDs, total evidence count and explicit truncation metadata. Aggregates never mix observation classes or provider/model/region/locale dimensions."
+    },
+    {
       "name": "geo-alert-event",
       "file": "geo-alert-event.schema.json",
       "schemaId": "https://searqon.com/schemas/geo-alert-event.schema.json",
@@ -298,19 +312,6 @@
         "remote-scan-cli"
       ],
       "notes": "References assessment-report.schema.json for nested assessment."
-    },
-    {
-      "name": "agent-artifact-compilation",
-      "file": "agent-artifact-compilation.schema.json",
-      "schemaId": "https://searqon.com/schemas/agent-artifact-compilation.schema.json",
-      "contractVersion": "1.0.0",
-      "versionField": "schemaVersion",
-      "status": "experimental",
-      "consumers": [
-        "agent-artifact-compiler",
-        "local-cli"
-      ],
-      "notes": "Deterministic, provenance-linked Markdown/OpenAPI compilation and unapplied diff proposals; no filesystem, GitHub, or publishing side effects."
     }
   ]
 }

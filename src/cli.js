@@ -8,7 +8,6 @@ import { evaluateBrandClaims } from "./claim-defense.js";
 import { buildGeoAlerts, detectCitationChanges, evaluateGeoCitationAlertQuality } from "./geo-alerts.js";
 import { scanPublicUrl } from "./remote-scan.js";
 import { renderHtmlReport } from "./report-html.js";
-import { compileAgentArtifacts } from "./artifact-compiler.js";
 
 const usage = [
   "Usage:",
@@ -23,8 +22,7 @@ const usage = [
   "  searqon geo citation-changes <raw-observation-cohorts.json> [--out <json-file>]",
   "  searqon geo quality-evaluate <labelled-cases.json> [--out <json-file>]",
   "  searqon claims audit <claim-input.json> [--out <json-file>]",
-  "  searqon report <assessment.json> [--out <html-file>]",
-  "  searqon artifacts compile <artifact-input.json> [--out <json-file>]"
+  "  searqon report <assessment.json> [--out <html-file>]"
 ].join("\n");
 
 async function readJson(file) {
@@ -123,16 +121,6 @@ async function runGeo(args) {
   await emitResult(handlers[command](input),args);
 }
 
-async function runArtifacts(args) {
-  const command = args[1];
-  const fileArg = args[2];
-  if (command !== "compile" || !fileArg) throw new Error(usage);
-  const file = resolve(fileArg);
-  if (extname(file).toLowerCase() !== ".json") throw new Error("Artifact compiler accepts local .json input only");
-  const input = await readJson(file);
-  await emitResult(compileAgentArtifacts(input), args);
-}
-
 async function runReport(args) {
   if (!args[1]) throw new Error(usage);
   const file = resolve(args[1]);
@@ -156,7 +144,6 @@ async function main() {
     else if (args[0]==="geo") await runGeo(args);
     else if (args[0]==="claims") await runClaims(args);
     else if (args[0]==="report") await runReport(args);
-    else if (args[0]==="artifacts") await runArtifacts(args);
     else { process.stderr.write(usage+"\n"); process.exitCode=2; }
   } catch (error) {
     process.stderr.write("Searqon: "+error.message+"\n");

@@ -41,3 +41,23 @@ test("GEO aggregation does not pool distinct models, regions, or locales", () =>
   assert.equal(groups.length,2);
   assert.ok(groups.every(group=>group.provider && typeof group.provider==="object"));
 });
+
+test("GEO aggregates preserve bounded, verifiable evidence references", () => {
+  const first = analyzeGeoObservation(sample);
+  const second = analyzeGeoObservation({ ...sample, prompt: "Recommend a payments API for another cohort." });
+  const [group] = aggregateGeoObservations([first, second]);
+  assert.equal(group.evidenceCount, 2);
+  assert.deepEqual(group.evidenceIds, [first.evidence.id, second.evidence.id].sort());
+  assert.equal(group.evidenceTruncated, false);
+});
+
+test("GEO aggregate evidence references are bounded without losing total evidence count", () => {
+  const observations = Array.from({ length: 501 }, (_, index) => analyzeGeoObservation({
+    ...sample,
+    prompt: sample.prompt + " evidence sample " + index
+  }));
+  const [group] = aggregateGeoObservations(observations);
+  assert.equal(group.evidenceIds.length, 500);
+  assert.equal(group.evidenceCount, 501);
+  assert.equal(group.evidenceTruncated, true);
+});

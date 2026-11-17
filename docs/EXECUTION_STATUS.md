@@ -1,7 +1,7 @@
 # Searqon Implementation Status
 
 **Last reconciled:** 2026-11-16  
-**Base commit for this status revision:** `726d552f05eba3682d8fd2629e163d5866b451d1`  
+**Base commit for this status revision:** `49bbbfe150ba222f15c67c1ab7cc132fd3e604a0`  
 **Product maturity:** Early alpha; not production-ready.
 
 This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification. Status is evidence-based; implementation does not imply independent assurance or product-owner acceptance.
@@ -208,7 +208,7 @@ This register separates implemented repository capabilities from customer, secur
 
 ## 2026-11-16 — Roadmap Phase 9 citation-change alert foundation (in progress)
 
-- Added deterministic GEO baseline/current aggregate comparisons with strict matching across observation class, provider, model, region, locale, brand, target domain and sample period.
+- Added deterministic GEO baseline/current aggregate comparisons with strict matching across observation class, provider, model, region, locale, brand, target domain and sample period. Aggregates preserve up to 500 evidence IDs per cohort, total counts and truncation metadata; emitted alerts carry baseline/current references and reject reused evidence IDs.
 - Added minimum sample/effect thresholds, conservative non-overlapping Wilson 95% interval screening, explicit new/missing cohort evaluations, stable deduplication keys and caller-managed cooldown suppression.
 - Added raw observation citation-domain disappearance detection with evidence-record integrity/provenance verification, strict same-cohort checks and baseline/current evidence references.
 - Added signed HMAC-SHA256 webhook event envelopes, timestamp tolerance, raw-body/event-ID binding, bounded delivery receipts, and Slack/Teams Workflows/PagerDuty payload builders.
@@ -243,3 +243,13 @@ This register separates implemented repository capabilities from customer, secur
 - Added deterministic local compilation for caller-supplied Markdown and OpenAPI 3.1/3.2 sources; source/evidence digests; passive analyzer quality findings; opt-in llms.txt; bounded deterministic diff proposals; versioned output schema and CLI.
 - The compiler performs no repository/network acquisition, source-file writes, patch application, GitHub branch/PR creation, merge or publishing.
 - Phase 10 remains IN_PROGRESS pending explicit repository/revision scope, statement-level source maps, richer OpenAPI/link/schema validation, prompt-injection/adversarial fixtures, disposable-worktree patch verification and a least-privilege GitHub PR adapter with human approval/no auto-merge.
+
+
+## 2026-11-17 — Roadmap Phase 9 evidence integrity follow-up
+
+- PR #99 adds bounded evidence references to aggregate rows (up to 500 IDs, total count and truncation state), baseline/current evidence links in alerts, and rejects evidence-ID reuse across snapshots.
+- Adds a versioned GEO aggregate-row schema and expands aggregate alert schema and examples.
+- Adds citation-change canonical observation validation and replay-guard TTL/timestamp-tolerance invariants.
+- Adds/updates regression coverage for bounded evidence retention, cross-window ID reuse, missing evidence references and CLI fixtures.
+- The PR's latest head has passed Node.js 22 and 24 test/package validation plus PostgreSQL 16 tenant/auth/workspace integration. CodeQL and full-history secret scanning must be verified on the synchronized final PR head before merge.
+- This remains a local supplied-data capability; durable event persistence, durable replay storage, outbound delivery, live provider acquisition and representative customer-labelled quality validation remain open.

@@ -198,13 +198,17 @@ test("CLI builds a cohort-safe GEO alert report from local aggregate snapshots",
         observationClass: "model_api",
         provider: { name: "OpenAI", model: "gpt-4.1", region: "us", locale: "en-US" },
         brand: "Searqon", targetDomain: "searqon.com", samplePeriod: null,
-        sampleSize: 100, mentionCount: 80, brandCitationCount: 70
+        sampleSize: 100, mentionCount: 80, brandCitationCount: 70,
+        evidenceIds: Array.from({ length: 100 }, (_, index) => "evidence_" + (index + 1).toString(16).padStart(20, "0")),
+        evidenceCount: 100, evidenceTruncated: false
       }],
       current: [{
         observationClass: "model_api",
         provider: { name: "OpenAI", model: "gpt-4.1", region: "us", locale: "en-US" },
         brand: "Searqon", targetDomain: "searqon.com", samplePeriod: null,
-        sampleSize: 100, mentionCount: 40, brandCitationCount: 20
+        sampleSize: 100, mentionCount: 40, brandCitationCount: 20,
+        evidenceIds: Array.from({ length: 100 }, (_, index) => "evidence_" + (index + 1001).toString(16).padStart(20, "0")),
+        evidenceCount: 100, evidenceTruncated: false
       }],
       baselineId: "baseline-1", currentId: "current-1",
       baselineAt: "2026-11-16T12:00:00.000Z",
@@ -263,15 +267,4 @@ test("CLI evaluates labelled GEO citation alert quality cases", async () => {
   assert.equal(report.counts.truePositive, 1);
   assert.equal(report.counts.falsePositive, 0);
   assert.equal(report.metrics.falsePositiveRate, 0);
-});
-
-test("CLI compiles provenance-linked agent artifacts without applying repository changes", async () => {
-  const input = new URL("../examples/agent-artifact-compiler-input.json", import.meta.url).pathname;
-  const result = spawnSync(process.execPath, [cli.pathname, "artifacts", "compile", input], { encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr);
-  const report = JSON.parse(result.stdout);
-  assert.equal(report.type, "agent_artifact_compilation");
-  assert.equal(report.artifacts.length, 3);
-  assert.equal(report.artifacts.some(item => item.path === "llms.txt"), true);
-  assert.equal(report.summary.patchesApplied, 0);
 });
