@@ -394,8 +394,8 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           `SELECT * FROM searqon.usage_reservations
            WHERE organization_id = $1 AND status = 'reserved' AND expires_at <= $2
            ORDER BY expires_at, id
-           FOR UPDATE SKIP LOCKED
-           LIMIT $3`,
+           LIMIT $3
+           FOR UPDATE SKIP LOCKED`,
           [organizationId, cutoff, limit]
         );
         const released = [];
