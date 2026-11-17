@@ -154,6 +154,9 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
 
       return withUserTransaction(database.pool, userId, async client => {
         await requireUsageWriter(client, organizationId, userId);
+        // Serialize the idempotency namespace before checking or creating a reservation.
+        // Hash collisions only serialize unrelated requests; they cannot weaken correctness.
+        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [organizationId + ":" + input.idempotencyKey]);
         const existing = await client.query(
           "SELECT * FROM searqon.usage_reservations WHERE organization_id = $1 AND idempotency_key = $2",
           [organizationId, input.idempotencyKey]
