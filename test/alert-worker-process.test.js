@@ -82,7 +82,7 @@ test("worker loop closes its database and emits only aggregate safe telemetry", 
   const database = {
     pool: { async connect() { return { async query(sql) {
       if (sql.includes("has_table_privilege")) return { rows: [{
-        jobsSelect: true, jobsUpdate: true, eventsSelect: true, eventsInsert: true,
+        jobsSelect: true, jobsUpdate: true, eventsSelect: true, eventsInsert: true, eventsSequence: true,
         destinationsSelect: true, alertEventsSelect: true, outboxSelect: true, outboxUpdate: true
       }] };
       return { rows: [] };
