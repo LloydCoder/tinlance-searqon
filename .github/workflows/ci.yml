@@ -56,6 +56,10 @@ jobs:
         run: |
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE searqon_runtime LOGIN PASSWORD 'runtime-test-only' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS"
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "GRANT searqon_app TO searqon_runtime"
+      - name: Create restricted worker login for durable queue integration
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE searqon_worker_login LOGIN PASSWORD 'worker-test-only' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "GRANT searqon_worker TO searqon_worker_login"
       - name: Verify Node.js tenant transactions against PostgreSQL
         run: node --test test/database.integration.test.js
         env:
@@ -85,6 +89,12 @@ jobs:
         env:
           SEARQON_TEST_DATABASE: "1"
           SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
+      - name: Verify durable job queue leases and tenant isolation
+        run: node --test test/jobs.integration.test.js
+        env:
+          SEARQON_TEST_DATABASE: "1"
+          SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
+          SEARQON_WORKER_DATABASE_URL: postgresql://searqon_worker_login:worker-test-only@127.0.0.1:5432/searqon_test
 
   test:
     name: Tests and package validation (Node ${{ matrix.node-version }})
