@@ -82,3 +82,17 @@ Migration `0004_usage_ledger.sql` adds tenant-scoped PostgreSQL usage periods, r
 The integration suite verifies concurrent reservations at the included quota boundary, duplicate request idempotency, settlement/release behavior, overage quote capture and partial settlement, cross-tenant isolation, and rejection of ledger mutation.
 
 **Still not implemented:** a durable subscription/contract source of truth, customer-facing overage-consent workflow, verified payment-provider webhooks, invoice settlement, automated reservation expiry/reconciliation, worker dispatch integration, API-wide entitlement enforcement, billing notifications, provider budget controls, or production billing operations. Do not treat this ledger as a complete billing system or enable paid usage solely because the ledger exists.
+
+
+## Subscription lifecycle and verified webhook inbox
+
+Migration `0005_billing_lifecycle.sql` introduces a tenant-scoped subscription source-of-truth table, a redacted billing webhook inbox and an append-only subscription event history.
+
+- A workspace has at most one current subscription row. Provider/customer/subscription identifiers are uniquely constrained; plan/status, trial, billing interval and period invariants are enforced in PostgreSQL.
+- The current subscription and its event history are readable only by workspace members through forced RLS. The request-serving `searqon_app` role has SELECT-only access; it cannot create or mutate subscription state.
+- The webhook inbox is forced-RLS and has no grants or policies for `searqon_app`. It is reserved for a future dedicated billing worker identity. Provider/event IDs are unique, giving the future worker an idempotency key. Processing state includes bounded attempts, retry time and an expiring lease.
+- The inbox stores a SHA-256 digest of the original raw request body and an allowlisted normalized JSON payload capped at 16 KiB. It does not store raw webhook bodies, card data or arbitrary provider payload fields.
+- `src/platform/billing-events.js` is the provider-neutral normalization boundary. It requires the caller to attest that signature verification already succeeded and rejects unsupported events, invalid identifiers, plan/status combinations and invalid UTC periods. It is not a provider signature verifier or HTTP endpoint.
+- No payment provider is selected or connected. There is no webhook route, subscription writer, billing worker, invoice reconciliation, checkout, payment collection or paid-plan activation. A separate least-privilege worker, provider-specific raw-body signature verifier, replay/idempotency handling and reconciliation process are mandatory before accepting billing events.
+
+The CI PostgreSQL job applies the migration and checks subscription constraints, webhook-event uniqueness, forced RLS and the runtime role's inability to read the privileged inbox. This is schema and normalization groundwork, not a complete billing lifecycle.
