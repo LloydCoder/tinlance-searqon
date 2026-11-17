@@ -154,30 +154,64 @@ ALTER TABLE searqon.usage_reservations FORCE ROW LEVEL SECURITY;
 ALTER TABLE searqon.usage_ledger_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE searqon.usage_ledger_entries FORCE ROW LEVEL SECURITY;
 
-CREATE POLICY usage_spend_member_access ON searqon.usage_spend_periods
-  FOR ALL
+CREATE POLICY usage_spend_member_select ON searqon.usage_spend_periods
+  FOR SELECT
   USING (EXISTS (
-    SELECT 1 FROM searqon.memberships m
-    WHERE m.organization_id = usage_spend_periods.organization_id
-      AND m.user_id = searqon.current_user_id()
-  ))
-  WITH CHECK (EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = usage_spend_periods.organization_id
       AND m.user_id = searqon.current_user_id()
   ));
+CREATE POLICY usage_spend_writer_insert ON searqon.usage_spend_periods
+  FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = usage_spend_periods.organization_id
+      AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin','analyst')
+  ));
+CREATE POLICY usage_spend_writer_update ON searqon.usage_spend_periods
+  FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = usage_spend_periods.organization_id
+      AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin','analyst')
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = usage_spend_periods.organization_id
+      AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin','analyst')
+  ));
 
-CREATE POLICY usage_period_member_access ON searqon.usage_period_counters
-  FOR ALL
+CREATE POLICY usage_period_member_select ON searqon.usage_period_counters
+  FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = usage_period_counters.organization_id
       AND m.user_id = searqon.current_user_id()
+  ));
+CREATE POLICY usage_period_writer_insert ON searqon.usage_period_counters
+  FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = usage_period_counters.organization_id
+      AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin','analyst')
+  ));
+CREATE POLICY usage_period_writer_update ON searqon.usage_period_counters
+  FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = usage_period_counters.organization_id
+      AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin','analyst')
   ))
   WITH CHECK (EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = usage_period_counters.organization_id
       AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin','analyst')
   ));
 
 CREATE POLICY usage_reservation_member_select ON searqon.usage_reservations
@@ -195,6 +229,7 @@ CREATE POLICY usage_reservation_member_insert ON searqon.usage_reservations
       SELECT 1 FROM searqon.memberships m
       WHERE m.organization_id = usage_reservations.organization_id
         AND m.user_id = searqon.current_user_id()
+        AND m.role IN ('owner','admin','analyst')
     )
   );
 CREATE POLICY usage_reservation_member_update ON searqon.usage_reservations
@@ -203,11 +238,13 @@ CREATE POLICY usage_reservation_member_update ON searqon.usage_reservations
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = usage_reservations.organization_id
       AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin','analyst')
   ))
   WITH CHECK (EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = usage_reservations.organization_id
       AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin','analyst')
   ));
 
 CREATE POLICY usage_ledger_member_access ON searqon.usage_ledger_entries
@@ -225,6 +262,7 @@ CREATE POLICY usage_ledger_member_insert ON searqon.usage_ledger_entries
       SELECT 1 FROM searqon.memberships m
       WHERE m.organization_id = usage_ledger_entries.organization_id
         AND m.user_id = searqon.current_user_id()
+        AND m.role IN ('owner','admin','analyst')
     )
   );
 
