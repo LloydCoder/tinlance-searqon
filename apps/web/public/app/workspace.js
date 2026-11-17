@@ -117,7 +117,7 @@ function renderAssessmentResult(assessment, target) {
   target.append(summary);
   const dimensions = node("p", "muted-copy");
   dimensions.textContent = Object.entries(report.assessments ?? {}).map(([name, item]) =>
-    name + ": " + item.status.replaceAll("_", " ") + " · " + item.coverage + " coverage"
+    name + ": " + String(item.status ?? "unknown").replaceAll("_", " ") + " · " + (item.coverage ?? "unknown") + " coverage"
   ).join("  /  ");
   target.append(dimensions);
   const findings = Array.isArray(report.findings) ? report.findings : [];
@@ -202,6 +202,10 @@ function renderProjectDetail(project) {
   form.addEventListener("submit", async event => {
     event.preventDefault();
     if (!form.reportValidity()) return;
+    if (new TextEncoder().encode(content.value).byteLength > 2 * 1024 * 1024) {
+      setStatus("The document exceeds the 2 MiB limit. Reduce the content and try again.", "error");
+      return;
+    }
     submit.disabled = true;
     submit.textContent = "Assessing…";
     setStatus("Running a scoped assessment and preserving its report in this project.");
