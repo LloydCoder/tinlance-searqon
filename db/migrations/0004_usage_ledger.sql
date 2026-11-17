@@ -43,8 +43,8 @@ CREATE TABLE searqon.usage_spend_periods (
   period_start timestamptz NOT NULL,
   period_end timestamptz NOT NULL,
   plan text NOT NULL CHECK (plan IN ('free','starter','growth','agency','business','enterprise','trial')),
-  plan text NOT NULL CHECK (plan IN ('free','starter','growth','agency','business','enterprise','trial')),
-  policy_fingerprint text NOT NULL CHECK (policy_fingerprint ~ '^[a-f0-9]{64}
+  policy_fingerprint text NOT NULL CHECK (length(policy_fingerprint) = 64 AND policy_fingerprint ~ '^[a-f0-9]{64}'),
+  overage_enabled boolean NOT NULL DEFAULT false,
   spend_cap_micro_usd bigint NOT NULL DEFAULT 0 CHECK (spend_cap_micro_usd BETWEEN 0 AND 100000000000),
   overage_spent_micro_usd bigint NOT NULL DEFAULT 0 CHECK (overage_spent_micro_usd >= 0),
   overage_reserved_micro_usd bigint NOT NULL DEFAULT 0 CHECK (overage_reserved_micro_usd >= 0),
