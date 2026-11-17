@@ -20,6 +20,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
   const database = { pool: runtime };
   const userA = randomUUID();
   const userB = randomUUID();
+  const viewer = randomUUID();
   const orgA = randomUUID();
   const orgB = randomUUID();
   const email = id => id + "@usage.example.test";
@@ -35,16 +36,16 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
 
   try {
     await owner.query(
-      "INSERT INTO searqon.app_users (id,email,display_name) VALUES ($1,$2,'Usage A'),($3,$4,'Usage B')",
-      [userA,email(userA),userB,email(userB)]
+      "INSERT INTO searqon.app_users (id,email,display_name) VALUES ($1,$2,'Usage A'),($3,$4,'Usage B'),($5,$6,'Usage Viewer')",
+      [userA,email(userA),userB,email(userB),viewer,email(viewer)]
     );
     await owner.query(
       "INSERT INTO searqon.organizations (id,name,slug) VALUES ($1,'Usage A',$2),($3,'Usage B',$4)",
       [orgA,"usage-"+userA.replaceAll("-",""),orgB,"usage-"+userB.replaceAll("-","")]
     );
     await owner.query(
-      "INSERT INTO searqon.memberships (organization_id,user_id,role) VALUES ($1,$2,'owner'),($3,$4,'owner')",
-      [orgA,userA,orgB,userB]
+      "INSERT INTO searqon.memberships (organization_id,user_id,role) VALUES ($1,$2,'owner'),($3,$4,'owner'),($1,$5,'viewer')",
+      [orgA,userA,orgB,userB,viewer]
     );
 
     const request = {
@@ -70,6 +71,10 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
     assert.equal(new Date(first.periodEnd).toISOString(), periodEnd);
     assert.equal(first.createdBy, userA);
     assert.equal(first.includedReservedUnits, 5);
+    await assert.rejects(
+      ledger.reserve(viewer, orgA, { ...request, idempotencyKey: "viewer-usage-denied-01" }),
+      error => error.code === "insufficient_role"
+    );
     const changedPolicy = createUsageLedger({
       database,
       getEntitlements: async () => ({
