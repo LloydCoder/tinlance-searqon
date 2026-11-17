@@ -17,7 +17,7 @@ test("public pricing page discloses the exact trial, usage, and overage policy",
   const html = await readFile(pricingPage, "utf8");
   for (const expected of [
     "14 days", "Successful AI answer checks total", "Crawl page credits total",
-    "no payment card", "No automatic conversion", "80%", "100%",
+    "no payment card", "no automatic conversion", "80%", "100%",
     "$0.025", "$0.020", "$0.0175", "$0.015",
     "$4 / 1,000", "$10 / 1,000", "$1 / 10,000",
     "Overages are off by default", "No unused usage rollover"
