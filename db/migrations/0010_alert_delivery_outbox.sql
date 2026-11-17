@@ -43,6 +43,7 @@ CREATE POLICY geo_alert_events_worker_read ON searqon.geo_alert_events
       AND o.organization_id=geo_alert_events.organization_id
       AND j.status='leased'
       AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_token=current_setting('searqon.lease_token',true)::uuid
       AND j.lease_expires_at > now()
   ));
 
@@ -70,6 +71,7 @@ CREATE POLICY alert_delivery_outbox_worker_read ON searqon.alert_delivery_outbox
       AND j.organization_id=alert_delivery_outbox.organization_id
       AND j.status='leased'
       AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_token=current_setting('searqon.lease_token',true)::uuid
       AND j.lease_expires_at > now()
   ));
 CREATE POLICY alert_delivery_outbox_worker_update ON searqon.alert_delivery_outbox
@@ -79,6 +81,7 @@ CREATE POLICY alert_delivery_outbox_worker_update ON searqon.alert_delivery_outb
       AND j.organization_id=alert_delivery_outbox.organization_id
       AND j.status='leased'
       AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_token=current_setting('searqon.lease_token',true)::uuid
       AND j.lease_expires_at > now()
   )) WITH CHECK (EXISTS (
     SELECT 1 FROM searqon.jobs j
@@ -86,6 +89,7 @@ CREATE POLICY alert_delivery_outbox_worker_update ON searqon.alert_delivery_outb
       AND j.organization_id=alert_delivery_outbox.organization_id
       AND j.status='leased'
       AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_token=current_setting('searqon.lease_token',true)::uuid
       AND j.lease_expires_at > now()
   ));
 
@@ -99,6 +103,7 @@ CREATE POLICY alert_destinations_worker_read ON searqon.alert_destinations
       AND o.organization_id=alert_destinations.organization_id
       AND j.status='leased'
       AND j.lease_owner=current_setting('searqon.worker_id',true)
+      AND j.lease_token=current_setting('searqon.lease_token',true)::uuid
       AND j.lease_expires_at > now()
   ));
 
