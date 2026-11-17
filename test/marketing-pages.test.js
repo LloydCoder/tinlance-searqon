@@ -112,3 +112,16 @@ test("all internal links and static assets referenced by public pages resolve", 
     }
   });
 });
+
+
+test("browser navigation to unknown public paths returns the branded 404 page", async () => {
+  await withServer(async base => {
+    const response = await fetch(base + "/this-page-does-not-exist", { headers: { accept: "text/html" } });
+    assert.equal(response.status, 404);
+    assert.match(response.headers.get("content-type"), /text\/html/);
+    assert.match(await response.text(), /That page isn't here/);
+    const head = await fetch(base + "/this-page-does-not-exist", { method: "HEAD", headers: { accept: "text/html" } });
+    assert.equal(head.status, 404);
+    assert.equal(await head.text(), "");
+  });
+});
