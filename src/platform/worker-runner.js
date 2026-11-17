@@ -112,7 +112,6 @@ export function createWorkerRunner({
         if (!result.extended) controller.abort();
       }).catch(() => controller.abort()).finally(() => { heartbeatBusy = false; });
     },heartbeatMs);
-    heartbeat.unref?.();
 
     try {
       const result = await handler(job,{workerId,signal:controller.signal});
