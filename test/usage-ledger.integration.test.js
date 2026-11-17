@@ -77,7 +77,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
     const release = await ledger.release(userA, orgA, second.id, { reason: "cancelled_before_dispatch" });
     assert.equal(release.status, "released");
     await owner.query("UPDATE searqon.usage_reservations SET expires_at = now() - interval '1 second' WHERE id = $1", [third.id]);
-    const expired = await ledger.releaseExpired(userA, orgA, { now: new Date() });
+    const expired = await ledger.releaseExpired(userA, orgA);
     assert.equal(expired.releasedCount, 1);
     assert.equal(expired.reservations[0].id, third.id);
     const usageAfterRelease = await ledger.getPeriod(userA, orgA, "ai_answer_checks", periodStart);
