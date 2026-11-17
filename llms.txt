@@ -2,7 +2,7 @@
 
 > Evidence-first intelligence for understanding how websites, documentation, APIs and published agent interfaces are discovered across search, answer engines, generative AI systems and authorized agents.
 
-Searqon is an Apache-2.0 open-source toolkit developed by Tinlance. It provides deterministic diagnostics for SEO, Answer Engine Optimization (AEO), Generative Engine Optimization (GEO) and Searqon's proposed Agent Discoverability & Readiness discipline (AgEO).
+Searqon is an Apache-2.0 open-source toolkit developed by Tinlance. It provides deterministic diagnostics for SEO, Answer Engine Optimization (AEO), Generative Engine Optimization (GEO) and agent readiness.
 
 ## Product status
 
