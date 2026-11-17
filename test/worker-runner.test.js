@@ -26,6 +26,7 @@ test("worker runner validates its queue, handler registry and bounded execution 
   assert.throws(() => createWorkerRunner(), /queue/);
   assert.throws(() => createWorkerRunner({queue,workerId:"x",handlers:{}}), /worker identity/);
   assert.throws(() => createWorkerRunner({queue,workerId:"worker-node-01",handlers:{unknown:()=>{}}}), /unsupported job type/);
+  assert.throws(() => createWorkerRunner({queue,workerId:"worker-node-01",handlers:Object.assign(Object.create({alert_delivery:()=>{}}),{})}), /plain job handler registry/);
   assert.throws(() => createWorkerRunner({queue,workerId:"worker-node-01",handlers:{alert_delivery:()=>{}},concurrency:0}), /concurrency/);
 });
 
@@ -36,7 +37,7 @@ test("worker runner executes registered handlers and completes with a digest onl
     handlers:{alert_delivery:async (item,context) => ({jobId:item.id,signalAborted:context.signal.aborted})}
   });
   const result = await runner.runOnce();
-  assert.deepEqual(result,{claimed:1,completed:1,retried:0,failed:0,leaseLost:0});
+  assert.deepEqual(result,{claimed:1,completed:1,retried:0,failed:0,leaseLost:0,runnerErrors:0});
   assert.equal(queue.calls.claim[0].options.limit,4);
   assert.equal(queue.calls.complete.length,1);
   assert.match(queue.calls.complete[0].options.resultSha256,/^[a-f0-9]{64}$/);
