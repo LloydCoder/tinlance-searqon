@@ -180,8 +180,25 @@ CREATE POLICY usage_period_member_access ON searqon.usage_period_counters
       AND m.user_id = searqon.current_user_id()
   ));
 
-CREATE POLICY usage_reservation_member_access ON searqon.usage_reservations
-  FOR ALL
+CREATE POLICY usage_reservation_member_select ON searqon.usage_reservations
+  FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM searqon.memberships m
+    WHERE m.organization_id = usage_reservations.organization_id
+      AND m.user_id = searqon.current_user_id()
+  ));
+CREATE POLICY usage_reservation_member_insert ON searqon.usage_reservations
+  FOR INSERT
+  WITH CHECK (
+    created_by = searqon.current_user_id()
+    AND EXISTS (
+      SELECT 1 FROM searqon.memberships m
+      WHERE m.organization_id = usage_reservations.organization_id
+        AND m.user_id = searqon.current_user_id()
+    )
+  );
+CREATE POLICY usage_reservation_member_update ON searqon.usage_reservations
+  FOR UPDATE
   USING (EXISTS (
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = usage_reservations.organization_id
