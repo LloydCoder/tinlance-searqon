@@ -245,8 +245,9 @@ test("PostgreSQL atomic consumption enforces fixed quotas and commits operation 
 
     const first = outcomes.find(item => item.status === "fulfilled").value;
     assert.equal(first.result.startsWith("assessment-"), true);
+    const successfulIndex = Number(first.result.split("-")[1]);
     const replay = await ledger.consume(user, organization, {
-      meter: "manual_assessments", quantity: 1, idempotencyKey: "atomic-consume-0001"
+      meter: "manual_assessments", quantity: 1, idempotencyKey: "atomic-consume-000" + successfulIndex
     }, async () => {
       throw new Error("idempotent replay must not execute the operation again");
     });
