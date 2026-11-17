@@ -70,12 +70,17 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
       error => error.code === "42501"
     );
 
-    const claimed = await queue.claim(workerId,{limit:1,leaseSeconds:30});
+    const unmatched = await queue.enqueue(userA,orgA,{
+      jobType:"site_crawl",payload:{projectId:randomUUID()},idempotencyKey:"queue-unmatched-0001"
+    });
+    const claimed = await queue.claim(workerId,{limit:1,leaseSeconds:30,jobTypes:["alert_delivery"]});
     assert.equal(claimed.length,1);
     assert.equal(claimed[0].id,first.job.id);
     assert.equal(claimed[0].status,"leased");
     assert.equal(claimed[0].attempts,1);
-    assert.equal((await queue.claim("worker-node-02",{limit:1,leaseSeconds:30})).length,0);
+    const unmatchedState = await owner.query("SELECT status FROM searqon.jobs WHERE id=$1",[unmatched.job.id]);
+    assert.equal(unmatchedState.rows[0].status,"queued");
+    assert.equal((await queue.claim("worker-node-02",{limit:1,leaseSeconds:30,jobTypes:["alert_delivery"]})).length,0);
     assert.equal((await queue.complete("worker-node-02",claimed[0].id,claimed[0].leaseToken)).accepted,false);
     assert.equal((await queue.complete(workerId,claimed[0].id,randomUUID())).accepted,false);
     const extended = await queue.extendLease(workerId,claimed[0].id,claimed[0].leaseToken,{leaseSeconds:45});
@@ -88,7 +93,7 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
     const retryJob = await queue.enqueue(userA,orgA,{
       jobType:"site_crawl",payload:{projectId:randomUUID()},idempotencyKey:"queue-retry-0001",maxAttempts:2
     });
-    const attemptOne = (await queue.claim(workerId,{limit:1,leaseSeconds:30})).find(job => job.id === retryJob.job.id);
+    const attemptOne = (await queue.claim(workerId,{limit:1,leaseSeconds:30,jobTypes:["site_crawl"]})).find(job => job.id === retryJob.job.id);
     assert.ok(attemptOne);
     const retried = await queue.retry(workerId,attemptOne.id,attemptOne.leaseToken,{errorCode:"upstream_timeout",retryDelaySeconds:0});
     assert.equal(retried.job.status,"queued");
@@ -100,7 +105,7 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
     const recoveredJob = await queue.enqueue(userA,orgA,{
       jobType:"geo_sampling",payload:{samplingPlanId:randomUUID()},idempotencyKey:"queue-recover-0001",maxAttempts:2
     });
-    const firstLease = (await queue.claim(workerId,{limit:1,leaseSeconds:30})).find(job => job.id === recoveredJob.job.id);
+    const firstLease = (await queue.claim(workerId,{limit:1,leaseSeconds:30,jobTypes:["geo_sampling"]})).find(job => job.id === recoveredJob.job.id);
     assert.ok(firstLease);
     await owner.query("UPDATE searqon.jobs SET lease_expires_at = now() - interval '1 second' WHERE id = $1",[firstLease.id]);
     const recovered = (await queue.claim(workerId,{limit:1,leaseSeconds:30})).find(job => job.id === recoveredJob.job.id);
@@ -114,8 +119,11 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
     });
     const deadLease = (await queue.claim(workerId,{limit:1,leaseSeconds:30})).find(job => job.id === deadJob.job.id);
     await owner.query("UPDATE searqon.jobs SET lease_expires_at = now() - interval '1 second' WHERE id = $1",[deadLease.id]);
-    const afterDeadLease = await queue.claim(workerId,{limit:10,leaseSeconds:30});
+    const afterDeadLease = await queue.claim(workerId,{limit:10,leaseSeconds:30,jobTypes:["alert_delivery"]});
     assert.equal(afterDeadLease.some(job => job.id === deadJob.job.id),false);
+    const stillExpired = await owner.query("SELECT status FROM searqon.jobs WHERE id=$1",[deadJob.job.id]);
+    assert.equal(stillExpired.rows[0].status,"leased");
+    await queue.claim(workerId,{limit:10,leaseSeconds:30,jobTypes:["scheduled_report"]});
     const deadState = await owner.query("SELECT status,last_error_code FROM searqon.jobs WHERE id = $1",[deadJob.job.id]);
     assert.equal(deadState.rows[0].status,"failed");
     assert.equal(deadState.rows[0].last_error_code,"max_attempts_exceeded");
