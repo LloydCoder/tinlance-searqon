@@ -150,3 +150,12 @@ The Free plan's one-project limit is covered by a PostgreSQL concurrency test. O
 `src/platform/worker-runner.js` adds a bounded worker runtime around the durable queue. It requires an explicit allowlisted handler registry, limits concurrency and polling, renews leases while handlers run, aborts work when lease ownership is lost, hashes bounded JSON results rather than persisting result bodies, and retries failures with capped exponential delay using machine-readable error codes. It supports graceful shutdown through `AbortSignal`.
 
 The runner is execution infrastructure, not a deployed daemon. No default job handlers, scheduler, browser sandbox, network egress policy, production worker credentials or long-running worker deployment are configured. Every future handler must separately validate tenant/job authorization, input provenance, resource limits and any external-action approval before acting.
+
+
+## Durable GEO alert state
+
+Migration `0008_geo_alert_state.sql` persists supplied aggregate snapshots, immutable alert events and tenant-scoped cooldown state.
+
+`createGeoAlertStore().recordComparison(userId, organizationId, { report, baseline, current })` stores bounded snapshots by stable ID and SHA-256 digest, verifies alert-to-snapshot references, and serializes each dedupe key with a transaction-scoped advisory lock. Alert IDs are idempotent; a repeated ID with changed content is rejected. Cooldowns use the trusted server clock rather than caller-supplied evaluation timestamps, and out-of-order evaluations are suppressed so an older comparison cannot roll cooldown state backwards. Events distinguish emitted from suppressed outcomes and retain the suppression reason. Snapshot/event rows are append-only and forced-RLS tenant scoped.
+
+This persists comparisons over caller-supplied observations only. No AI provider collection, consumer-interface automation, destination encryption, delivery outbox, webhook dispatch, retry worker, scheduler or monitoring is enabled. Customer/provider-labelled false-positive evaluation remains an external gate.

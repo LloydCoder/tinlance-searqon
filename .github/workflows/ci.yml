@@ -95,6 +95,11 @@ jobs:
           SEARQON_TEST_DATABASE: "1"
           SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
           SEARQON_WORKER_DATABASE_URL: postgresql://searqon_worker_login:worker-test-only@127.0.0.1:5432/searqon_test
+      - name: Verify durable GEO alert snapshots, cooldowns and replay protection
+        run: node --test test/geo-alert-store.integration.test.js
+        env:
+          SEARQON_TEST_DATABASE: "1"
+          SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
 
   test:
     name: Tests and package validation (Node ${{ matrix.node-version }})
