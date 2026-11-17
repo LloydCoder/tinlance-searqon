@@ -79,6 +79,17 @@ test('overage requires explicit opt-in and a positive spend cap', () => {
   assert.equal(allowed.amountMicroUsd, 2000000);
 });
 
+test('overage charges only newly consumed units, never the full cumulative excess twice', () => {
+  const growth = resolveEntitlements({ subscription: { status: 'active', plan: 'growth' } });
+  const result = authorizeUsage({
+    entitlements: growth, meter: 'ai_answer_checks', used: 6100, requested: 100,
+    overage: { enabled: true, spendCapMicroUsd: 10000000, spentMicroUsd: 2000000 }
+  });
+  assert.equal(result.allowed, true);
+  assert.equal(result.billableOverage, 100);
+  assert.equal(result.amountMicroUsd, 2000000);
+});
+
 test('overage cannot exceed customer spend cap', () => {
   const growth = resolveEntitlements({ subscription: { status: 'active', plan: 'growth' } });
   const result = authorizeUsage({
@@ -97,15 +108,26 @@ test('overage quotes use integer micro-USD and block pricing', () => {
 
 test('enterprise overrides require an active approved contract and respect hard ceilings', () => {
   const subscription = { status: 'active', plan: 'enterprise' };
-  assert.throws(() => resolveEntitlements({ subscription, approvedOverrides: { limits: { projects: 200 } } }), /active contract/);
+  const now = Date.parse('2026-11-17T00:00:00.000Z');
+  assert.throws(() => resolveEntitlements({ subscription, approvedOverrides: { limits: { projects: 200 } }, now }), /active contract/);
   assert.throws(() => resolveEntitlements({
-    subscription,
+    subscription, now,
     approvedOverrides: {
       contractStatus: 'active', approvedBy: 'billing-admin',
       validFrom: '2026-01-01T00:00:00.000Z', validUntil: '2027-01-01T00:00:00.000Z',
       limits: { projects: 501 }
     }
   }), /hard safety ceiling/);
+  const approved = resolveEntitlements({
+    subscription, now,
+    approvedOverrides: {
+      contractStatus: 'active', approvedBy: 'billing-admin',
+      validFrom: '2026-01-01T00:00:00.000Z', validUntil: '2027-01-01T00:00:00.000Z',
+      limits: { projects: 120 }, features: { dataResidency: false }
+    }
+  });
+  assert.equal(approved.limits.projects, 120);
+  assert.equal(approved.features.dataResidency, false);
 });
 
 test('rejects unknown plans and invalid usage counters', () => {
