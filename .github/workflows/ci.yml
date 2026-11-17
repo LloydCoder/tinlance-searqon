@@ -75,6 +75,11 @@ jobs:
         env:
           SEARQON_TEST_DATABASE: "1"
           SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
+      - name: Verify subscription and redacted webhook inbox schema
+        run: node --test test/billing-lifecycle.integration.test.js
+        env:
+          SEARQON_TEST_DATABASE: "1"
+          SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
 
   test:
     name: Tests and package validation (Node ${{ matrix.node-version }})
