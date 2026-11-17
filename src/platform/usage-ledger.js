@@ -187,11 +187,30 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         }
 
         await client.query(
+          `INSERT INTO searqon.usage_spend_periods
+            (organization_id, period_start, period_end, overage_enabled, spend_cap_micro_usd)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (organization_id, period_start) DO NOTHING`,
+          [organizationId, periodStart, periodEnd, overageEnabled, spendCapMicroUsd]
+        );
+        const spendLocked = await client.query(
+          `SELECT * FROM searqon.usage_spend_periods
+           WHERE organization_id = $1 AND period_start = $2 FOR UPDATE`,
+          [organizationId, periodStart]
+        );
+        const spendPeriod = spendLocked.rows[0];
+        if (!spendPeriod || new Date(spendPeriod.period_end).getTime() !== periodEnd.getTime()
+          || spendPeriod.overage_enabled !== overageEnabled
+          || numberValue(spendPeriod.spend_cap_micro_usd, "spend_cap_micro_usd") !== spendCapMicroUsd) {
+          throw new UsageLedgerError(409, "usage_policy_changed", "The usage spend policy for this billing period is fixed; apply changes at a new period boundary.");
+        }
+
+        await client.query(
           `INSERT INTO searqon.usage_period_counters
-            (organization_id, meter, period_start, period_end, included_limit, overage_enabled, spend_cap_micro_usd)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+            (organization_id, meter, period_start, period_end, included_limit)
+           VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT (organization_id, meter, period_start) DO NOTHING`,
-          [organizationId, meter, periodStart, periodEnd, includedLimit, overageEnabled, spendCapMicroUsd]
+          [organizationId, meter, periodStart, periodEnd, includedLimit]
         );
         const locked = await client.query(
           `SELECT * FROM searqon.usage_period_counters
@@ -201,9 +220,7 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
         );
         const counter = locked.rows[0];
         if (!counter || new Date(counter.period_end).getTime() !== periodEnd.getTime()
-          || numberValue(counter.included_limit, "included_limit") !== includedLimit
-          || counter.overage_enabled !== overageEnabled
-          || numberValue(counter.spend_cap_micro_usd, "spend_cap_micro_usd") !== spendCapMicroUsd) {
+          || numberValue(counter.included_limit, "included_limit") !== includedLimit) {
           throw new UsageLedgerError(409, "usage_policy_changed", "The usage policy for this billing period is fixed; apply plan changes at a new period boundary.");
         }
 
@@ -228,8 +245,8 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           reservedAmountMicroUsd = quote.amountMicroUsd;
           overageRateMicroUsdPerBlock = quote.rateMicroUsdPerBlock;
           overageBlock = quote.block;
-          const spent = numberValue(counter.overage_spent_micro_usd, "overage_spent_micro_usd");
-          const alreadyReserved = numberValue(counter.overage_reserved_micro_usd, "overage_reserved_micro_usd");
+          const spent = numberValue(spendPeriod.overage_spent_micro_usd, "overage_spent_micro_usd");
+          const alreadyReserved = numberValue(spendPeriod.overage_reserved_micro_usd, "overage_reserved_micro_usd");
           if (spent + alreadyReserved + reservedAmountMicroUsd > spendCapMicroUsd) {
             throw new UsageLedgerError(409, "overage_spend_cap_exhausted", "The workspace overage spend cap would be exceeded.");
           }
@@ -263,11 +280,15 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
 
         await client.query(
           `UPDATE searqon.usage_period_counters
-           SET reserved_units = reserved_units + $4,
-               overage_reserved_micro_usd = overage_reserved_micro_usd + $5,
-               updated_at = now()
+           SET reserved_units = reserved_units + $4, updated_at = now()
            WHERE organization_id = $1 AND meter = $2 AND period_start = $3`,
-          [organizationId, meter, periodStart, quantity, reservedAmountMicroUsd]
+          [organizationId, meter, periodStart, quantity]
+        );
+        await client.query(
+          `UPDATE searqon.usage_spend_periods
+           SET overage_reserved_micro_usd = overage_reserved_micro_usd + $3, updated_at = now()
+           WHERE organization_id = $1 AND period_start = $2`,
+          [organizationId, periodStart, reservedAmountMicroUsd]
         );
         const row = inserted.rows[0];
         await appendLedgerEntry(client, {
