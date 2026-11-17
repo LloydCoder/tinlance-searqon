@@ -69,6 +69,10 @@ CREATE TABLE searqon.billing_webhook_inbox (
   normalized_payload jsonb NOT NULL CHECK (
     jsonb_typeof(normalized_payload) = 'object'
     AND octet_length(normalized_payload::text) <= 16384
+    AND normalized_payload - ARRAY[
+      'organizationId','providerCustomerId','providerSubscriptionId','status','plan',
+      'currentPeriodStart','currentPeriodEnd','trialEndsAt'
+    ] = '{}'::jsonb
   ),
   processing_status text NOT NULL DEFAULT 'pending'
     CHECK (processing_status IN ('pending','processing','processed','failed')),
