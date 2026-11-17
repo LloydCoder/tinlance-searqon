@@ -10,7 +10,7 @@ function fixture() {
   const database = { pool: { async connect() { connects += 1; throw new Error("database should not be reached"); } } };
   const ledger = createUsageLedger({
     database,
-    getEntitlements: async () => ({ plan: "free", limits: {}, overage: { enabled: false, spendCapMicroUsd: 0 } })
+    getEntitlements: async () => ({ plan: "free", limits: {}, billingPeriod: { start: "2026-11-01T00:00:00.000Z", end: "2026-12-01T00:00:00.000Z" }, overage: { enabled: false, spendCapMicroUsd: 0 } })
   });
   return { ledger, connects: () => connects };
 }
@@ -40,7 +40,7 @@ test("usage reservation validates meter, quantity, idempotency key and billing p
     error => error instanceof UsageLedgerError && error.code === "invalid_quantity");
   await assert.rejects(ledger.reserve(userId, organizationId, { ...base, idempotencyKey: "short" }),
     error => error instanceof UsageLedgerError && error.code === "invalid_idempotency_key");
-  await assert.rejects(ledger.reserve(userId, organizationId, { ...base, periodEnd: base.periodStart }),
+  await assert.rejects(ledger.getPeriod(userId, organizationId, "ai_answer_checks", "not-a-date"),
     error => error instanceof UsageLedgerError && error.code === "invalid_period");
   assert.equal(connects(), 0);
 });
