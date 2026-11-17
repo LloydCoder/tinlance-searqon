@@ -71,8 +71,9 @@ export function createWorkerRunner({
   if (typeof workerId !== "string" || !WORKER_ID.test(workerId)) {
     throw new TypeError("A valid worker identity is required.");
   }
-  if (!handlers || typeof handlers !== "object" || Array.isArray(handlers)) {
-    throw new TypeError("A job handler registry is required.");
+  if (!handlers || typeof handlers !== "object" || Array.isArray(handlers)
+    || (Object.getPrototypeOf(handlers) !== Object.prototype && Object.getPrototypeOf(handlers) !== null)) {
+    throw new TypeError("A plain job handler registry is required.");
   }
   for (const [jobType, handler] of Object.entries(handlers)) {
     if (!JOB_TYPES.has(jobType)) throw new TypeError("The worker handler registry contains an unsupported job type.");
@@ -93,7 +94,7 @@ export function createWorkerRunner({
   }
 
   async function processJob(job) {
-    const handler = handlers[job.jobType];
+    const handler = Object.hasOwn(handlers,job.jobType) ? handlers[job.jobType] : null;
     if (!handler) {
       try { return await retryJob(job,"handler_unavailable"); }
       catch { return {status:"runnerError"}; }
@@ -129,23 +130,24 @@ export function createWorkerRunner({
     }
   }
 
-  return Object.freeze({
-    async runOnce() {
-      const jobs = await queue.claim(workerId,{limit:concurrency,leaseSeconds});
-      const results = await Promise.all(jobs.map(processJob));
-      return {
-        claimed:jobs.length,
-        completed:results.filter(result => result.status === "completed").length,
-        retried:results.filter(result => result.status === "retried").length,
-        failed:results.filter(result => result.status === "failed").length,
-        leaseLost:results.filter(result => result.status === "leaseLost").length,
-        runnerErrors:results.filter(result => result.status === "runnerError").length
-      };
-    },
+  async function runOnce() {
+    const jobs = await queue.claim(workerId,{limit:concurrency,leaseSeconds});
+    const results = await Promise.all(jobs.map(processJob));
+    return {
+      claimed:jobs.length,
+      completed:results.filter(result => result.status === "completed").length,
+      retried:results.filter(result => result.status === "retried").length,
+      failed:results.filter(result => result.status === "failed").length,
+      leaseLost:results.filter(result => result.status === "leaseLost").length,
+      runnerErrors:results.filter(result => result.status === "runnerError").length
+    };
+  }
 
+  return Object.freeze({
+    runOnce,
     async run({ signal } = {}) {
       while (!signal?.aborted) {
-        await this.runOnce();
+        await runOnce();
         if (!signal?.aborted) await sleep(pollIntervalMs,signal);
       }
       return {stopped:true};
