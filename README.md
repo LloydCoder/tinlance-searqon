@@ -35,11 +35,13 @@ flowchart TD
   B --> I[Evidence-linked assessment JSON]
   I --> J[Standalone HTML report]
   H --> K[Separate GEO result]
+  I --> L[Recommendation worklist]
+  L --> M[Human review and later assessment verification]
 ```
 
 ## Product direction
 
-Searqon's four-discipline foundation (SEO, AEO, GEO and AgEO) is being extended with an owner-attested Brand Truth Registry, deterministic locale/market prompt cohorts and policy-reviewed, cost-bounded GEO sampling plans. Deterministic, registry-relative brand-claim and citation defense now emits human-review correction manifests. GEO snapshot alerts, evidence-linked citation-domain disappearance detection, signed event envelopes, provider payload builders and labelled synthetic quality-evaluation tooling are implemented for supplied data; live acquisition, durable delivery, machine-readable artifact generation and isolated agent-journey simulation remain future work. See the [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md), [16-phase roadmap](docs/ROADMAP_16_PHASE.md) and [proposed pricing and entitlement contract](docs/PRICING_AND_PACKAGING.md). GEO snapshot comparisons are available through `searqon geo alerts`; see the [alert guide](docs/how-to/compare-geo-snapshots-and-alerts.md).
+Searqon's four-discipline foundation (SEO, AEO, GEO and AgEO) is being extended with an owner-attested Brand Truth Registry, deterministic locale/market prompt cohorts and policy-reviewed, cost-bounded GEO sampling plans. Deterministic, registry-relative brand-claim and citation defense emits human-review correction manifests. GEO alert snapshots/cooldowns, encrypted tenant-scoped destinations, a transactional outbox, secure Slack/Teams Workflows/PagerDuty transports and a dedicated lease-fenced alert worker are implemented but not deployed or configured with provider credentials. The authenticated workspace now includes a durable recommendation worklist with human status transitions and evidence-gated verification; it does not apply patches or publish content. Live GEO acquisition/scheduling, production delivery, machine-readable artifact generation and isolated agent-journey simulation remain future work. See the [recommendation lifecycle](docs/RECOMMENDATIONS.md), [architecture specification](docs/ARCHITECTURE_SPEC.md), [module contracts](docs/MODULE_CONTRACTS.md), [16-phase roadmap](docs/ROADMAP_16_PHASE.md) and [proposed pricing and entitlement contract](docs/PRICING_AND_PACKAGING.md). GEO snapshot comparisons are available through `searqon geo alerts`; see the [alert guide](docs/how-to/compare-geo-snapshots-and-alerts.md).
 
 ## Why Searqon
 
@@ -49,7 +51,7 @@ Searqon keeps different kinds of discoverability evidence separate instead of hi
 |---|---|---|
 | SEO | Technical discovery, indexability and page signals | Partial local and single-page diagnostics |
 | AEO | Answer structure, clarity and source-oriented content signals | Partial diagnostics |
-| GEO | Mentions and citations in generative-system observations | Supplied-observation analysis, brand registry, prompt cohorts, governed sampling preflight and deterministic baseline/current alert comparisons and evidence-linked citation-domain disappearance detection; no live collection or notification delivery |
+| GEO | Mentions and citations in generative-system observations | Supplied-observation analysis, brand registry, prompt cohorts, governed sampling preflight, persisted alert snapshots/cooldowns and a secure provider delivery pipeline (not deployed); no live collection or scheduling |
 | AgEO | Documentation and interface readiness for software agents | Partial API, OpenAPI and passive MCP snapshot diagnostics |
 
 Searqon is not a search-rank tracker, a general-purpose crawler, an MCP execution runtime or a hosted monitoring service. It does not guarantee rankings, citations, recommendations or agent adoption. AgEO is Searqon's proposed product discipline, not a universal industry standard.
@@ -174,7 +176,9 @@ The CLI prints usage when invoked without a valid command. Run `node src/cli.js`
 | GEO analysis | Normalizes supplied observations and keeps observation classes separate |
 | GEO monitoring and provider collection | Not implemented |
 | Standalone HTML reports | Implemented; local output only |
-| Hosted API, UI and multi-tenant service | Not implemented |
+| Evidence-linked recommendations | Implemented lifecycle/API/UI; human approval and later comparable-assessment verification only |
+| Alert delivery | Secure sender/outbox/worker code implemented; not deployed or credentialed |
+| Hosted API, UI and multi-tenant service | Partially implemented early-alpha foundation; not production deployed |
 
 ## Local web application
 
