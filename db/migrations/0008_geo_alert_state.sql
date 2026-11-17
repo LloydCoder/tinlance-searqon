@@ -35,6 +35,7 @@ CREATE TABLE searqon.geo_alert_events (
   current_snapshot_id text NOT NULL,
   state text NOT NULL CHECK (state IN ('emitted','suppressed')),
   suppressed_until timestamptz,
+  suppression_reason text CHECK (suppression_reason IS NULL OR suppression_reason IN ('cooldown_active','out_of_order_evaluation')),
   payload jsonb NOT NULL CHECK (
     jsonb_typeof(payload) = 'object'
     AND octet_length(payload::text) <= 65536
@@ -50,8 +51,8 @@ CREATE TABLE searqon.geo_alert_events (
   CONSTRAINT geo_alert_events_current_fk FOREIGN KEY (organization_id,current_snapshot_id)
     REFERENCES searqon.geo_alert_snapshots(organization_id,snapshot_id) ON DELETE RESTRICT,
   CONSTRAINT geo_alert_events_suppression_state CHECK (
-    (state = 'suppressed' AND suppressed_until IS NOT NULL)
-    OR (state = 'emitted' AND suppressed_until IS NULL)
+    (state = 'suppressed' AND suppressed_until IS NOT NULL AND suppression_reason IS NOT NULL)
+    OR (state = 'emitted' AND suppressed_until IS NULL AND suppression_reason IS NULL)
   )
 );
 CREATE INDEX geo_alert_events_org_time_idx
@@ -64,6 +65,7 @@ CREATE TABLE searqon.geo_alert_cooldowns (
   dedupe_key text NOT NULL CHECK (dedupe_key ~ '^[a-f0-9]{64}$'),
   last_emitted_event_id uuid NOT NULL,
   last_emitted_at timestamptz NOT NULL,
+  last_evaluated_at timestamptz NOT NULL,
   cooldown_until timestamptz NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (organization_id,dedupe_key),
