@@ -6,7 +6,7 @@ const WORKER_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,63}$/;
 const CHANNELS = new Set(["slack","teams","pagerduty"]);
 const KEY_VERSION = /^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/;
 const WRITERS = new Set(["owner","admin","analyst"]);
-const TEAMS_HOST_SUFFIXES = [".webhook.office.com",".webhook.office365.com",".logic.azure.com",".webhook.microsoft.com"];
+const TEAMS_HOST_SUFFIXES = [".logic.azure.com"];
 
 export class AlertDestinationError extends Error {
   constructor(statusCode, code, message) {
