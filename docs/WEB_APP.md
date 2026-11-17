@@ -85,7 +85,7 @@ Public content routes:
 - /about/ and /contact/ — product context and support channels.
 - /privacy/ and /terms/ — early-alpha transparency/draft notices. These are not substitutes for final legal review or a complete production privacy notice.
 
-The public root also serves robots.txt, sitemap.xml and llms.txt. llms.txt is descriptive only; it is not a ranking mechanism and does not guarantee model ingestion. Authentication and workspace routes remain disallowed from crawler indexing. The website uses canonical URLs and responsive shared page styles, and the mobile navigation supports keyboard dismissal.
+The public root also serves robots.txt, sitemap.xml and llms.txt. Unknown browser-facing paths return the branded 404 page with an HTTP 404 status; API misses remain structured JSON responses. llms.txt is descriptive only; it is not a ranking mechanism and does not guarantee model ingestion. Authentication and workspace routes remain disallowed from crawler indexing. The website uses canonical URLs and responsive shared page styles, and the mobile navigation supports keyboard dismissal.
 
 The brand fonts are currently loaded through Google Fonts. This is disclosed in the privacy notice because the font request exposes normal connection metadata to Google's font infrastructure. Self-hosting the licensed brand font files is a preferred privacy/performance follow-up before general availability.
 
