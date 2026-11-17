@@ -103,3 +103,45 @@ test("workspace projects and persisted assessments enforce tenant and role bound
     await owner.end();
   }
 });
+
+
+test("Free workspaces receive one manual assessment per UTC billing month", { skip: !disposable }, async () => {
+  const owner = new Pool({ connectionString: databaseUrl });
+  const runtime = new Pool({ connectionString: process.env.SEARQON_RUNTIME_DATABASE_URL ?? databaseUrl, max: 2 });
+  const database = { pool: runtime };
+  const service = createWorkspaceService({ database });
+  const user = randomUUID();
+  const organization = randomUUID();
+  try {
+    await owner.query("INSERT INTO searqon.app_users (id,email,display_name) VALUES ($1,$2,'Free Meter')", [user,user+"@free-meter.example.test"]);
+    await owner.query("INSERT INTO searqon.organizations (id,name,slug) VALUES ($1,'Free Meter',$2)", [organization,"free-meter-"+user.replaceAll("-","")]);
+    await owner.query("INSERT INTO searqon.memberships (organization_id,user_id,role) VALUES ($1,$2,'owner')", [organization,user]);
+
+    const project = await service.createProject(user, {
+      organizationId: organization,
+      name: "Free quota project",
+      targetUrl: "https://example.com"
+    });
+    const document = {
+      contentType: "text/html",
+      content: "<html lang=\"en\"><head><title>Example page title</title><meta name=\"description\" content=\"A useful description for an example page.\"></head><body><h1>Example page</h1></body></html>"
+    };
+    const first = await service.createAssessment(user, project.id, document);
+    assert.equal(first.status, "succeeded");
+    await assert.rejects(
+      service.createAssessment(user, project.id, document),
+      error => error.code === "included_allowance_exhausted" && error.statusCode === 409
+    );
+    assert.equal((await service.listAssessments(user, project.id)).length, 1);
+
+    const counter = await owner.query(
+      "SELECT consumed_units, reserved_units FROM searqon.usage_period_counters WHERE organization_id = $1 AND meter = 'manual_assessments'",
+      [organization]
+    );
+    assert.equal(Number(counter.rows[0].consumed_units), 1);
+    assert.equal(Number(counter.rows[0].reserved_units), 0);
+  } finally {
+    await runtime.end();
+    await owner.end();
+  }
+});
