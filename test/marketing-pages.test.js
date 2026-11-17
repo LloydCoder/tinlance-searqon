@@ -24,7 +24,7 @@ test("public marketing routes are real pages with a shared accessible navigation
       ["/docs/", "Documentation"],
       ["/pricing/", "Pricing and early access"],
       ["/security/", "Security and trust"],
-      ["/about/", "About Searqon"]
+      ["/about/", "About Searqon"],\n      ["/contact/", "Talk to the team"],\n      ["/privacy/", "Privacy, explained"],\n      ["/terms/", "Use the tools"]
     ];
     for (const [path, heading] of routes) {
       const response = await fetch(base + path);
@@ -57,7 +57,7 @@ test("marketing pages expose crawlable metadata and sitemap resources", async ()
     const sitemap = await fetch(base + "/sitemap.xml");
     assert.equal(sitemap.status, 200);
     const xml = await sitemap.text();
-    for (const path of ["/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/", "/security/", "/about/"]) {
+    for (const path of ["/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/", "/security/", "/about/", "/contact/", "/privacy/", "/terms/"]) {
       assert.ok(xml.includes("https://searqon.tinlance.com" + path), "missing sitemap route " + path);
     }
   });
