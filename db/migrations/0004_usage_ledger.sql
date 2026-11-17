@@ -29,6 +29,14 @@ CREATE TABLE searqon.usage_period_counters (
       WHEN 'api_requests' THEN included_limit <= 5000000
     END
   ),
+  CONSTRAINT usage_period_total_meter_ceiling CHECK (
+    CASE meter
+      WHEN 'ai_answer_checks' THEN consumed_units + reserved_units <= 1000000
+      WHEN 'crawl_pages' THEN consumed_units + reserved_units <= 5000000
+      WHEN 'keyword_months' THEN consumed_units + reserved_units <= 1000000
+      WHEN 'api_requests' THEN consumed_units + reserved_units <= 5000000
+    END
+  ),
   CONSTRAINT usage_period_spend_within_cap CHECK (
     overage_spent_micro_usd + overage_reserved_micro_usd <= spend_cap_micro_usd
   ),
