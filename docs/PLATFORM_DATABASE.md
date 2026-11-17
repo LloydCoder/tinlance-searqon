@@ -168,3 +168,12 @@ Migration `0009_encrypted_alert_destinations.sql` adds tenant-scoped Slack, Micr
 The request role has column-level privileges to create destinations and read non-secret metadata, but cannot SELECT ciphertext, nonce, tag or secret digest. The separate worker role can read encrypted destination rows; the destination service authenticates/decrypts them only for delivery code. Creation and disable actions append audit events. Slack and Teams webhook URLs are restricted to official HTTPS host patterns; PagerDuty accepts a bounded routing key.
 
 Key material is injected by the operator and snapshotted in memory by the store. No key is generated, stored or managed by the database. Production key provisioning, rotation, backup/recovery, KMS/HSM integration, DNS pinning, egress controls, outbound senders, delivery outbox and end-to-end dispatch are not yet implemented. No webhook is contacted by this feature.
+
+
+## Transactional alert delivery outbox
+
+Migration `0010_alert_delivery_outbox.sql` links each emitted alert event to every enabled destination in the workspace. The alert event, cooldown update, outbox rows, `alert_delivery` jobs and queued job events are written in the same tenant transaction. Suppressed alerts and idempotent replays do not enqueue another delivery. Each job payload contains only the outbox delivery ID.
+
+The worker can retrieve a delivery only while it holds the matching active job lease and fencing token. It then reads the immutable event payload and decrypts the destination credential. Outbox transitions (`delivered`, `failed`, `cancelled`) are worker-only and lease-fenced; a provider receipt ID is bounded and never stores response bodies. The integration suite verifies the transaction handoff from event to job, secret retrieval under lease, delivered-state persistence and job completion.
+
+This remains a durable dispatch pipeline, not a live notification service. There is no outbound Slack/Teams/PagerDuty sender, DNS pinning/egress policy, provider response validation, dead-letter operator UI, or production worker deployment. No external webhook is contacted.
