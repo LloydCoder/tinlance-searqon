@@ -104,7 +104,9 @@ CREATE POLICY alert_destinations_worker_read ON searqon.alert_destinations
 
 REVOKE ALL PRIVILEGES ON searqon.alert_delivery_outbox FROM PUBLIC,searqon_app,searqon_worker;
 GRANT SELECT,INSERT ON searqon.alert_delivery_outbox TO searqon_app;
-GRANT SELECT,UPDATE ON searqon.alert_delivery_outbox TO searqon_worker;
+GRANT SELECT ON searqon.alert_delivery_outbox TO searqon_worker;
+GRANT UPDATE (status,provider_receipt_id,last_error_code,delivered_at,updated_at)
+  ON searqon.alert_delivery_outbox TO searqon_worker;
 GRANT SELECT ON searqon.geo_alert_events TO searqon_worker;
 
 COMMIT;
