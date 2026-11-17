@@ -28,6 +28,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
   const getEntitlements = async (_client, organizationId) => ({
     ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }),
     limits: { ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }).limits, aiAnswerChecksPerMonth: 1500 },
+    billingPeriod: { start: periodStart, end: periodEnd },
     overage: { enabled: false, spendCapMicroUsd: 0 }
   });
   const ledger = createUsageLedger({ database, getEntitlements });
@@ -47,7 +48,7 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
     );
 
     const request = {
-      meter: "ai_answer_checks", quantity: 5, periodStart, periodEnd,
+      meter: "ai_answer_checks", quantity: 5, periodStart: "2026-01-01T00:00:00.000Z", periodEnd: "2026-02-01T00:00:00.000Z",
       idempotencyKey: "usage-reservation-0001"
     };
     const first = await ledger.reserve(userA, orgA, request);
@@ -65,6 +66,8 @@ test("PostgreSQL usage ledger reserves atomically, settles idempotently and isol
       ledger.reserve(userA, orgA, { ...request, quantity: 6 }),
       error => error.code === "idempotency_key_conflict"
     );
+    assert.equal(new Date(first.periodStart).toISOString(), periodStart);
+    assert.equal(new Date(first.periodEnd).toISOString(), periodEnd);
     assert.equal(first.includedReservedUnits, 5);
     assert.equal(first.overageReservedUnits, 0);
 
@@ -131,6 +134,7 @@ test("PostgreSQL usage ledger prices only reserved overage and releases unused r
     getEntitlements: async () => ({
       ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }),
       limits: { ...resolveEntitlements({ subscription: { status: "active", plan: "growth" } }).limits, aiAnswerChecksPerMonth: 3 },
+      billingPeriod: { start: periodStart, end: periodEnd },
       overage: { enabled: true, spendCapMicroUsd: 45_000 }
     })
   });
