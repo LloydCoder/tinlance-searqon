@@ -281,7 +281,7 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
       return withUserTransaction(database.pool, userId, async client => {
         await requireUsageWriter(client, organizationId, userId);
         const selected = await client.query(
-          "SELECT * FROM searqon.usage_reservations WHERE organization_id = $1 AND id = $2 FOR UPDATE",
+          "SELECT *, (expires_at > now()) AS not_expired FROM searqon.usage_reservations WHERE organization_id = $1 AND id = $2 FOR UPDATE",
           [organizationId, reservationId]
         );
         const reservation = selected.rows[0];
@@ -293,7 +293,7 @@ export function createUsageLedger({ database, getEntitlements, reservationTtlSec
           return reservationRow(reservation, true);
         }
         if (reservation.status !== "reserved") throw new UsageLedgerError(409, "reservation_not_active", "Only an active usage reservation can be settled.");
-        if (new Date(reservation.expires_at).getTime() <= Date.now()) {
+        if (!reservation.not_expired) {
           throw new UsageLedgerError(409, "reservation_expired", "The usage reservation expired; release it and create a new reservation before dispatch.");
         }
         const requested = numberValue(reservation.requested_units, "requested_units");
