@@ -29,7 +29,7 @@ function requireString(value, field, pattern) {
 
 function requireUtcTimestamp(value, field) {
   const match = typeof value === "string"
-    ? value.match(/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,3}))?Z$/)
+    ? value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/)
     : null;
   if (!match || !Number.isFinite(Date.parse(value))) {
     throw new BillingEventError("invalid_" + field, field + " must be an ISO-8601 UTC timestamp.");
