@@ -59,3 +59,40 @@ test("console magic-link delivery is available only in non-production mode", asy
   assert.equal(logs.length, 1);
   assert.equal(logs[0].event, "searqon_magic_link_local_only");
 });
+
+
+test("Resend adapter sends workspace invitations with escaped workspace details and stable idempotency", async () => {
+  let request;
+  const sender = createEmailSender({
+    apiKey:"re_test_key",from:"Searqon <no-reply@example.test>",
+    fetchImpl:async (url,options)=>{request={url,options};return {ok:true,status:200};}
+  });
+  const result = await sender.sendWorkspaceInvitation({
+    to:"member@example.test",
+    url:"https://app.example.test/auth/invitation/#token="+ "A".repeat(43),
+    organizationName:"<Workspace & Co>",
+    role:"analyst",
+    idempotencyKey:"searqon-workspace-invitation/123"
+  });
+  assert.deepEqual(result,{accepted:true});
+  const body=JSON.parse(request.options.body);
+  assert.equal(body.to[0],"member@example.test");
+  assert.match(body.html,/&lt;Workspace &amp; Co&gt;/);
+  assert.match(body.text,/expires in seven days/);
+  assert.equal(request.options.headers["idempotency-key"],"searqon-workspace-invitation/123");
+});
+
+test("workspace invitation email rejects non-HTTPS public links and unsupported roles", async () => {
+  const sender=createEmailSender({
+    apiKey:"re_test_key",from:"Searqon <no-reply@example.test>",
+    fetchImpl:async()=>({ok:true,status:200})
+  });
+  await assert.rejects(sender.sendWorkspaceInvitation({
+    to:"member@example.test",url:"http://app.example.test/invite",organizationName:"Workspace",
+    role:"analyst",idempotencyKey:"invite/123"
+  }));
+  await assert.rejects(sender.sendWorkspaceInvitation({
+    to:"member@example.test",url:"https://app.example.test/invite",organizationName:"Workspace",
+    role:"owner",idempotencyKey:"invite/124"
+  }));
+});

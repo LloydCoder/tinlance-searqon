@@ -18,6 +18,10 @@ test('missing or inactive subscription resolves to Free', () => {
   assert.equal(resolveEntitlements().plan, 'free');
   assert.equal(resolveEntitlements({ subscription: { status: 'canceled', plan: 'growth' } }).plan, 'free');
   assert.equal(resolveEntitlements({ subscription: { status: 'past_due', plan: 'growth' } }).plan, 'free');
+  assert.deepEqual(
+    {plan:resolveEntitlements({subscription:{status:'paused',plan:'growth'}}).plan,status:resolveEntitlements({subscription:{status:'paused',plan:'growth'}}).status},
+    {plan:'free',status:'paused'}
+  );
 });
 
 test('active paid subscription resolves only to its configured plan', () => {

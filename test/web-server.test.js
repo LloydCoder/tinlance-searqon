@@ -668,3 +668,107 @@ test("auth registration and magic-link validation survive requests without a soc
     { method: "register", address: "203.0.113.27" }
   ]);
 });
+
+
+test("workspace administration API enforces authentication and same-origin writes", async () => {
+  const calls = [];
+  let origin;
+  const authService = {
+    get publicOrigin() { return origin; },
+    async getProfile() { return { user: { id: "20000000-0000-4000-8000-000000000001" } }; }
+  };
+  const workspaceAdminService = {
+    async listInvitations(userId,organizationId) { calls.push(["listInvitations",userId,organizationId]); return []; },
+    async createInvitation(userId,organizationId,input) { calls.push(["createInvitation",userId,organizationId,input]); return {id:"invite-1"}; },
+    async listMembers(userId,organizationId) { calls.push(["listMembers",userId,organizationId]); return []; },
+    async updateMemberRole(userId,organizationId,memberUserId,role) { calls.push(["updateMemberRole",userId,organizationId,memberUserId,role]); return {updated:true}; },
+    async revokeInvitation(userId,invitationId) { calls.push(["revokeInvitation",userId,invitationId]); return {revoked:true}; },
+    async acceptInvitation(userId,token) { calls.push(["acceptInvitation",userId,token]); return {organizationId:"20000000-0000-4000-8000-000000000002",role:"analyst"}; }
+  };
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const organizationId = "20000000-0000-4000-8000-000000000002";
+    const memberId = "20000000-0000-4000-8000-000000000003";
+    const cookie = "searqon_session=" + "A".repeat(43);
+
+    const listed = await fetch(base + "/api/v1/workspaces/" + organizationId + "/invitations", {headers:{cookie}});
+    assert.equal(listed.status,200);
+    assert.deepEqual((await listed.json()).invitations,[]);
+
+    const rejected = await fetch(base + "/api/v1/workspaces/" + organizationId + "/invitations", {
+      method:"POST",headers:{cookie,origin:"https://attacker.example","content-type":"application/json"},
+      body:JSON.stringify({email:"member@example.test",role:"analyst"})
+    });
+    assert.equal(rejected.status,403);
+
+    const created = await fetch(base + "/api/v1/workspaces/" + organizationId + "/invitations", {
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},
+      body:JSON.stringify({email:"member@example.test",role:"analyst"})
+    });
+    assert.equal(created.status,201);
+    assert.equal((await created.json()).invitation.id,"invite-1");
+
+    const members = await fetch(base + "/api/v1/workspaces/" + organizationId + "/members",{headers:{cookie}});
+    assert.equal(members.status,200);
+
+    const role = await fetch(base + "/api/v1/workspaces/" + organizationId + "/members/" + memberId + "/role", {
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},body:JSON.stringify({role:"viewer"})
+    });
+    assert.equal(role.status,200);
+
+    const revoked = await fetch(base + "/api/v1/workspace-invitations/invite-1/revoke", {
+      method:"POST",headers:{cookie,origin}
+    });
+    assert.equal(revoked.status,200);
+
+    const accepted = await fetch(base + "/api/v1/workspace-invitations/accept", {
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},body:JSON.stringify({token:"B".repeat(43)})
+    });
+    assert.equal(accepted.status,200);
+    assert.equal((await accepted.json()).membership.role,"analyst");
+    assert.deepEqual(calls.map(call=>call[0]),["listInvitations","createInvitation","listMembers","updateMemberRole","revokeInvitation","acceptInvitation"]);
+  },{authService,workspaceAdminService});
+});
+
+
+test("billing webhook route preserves original bytes and returns only durable receipt status", async () => {
+  let observed;
+  const billingWebhookProcessor = async input => {
+    observed = input;
+    return {accepted:true,duplicate:true,eventId:"must-not-be-returned"};
+  };
+  await withServer(async base => {
+    const raw = Buffer.from('{"id":"evt_12345678","signed":"raw-bytes"}');
+    const response = await fetch(base + "/api/v1/billing/webhooks/fixture", {
+      method:"POST",
+      headers:{"content-type":"application/json","x-provider-signature":"signature"},
+      body:raw
+    });
+    assert.equal(response.status,202);
+    assert.deepEqual(await response.json(),{received:true,duplicate:true,ignored:false});
+    assert.deepEqual(observed.rawBody,raw);
+    assert.equal(observed.provider,"fixture");
+    assert.equal(observed.headers["x-provider-signature"],"signature");
+  },{billingWebhookProcessor});
+});
+
+test("billing webhook route fails closed when disabled and hides provider verification details", async () => {
+  await withServer(async base => {
+    const disabled = await fetch(base + "/api/v1/billing/webhooks/fixture",{method:"POST",body:"{}"});
+    assert.equal(disabled.status,503);
+    assert.equal((await disabled.json()).error.code,"billing_webhook_unavailable");
+  });
+  const billingWebhookProcessor = async () => {
+    const error=new Error("provider signing secret must not leak");
+    error.statusCode=401;
+    error.code="signature_invalid";
+    throw error;
+  };
+  await withServer(async base => {
+    const rejected = await fetch(base + "/api/v1/billing/webhooks/fixture",{method:"POST",body:"{}"});
+    assert.equal(rejected.status,401);
+    const body=await rejected.json();
+    assert.equal(body.error.code,"signature_invalid");
+    assert.equal(body.error.message.includes("secret"),false);
+  },{billingWebhookProcessor});
+});

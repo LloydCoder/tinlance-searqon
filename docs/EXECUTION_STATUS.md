@@ -23,6 +23,14 @@ This register separates implemented repository capabilities from customer, secur
 - Unit, PostgreSQL integration, API boundary and security workflows are being verified against the exact PR head. The existing Vercel Hobby deployment quota has intermittently blocked automatic preview status; no plan upgrade or paid spend is authorized.
 - No external customer evaluation or design-partner outcome is claimed. Phase 12 remains unaccepted until actual customer evaluation, staging verification and explicit product-owner acceptance are recorded.
 
+## 2026-11-18 Phase 13 implementation update
+
+- PR #143 extends the provider-neutral webhook boundary with a redacted PostgreSQL inbox, dedicated ingest/worker roles, duplicate-event collision detection, lease-fenced processing and canonical provider subscription reconciliation. No raw webhook body is persisted.
+- PR #143 adds workspace invitations, verified-email acceptance, owner/admin role controls, revocation, same-origin APIs and append-only audit events.
+- Added operational documentation for billing, workspace administration, backup/restore, retention and secret custody.
+- The Paddle signature and canonical subscription API adapter/runtime factory are now implemented but remain unselected and disabled pending seller onboarding, approved price IDs, credentials and sandbox verification. Checkout/payment settlement, end-to-end metering coverage, permitted live GEO collection, managed KMS, automatic retention/deletion, production operations and staging acceptance remain outstanding. No provider credentials, paid infrastructure or production deployment were introduced.
+- Phase 13 remains IN_PROGRESS. Phase 14 has not started; it remains gated on Phase 13 completion and merge.
+
 ## Phase status
 
 | Phase | Status | Evidence and remaining exit gates |

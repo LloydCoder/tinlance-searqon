@@ -7,6 +7,7 @@ const base = {
   providerEventId: "evt_12345678",
   eventType: "customer.subscription.updated",
   verifiedAt: "2026-11-17T10:00:00.000Z",
+  providerCreatedAt: "2026-11-17T09:59:58.000Z",
   receivedAt: "2026-11-17T10:00:01.000Z",
   rawBodySha256: "a".repeat(64),
   payload: {
@@ -28,6 +29,7 @@ test("normalizes a verified provider event into a bounded canonical subscription
     eventType: "customer.subscription.updated",
     eventKind: "subscription.snapshot",
     verifiedAt: "2026-11-17T10:00:00.000Z",
+    providerCreatedAt: "2026-11-17T09:59:58.000Z",
     receivedAt: "2026-11-17T10:00:01.000Z",
     rawBodySha256: "a".repeat(64),
     organizationId: "20000000-0000-4000-8000-000000000001",
@@ -49,6 +51,7 @@ test("rejects unverified events before interpreting provider payloads", () => {
 test("rejects invalid digest, provider identifiers, plan, status and period boundaries", () => {
   for (const patch of [
     { rawBodySha256: "not-a-digest" },
+    { providerCreatedAt: "not-a-timestamp" },
     { providerEventId: " " },
     { provider: "../provider" },
     { payload: { ...base.payload, plan: "trial" } },

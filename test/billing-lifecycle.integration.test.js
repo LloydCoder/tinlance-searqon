@@ -33,15 +33,15 @@ test("billing lifecycle schema stores canonical subscriptions and a redacted ide
 
     await owner.query(
       `INSERT INTO searqon.billing_webhook_inbox
-        (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,received_at,normalized_payload)
-       VALUES ('stripe','evt_12345678',$1,'customer.subscription.updated','subscription.snapshot',$2,now(),now(),$3::jsonb)`,
+        (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,provider_created_at,received_at,normalized_payload)
+       VALUES ('stripe','evt_12345678',$1,'customer.subscription.updated','subscription.snapshot',$2,now(),now(),now(),$3::jsonb)`,
       [organizationId,"a".repeat(64),JSON.stringify({status:"active",plan:"growth"})]
     );
     await assert.rejects(
       owner.query(
         `INSERT INTO searqon.billing_webhook_inbox
-          (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,received_at,normalized_payload)
-         VALUES ('stripe','evt_12345678',$1,'customer.subscription.updated','subscription.snapshot',$2,now(),now(),'{}'::jsonb)`,
+          (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,provider_created_at,received_at,normalized_payload)
+         VALUES ('stripe','evt_12345678',$1,'customer.subscription.updated','subscription.snapshot',$2,now(),now(),now(),'{}'::jsonb)`,
         [organizationId,"b".repeat(64)]
       ),
       error => error.code === "23505"

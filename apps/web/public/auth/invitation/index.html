@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101820">
+  <title>Accept workspace invitation — Searqon</title>
+  <link rel="stylesheet" href="/auth/auth.css">
+</head>
+<body>
+  <main class="auth-shell">
+    <a class="auth-brand" href="/">SEARQON</a>
+    <section class="auth-card" aria-labelledby="page-title">
+      <p class="auth-eyebrow">WORKSPACE ACCESS</p>
+      <h1 id="page-title">Accept your invitation</h1>
+      <p class="auth-intro">Join the workspace using the verified email address that received this invitation.</p>
+      <p id="auth-status" class="auth-status" role="status" aria-live="polite">Checking your invitation…</p>
+      <div class="auth-actions">
+        <button id="accept-invitation-button" type="button" disabled>Accept invitation ↗</button>
+        <a id="sign-in-link" class="auth-secondary" href="/auth/login/" hidden>Sign in with invited email</a>
+        <a class="auth-secondary" href="/app/">Open workspace</a>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/auth/invitation.js"></script>
+</body>
+</html>

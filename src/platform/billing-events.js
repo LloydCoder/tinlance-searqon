@@ -3,7 +3,7 @@ const DIGEST = /^[a-f0-9]{64}$/;
 const PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const PROVIDER_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/;
 const PLANS = new Set(["free", "starter", "growth", "agency", "business", "enterprise", "trial"]);
-const STATUSES = new Set(["active", "trialing", "past_due", "canceled", "expired", "free"]);
+const STATUSES = new Set(["active", "trialing", "past_due", "paused", "canceled", "expired", "free"]);
 const EVENT_KINDS = Object.freeze({
   "customer.subscription.created": "subscription.snapshot",
   "customer.subscription.updated": "subscription.snapshot",
@@ -63,6 +63,7 @@ export function normalizeVerifiedBillingEvent(input) {
     throw new BillingEventError("unsupported_event_type", "The provider event type is not supported.");
   }
   const verifiedAt = requireUtcTimestamp(input.verifiedAt, "verified_at");
+  const providerCreatedAt = requireUtcTimestamp(input.providerCreatedAt, "provider_created_at");
   const receivedAt = requireUtcTimestamp(input.receivedAt, "received_at");
   const rawBodySha256 = requireString(input.rawBodySha256, "raw_body_sha256", DIGEST);
   const payload = input.payload;
@@ -99,6 +100,7 @@ export function normalizeVerifiedBillingEvent(input) {
     eventType: input.eventType,
     eventKind: EVENT_KINDS[input.eventType],
     verifiedAt,
+    providerCreatedAt,
     receivedAt,
     rawBodySha256,
     organizationId,
