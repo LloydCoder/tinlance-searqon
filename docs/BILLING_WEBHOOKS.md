@@ -49,7 +49,7 @@ The Paddle adapter and runtime factory are implemented but are not activated. No
 
 ## Runtime integration
 
-The raw-byte HTTP route `POST /api/v1/billing/webhooks/:provider` is implemented and accepts a processor by dependency injection. The Paddle runtime factory wires the signature adapter, inbox, canonical reconciler and worker, but the route returns 503 until the application bootstrap injects that runtime. No Paddle credentials or price IDs are configured; sandbox verification and provider selection remain outstanding. Do not expose the ingest database role to the general request-serving process.
+The raw-byte HTTP route `POST /api/v1/billing/webhooks/:provider` is wired into the web process only when `SEARQON_BILLING_WEBHOOKS_ENABLED=true` and all Paddle secrets, dedicated database URLs and price mappings are configured. The worker runs separately with `npm run start:paddle-billing-worker`. Both processes use dedicated ingest/worker pools; remote URLs require `sslmode=verify-full` or `verify-ca`. Billing remains disabled by default. No Paddle credentials or price IDs are configured; sandbox verification and provider selection remain outstanding. Do not expose the ingest database role to the general request-serving process.
 
 The webhook worker handler must return `{ reconciled: true }` only after it has successfully queried canonical provider state and committed the subscription update plus append-only event in one transaction. Failed reconciliation is retried with bounded exponential backoff; expired leases are fenced from completing or retrying another worker's event.
 
