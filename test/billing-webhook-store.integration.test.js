@@ -46,6 +46,7 @@ test("verified billing webhook is durably accepted once and processed under a fe
     workerPool: owner,
     leaseSeconds: 30
   });
+  let normalizedEvent;
   const processor = createBillingWebhookProcessor({
     adapters: {
       fixture: {
@@ -68,7 +69,10 @@ test("verified billing webhook is durably accepted once and processed under a fe
         }
       }
     },
-    persist: event => store.acceptVerifiedEvent(event)
+    persist: event => {
+      normalizedEvent = event;
+      return store.acceptVerifiedEvent(event);
+    }
   });
 
   try {
@@ -83,6 +87,10 @@ test("verified billing webhook is durably accepted once and processed under a fe
     assert.deepEqual(accepted, { accepted: true, duplicate: false, eventId });
     const duplicate = await processor({ provider: "fixture", rawBody, headers: {} });
     assert.deepEqual(duplicate, { accepted: true, duplicate: true, eventId });
+    await assert.rejects(
+      store.acceptVerifiedEvent({ ...normalizedEvent, rawBodySha256: "b".repeat(64) }),
+      error => error.code === "event_id_conflict"
+    );
 
     const [job] = await store.claim("billing-worker-001", { limit: 1 });
     assert.ok(job);
