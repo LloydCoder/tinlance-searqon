@@ -68,7 +68,7 @@ Implemented:
 - Canonical subscription reconciliation fetches current provider state through an injected provider adapter, applies provider-event ordering, enforces tenant/customer/subscription binding and appends immutable subscription events.
 - The generic worker refuses to complete an event unless the injected handler confirms canonical provider reconciliation.
 
-Still not implemented: provider-specific cryptographic adapters, provider API clients, an HTTP webhook route, provider selection, checkout, invoice/payment settlement, refunds or disputes. The dedicated database URLs are placeholders and no production credentials are configured.
+The raw-byte HTTP webhook route is implemented but returns 503 until a provider processor is injected. Still not implemented: provider-specific cryptographic adapters, provider API clients, provider selection, checkout, invoice/payment settlement, refunds or disputes. The dedicated database URLs are placeholders and no production credentials are configured.
 
 ## Increment 3 — workspace invitations and administration
 
