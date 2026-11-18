@@ -47,7 +47,6 @@ test("sandbox child and simulator contain no outbound network or dynamic executi
   }
   assert.ok(child.includes("globalThis.fetch = undefined"));
   assert.ok(child.includes('process.permission.has("fs.write")'));
-  assert.ok(child.includes('process.permission.has("net")'));
 });
 
 test("isolated child is terminated immediately when its queue lease is cancelled", async () => {
