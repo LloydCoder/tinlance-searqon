@@ -3,7 +3,7 @@ const DIGEST = /^[a-f0-9]{64}$/;
 const PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const PROVIDER_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/;
 const PLANS = new Set(["free", "starter", "growth", "agency", "business", "enterprise", "trial"]);
-const STATUSES = new Set(["active", "trialing", "past_due", "canceled", "expired", "free"]);
+const STATUSES = new Set(["active", "trialing", "past_due", "paused", "canceled", "expired", "free"]);
 const EVENT_KINDS = Object.freeze({
   "customer.subscription.created": "subscription.snapshot",
   "customer.subscription.updated": "subscription.snapshot",
