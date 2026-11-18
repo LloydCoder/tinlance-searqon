@@ -19,6 +19,11 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(release, /npm sbom --sbom-format cyclonedx/);
   assert.match(release, /git merge-base --is-ancestor/);
   assert.match(release, /fetch-depth: 0/);
+  assert.match(release, /push:\s+tags:\s+\["v\*"\]/);
+  assert.match(release, /gh release create/);
+  assert.match(release, /--verify-tag/);
+  assert.match(release, /gh release create.*PACKAGE_FILE/);
+
   assert.match(dependabot, /package-ecosystem: "github-actions"/);
   assert.match(dependabot, /package-ecosystem: "npm"/);
   const ci = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
