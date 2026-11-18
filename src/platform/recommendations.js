@@ -298,12 +298,18 @@ export function createRecommendationService({ database } = {}) {
         throw new RecommendationError(400,"invalid_remediation_plan","A remediation plan object is required.");
       }
       const createdAt = new Date().toISOString();
-      const plan = compileRemediationPlan({
-        planId: input.planId,
-        projectId,
-        createdAt,
-        steps: input.steps
-      });
+      let plan;
+      try {
+        plan = compileRemediationPlan({
+          planId: input.planId,
+          projectId,
+          createdAt,
+          steps: input.steps
+        });
+      } catch (error) {
+        throw new RecommendationError(422,"invalid_remediation_plan",
+          error instanceof Error ? error.message : "The remediation plan is invalid.");
+      }
       const recommendationIds = [...new Set(plan.steps.flatMap(step => step.recommendationIds))].map(id => requireUuid(id,"recommendation_id"));
       const assessmentIds = [...new Set(plan.steps.flatMap(step => step.tests.map(item => item.assessmentId)))].map(id => requireUuid(id,"assessment_id"));
       const planDigest = createHash("sha256").update(JSON.stringify(plan),"utf8").digest("hex");
