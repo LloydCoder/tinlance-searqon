@@ -8,6 +8,7 @@ const canonical = {
   providerEventId: "evt_12345678",
   eventType: "customer.subscription.updated",
   verifiedAt: "2026-11-18T10:00:00.000Z",
+  providerCreatedAt: "2026-11-18T09:59:59.000Z",
   receivedAt: "2026-11-18T10:00:01.000Z",
   payload: {
     organizationId: "20000000-0000-4000-8000-000000000001",
