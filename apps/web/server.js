@@ -10,6 +10,8 @@ import { createWorkspaceService } from "../../src/platform/workspaces.js";
 import { createRecommendationService } from "../../src/platform/recommendations.js";
 import { createGeoObservationService } from "../../src/platform/geo-observations.js";
 import { createWorkspaceAdminService } from "../../src/platform/workspace-admin.js";
+import { createBillingDatabasePool } from "../../src/platform/billing-database-pools.js";
+import { createPaddleBillingRuntime } from "../../src/platform/paddle-billing-runtime.js";
 
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
@@ -881,15 +883,37 @@ if (invokedPath && pathToFileURL(invokedPath).href === import.meta.url) {
   } else {
     const database = process.env.DATABASE_URL ? createDatabase() : null;
     let authService = null;
+    let billingRuntime = null;
+    const billingPools = [];
     try {
       authService = database ? createAuthService({ database, emailSender: createEmailSender() }) : null;
+      if (process.env.SEARQON_BILLING_WEBHOOKS_ENABLED === "true") {
+        if (!database || !process.env.PADDLE_API_KEY || !process.env.PADDLE_NOTIFICATION_SECRET
+          || !process.env.SEARQON_BILLING_INGEST_DATABASE_URL
+          || !process.env.SEARQON_BILLING_WORKER_DATABASE_URL
+          || !process.env.PADDLE_PRICE_PLAN_MAP_JSON) {
+          throw new Error("Billing activation requires the application database, dedicated ingest/worker URLs, Paddle API and notification secrets, and an explicit price map.");
+        }
+        const ingestPool = createBillingDatabasePool(process.env.SEARQON_BILLING_INGEST_DATABASE_URL,{role:"ingest"});
+        billingPools.push(ingestPool);
+        const workerPool = createBillingDatabasePool(process.env.SEARQON_BILLING_WORKER_DATABASE_URL,{role:"worker"});
+        billingPools.push(workerPool);
+        billingRuntime = createPaddleBillingRuntime({
+          ingestPool,workerPool,
+          notificationSecret:process.env.PADDLE_NOTIFICATION_SECRET,
+          apiKey:process.env.PADDLE_API_KEY,
+          environment:process.env.PADDLE_ENVIRONMENT??"sandbox",
+          pricePlanMap:process.env.PADDLE_PRICE_PLAN_MAP_JSON,
+          workerId:process.env.SEARQON_BILLING_WORKER_ID
+        });
+      }
     } catch (error) {
-      database?.close().catch(() => {});
-      process.stderr.write("Searqon authentication configuration error: " + error.message + "\n");
+      await Promise.allSettled([...billingPools.map(pool=>pool.end()),...(database?[database.close()]:[])]);
+      process.stderr.write("Searqon service configuration error: " + error.message + "\n");
       process.exitCode = 1;
     }
     if (process.exitCode !== 1) {
-      const server = createAppServer({ database, authService });
+      const server = createAppServer({ database, authService, billingWebhookProcessor:billingRuntime?.processor });
       server.listen(port, host, () => {
         process.stdout.write("Searqon web listening on http://" + host + ":" + port + "\n");
       });
@@ -898,11 +922,10 @@ if (invokedPath && pathToFileURL(invokedPath).href === import.meta.url) {
         if (shuttingDown) return;
         shuttingDown = true;
         server.close(() => {
-          if (!database) {
-            process.exit(0);
-            return;
-          }
-          database.close().then(() => process.exit(0)).catch(() => process.exit(1));
+          const resources = [...billingPools.map(pool=>pool.end()),...(database?[database.close()]:[])];
+          Promise.allSettled(resources).then(results=>{
+            process.exit(results.some(result=>result.status==="rejected")?1:0);
+          });
         });
       };
       process.once("SIGTERM", shutdown);
