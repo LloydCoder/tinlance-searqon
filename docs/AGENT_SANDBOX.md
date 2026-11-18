@@ -76,7 +76,7 @@ OS/container-level egress denial and cgroup CPU quotas are not represented as co
 
 Remaining Phase 11 acceptance work:
 
-1. Complete adversarial parser, prototype-shaped JSON, lease-loss, tenant-isolation, child-crash and retry coverage against the real worker/database boundary.
+1. Exercise unexpected child-process termination and retry against the actual worker/database runtime in authorized staging; current CI covers child cancellation, bounded child errors, lease fencing, and the worker-runner retry path with a simulated child failure.
 2. Confirm worker deployment resource limits and observability in an authorized staging runtime; do not start the worker or change production secrets as part of this code-only PR.
 3. Add customer-visible simulation history and evidence export only after Phase 1 validates the user workflow.
 4. Obtain staging authorization and explicit product-owner acceptance.
