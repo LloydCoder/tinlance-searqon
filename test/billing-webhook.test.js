@@ -166,3 +166,16 @@ test("maps persistence exceptions to a retryable generic service error", async (
       && !error.message.includes("database URL")
   );
 });
+
+
+test("acknowledges verified non-billable provider events without persisting them", async () => {
+  let persisted=false;
+  const processor=createBillingWebhookProcessor({
+    adapters:{stripe:{verifyAndParse:async()=>({ignored:true,providerEventId:"evt_12345678"})}},
+    persist:async()=>{persisted=true;return {accepted:true,duplicate:false};},
+    now:()=>new Date("2026-11-18T10:00:01.000Z")
+  });
+  const result=await processor({provider:"stripe",rawBody,headers:{}});
+  assert.deepEqual(result,{accepted:true,duplicate:false,ignored:true,eventId:"evt_12345678"});
+  assert.equal(persisted,false);
+});
