@@ -89,7 +89,12 @@ jobs:
           PACKAGE_FILE: ${{ steps.package.outputs.filename }}
         run: gh release create "$RELEASE_TAG" "$PACKAGE_FILE" sbom.cdx.json SHA256SUMS --title "$RELEASE_TAG" --generate-notes --verify-tag
 
-      - name: Attest package provenance and SBOM
+      - name: Attest SLSA package provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ github.workspace }}/${{ steps.package.outputs.filename }}
+
+      - name: Attest CycloneDX SBOM
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: ${{ github.workspace }}/${{ steps.package.outputs.filename }}
