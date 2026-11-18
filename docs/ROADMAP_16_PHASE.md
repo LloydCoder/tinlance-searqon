@@ -59,3 +59,11 @@ Phases 0–3 establish scope, demand, governance and contracts. Phase 4 gates al
 Unit economics include provider collection, retries, storage, queue/worker time, alert delivery, support and refunds. Gross-margin targets remain hypotheses until measured. Continuous monitoring is opt-in and bounded by per-tenant budgets.
 
 Production readiness additionally requires threat-model closure, independent security testing, privacy/legal review, tenant isolation, backup/restore evidence, incident response, observability, rollback, support ownership and documented service objectives.
+
+## 2026-11-18 QA remediation note
+
+- Phase 1 analyzer hardening: visible-content HTML analysis now excludes comments and non-rendered script/style/textarea/noscript/template content, handles empty-title fallback and unquoted attributes, and preserves JSON-LD detection separately. Methodology version: 2026-11-18.1.
+- Phase 4 acquisition hardening: the robots product token is shared with the wire User-Agent, validated against RFC 9309 token characters, and included in robots-policy cache keys. Redirect-origin robots checks preserve the same token. Cross-origin robots redirects are deliberately denied and fail closed; this is stricter than RFC 9309's SHOULD-follow-across-authorities guidance.
+- OpenAPI 3.2 security requirements now distinguish explicit URI-like references from bare component names and reject malformed references; multiple undefined schemes receive unique finding IDs.
+- Local CLI scans reject symlink and non-regular inputs, using lstat, O_NOFOLLOW where supported, and device/inode rechecks.
+- QA implementation PRs #127–#133 are merged. The exact production deployment boundary and remaining auth end-to-end gate are recorded in docs/EXECUTION_STATUS.md; green CI is not a substitute for production verification or product-owner phase acceptance.
