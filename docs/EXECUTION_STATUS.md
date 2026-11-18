@@ -345,3 +345,10 @@ This register separates implemented repository capabilities from customer, secur
 - A 24-hour Vercel runtime-error query returned no runtime error clusters at the time of review. This is a bounded observation, not an SLO or uptime guarantee.
 - Dashboard Command Center work is isolated in PR #136 and is not deployed to production. Vercel Hobby preview deployment attempts for the branch were rejected by the `api-deployments-free-per-day` quota. No plan upgrade, billing change, quota workaround or production alias change was performed.
 - The production baseline remains the deployed main commit above until a separately reviewed and verified dashboard change is merged and deployed.
+
+## 2026-11-18 Phase 2 security-workflow hardening
+
+- PR #145 adds the exact dependency-license inventory and release/governance evidence in `docs/PHASE_2_OPEN_SOURCE_FOUNDATION.md`, corrects stale dependency guidance, and indexes the audit.
+- CodeQL and full-history secret scanning now run on pushes to `bootstrap/**`, `feat/**`, and `fix/**`, matching CI branch coverage. Regression tests enforce the triggers.
+- A full-history Gitleaks scan identified three synthetic Paddle sandbox fixture values in historical test-only commit `20045e861ccde3dc25efd6c220ac4663734171fb`. A narrowly scoped commit+path AND allowlist was added; default rules remain enabled. PR-head CI, CodeQL and secret-scan runs 44384769348, 44384769353 and 44384769508 passed at `b5eb0b7440e9595168b4c1a7e7ae31be2a6d4aeb`.
+- Vercel still reports a rate-limit failure on the PR head. No versioned release/tag/attestation exists and main-branch rulesets remain absent. Phase 2 is still IN_PROGRESS and the PR is not merged.
