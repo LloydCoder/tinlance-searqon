@@ -551,14 +551,14 @@ test("auth registration and magic-link validation survive requests without a soc
     async register(body, address) {
       calls.push({ method: "register", address });
       if (!body || typeof body !== "object" || Array.isArray(body) ||
-          typeof body.email !== "string" || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(body.email)) {
+          typeof body.email !== "string" || !body.email.includes("@") || !body.email.slice(body.email.indexOf("@")).includes(".")) {
         throw Object.assign(new Error("A valid email address is required."), { statusCode: 400 });
       }
       return { accepted: true };
     },
     async requestMagicLink(email, address) {
       calls.push({ method: "magic-link", address });
-      if (typeof email !== "string" || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+      if (typeof email !== "string" || !email.includes("@") || !email.slice(email.indexOf("@")).includes(".")) {
         throw Object.assign(new Error("A valid email address is required."), { statusCode: 400 });
       }
       return { accepted: true };
