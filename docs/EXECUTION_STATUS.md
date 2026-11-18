@@ -14,6 +14,14 @@ This register separates implemented repository capabilities from customer, secur
 - Phase 1 desk research is recorded in `docs/validation/PHASE_1_CUSTOMER_VALIDATION.md`. It distinguishes first-party vendor claims, official Google guidance and self-reported buyer survey evidence. No customer participation has been fabricated.
 - No production deployment or paid infrastructure spend was authorized or attempted.
 
+## 2026-11-18 Phase 12 implementation update
+
+- PR #142 adds tenant-member assignment and due-date scheduling with append-only audit events, plus an authenticated assignee directory.
+- The same PR adds deterministic cross-discipline worklist ranking and immutable tenant-scoped remediation-plan snapshots. Plans bind recommendation IDs to exact unified-diff SHA-256 digests, dependency graphs and successful assessment references; the migration enforces tenant RLS and immutability.
+- The plan compiler is proposal-only: it does not execute tests, apply patches, write to source control, merge or publish. Supplied test status is not independent proof of execution.
+- Unit, PostgreSQL integration, API boundary and security workflows are being verified against the exact PR head. The existing Vercel Hobby deployment quota has intermittently blocked automatic preview status; no plan upgrade or paid spend is authorized.
+- No external customer evaluation or design-partner outcome is claimed. Phase 12 remains unaccepted until actual customer evaluation, staging verification and explicit product-owner acceptance are recorded.
+
 ## Phase status
 
 | Phase | Status | Evidence and remaining exit gates |
