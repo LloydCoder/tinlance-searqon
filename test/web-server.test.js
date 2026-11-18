@@ -3,9 +3,8 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createAppServer } from "../apps/web/server.js";
 
-async function withServer(run, options = {}, configureServer = () => {}) {
+async function withServer(run, options = {}) {
   const server = createAppServer(options);
-  configureServer(server);
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -544,11 +543,11 @@ test("GEO observation APIs enforce authentication and same-origin ingestion", as
 });
 
 
+
 test("auth registration and magic-link validation survive requests without a socket", async () => {
-  let origin;
   const calls = [];
   const authService = {
-    get publicOrigin() { return origin; },
+    publicOrigin: "https://searqon.example",
     async register(body, address) {
       calls.push({ method: "register", address });
       if (!body || typeof body !== "object" || Array.isArray(body) ||
@@ -568,47 +567,55 @@ test("auth registration and magic-link validation survive requests without a soc
     async getProfile() { return null; },
     async logout() {}
   };
+  const server = createAppServer({ authService });
 
-  await withServer(async base => {
-    origin = new URL(base).origin;
-    const headers = {
-      "content-type": "application/json",
-      origin,
-      "x-real-ip": "203.0.113.27"
+  async function dispatch(path, body) {
+    const request = {
+      url: path,
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: authService.publicOrigin,
+        "x-real-ip": "203.0.113.27"
+      },
+      socket: undefined,
+      async *[Symbol.asyncIterator]() {
+        yield Buffer.from(JSON.stringify(body));
+      }
     };
+    return await new Promise(resolve => {
+      const response = {
+        headers: {},
+        statusCode: null,
+        setHeader(name, value) { this.headers[name.toLowerCase()] = value; },
+        writeHead(status, headers = {}) {
+          this.statusCode = status;
+          for (const [name, value] of Object.entries(headers)) this.headers[name.toLowerCase()] = value;
+        },
+        end(value) {
+          const text = value?.toString() ?? "";
+          resolve({ status: this.statusCode, body: JSON.parse(text) });
+        }
+      };
+      server.emit("request", request, response);
+    });
+  }
 
-    const invalidShape = await fetch(base + "/api/v1/auth/register", {
-      method: "POST",
-      headers,
-      body: JSON.stringify([])
-    });
-    assert.equal(invalidShape.status, 400);
+  const invalidShape = await dispatch("/api/v1/auth/register", []);
+  assert.equal(invalidShape.status, 400);
 
-    const invalidEmail = await fetch(base + "/api/v1/auth/magic-link", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ email: "not-an-email" })
-    });
-    assert.equal(invalidEmail.status, 400);
+  const invalidEmail = await dispatch("/api/v1/auth/magic-link", { email: "not-an-email" });
+  assert.equal(invalidEmail.status, 400);
 
-    const validRegistration = await fetch(base + "/api/v1/auth/register", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        email: "user@example.test",
-        displayName: "User",
-        organizationName: "Workspace"
-      })
-    });
-    assert.equal(validRegistration.status, 202);
-    assert.deepEqual(calls, [
-      { method: "register", address: "203.0.113.27" },
-      { method: "magic-link", address: "203.0.113.27" },
-      { method: "register", address: "203.0.113.27" }
-    ]);
-  }, { authService }, server => {
-    server.prependListener("request", request => {
-      Object.defineProperty(request, "socket", { configurable: true, value: undefined });
-    });
+  const validRegistration = await dispatch("/api/v1/auth/register", {
+    email: "user@example.test",
+    displayName: "User",
+    organizationName: "Workspace"
   });
+  assert.equal(validRegistration.status, 202);
+  assert.deepEqual(calls, [
+    { method: "register", address: "203.0.113.27" },
+    { method: "magic-link", address: "203.0.113.27" },
+    { method: "register", address: "203.0.113.27" }
+  ]);
 });
