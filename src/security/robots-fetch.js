@@ -127,6 +127,8 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
       outcome = "unreachable";
     }
   } catch (cause) {
+    status = null;
+    headers = {};
     policy = DISALLOW_ALL;
     outcome = "unreachable";
     error = cause instanceof Error ? cause.message.slice(0, 256) : "Robots retrieval failed";
