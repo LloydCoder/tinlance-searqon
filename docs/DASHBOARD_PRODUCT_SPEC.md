@@ -56,7 +56,7 @@ Existing gaps:
 ### 3.1 Evidence over vanity metrics
 - Do not invent 0–100 SEO/AEO/GEO/AgEO scores.
 - Do not convert missing or unassessed data into zero visibility.
-- Distinguish `full`, `partial` and `none` coverage.
+- Distinguish `full`, `partial`, `none` and `unavailable` coverage. A failed API read is unavailable data, not evidence that a discipline was unassessed.
 - Distinguish successful assessments from failed attempts.
 - Show methodology version, assessment time, content type and evidence identity where available.
 - Label derived counts as summaries of stored records, not provider measurements.
