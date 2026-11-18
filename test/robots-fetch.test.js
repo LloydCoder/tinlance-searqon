@@ -153,24 +153,24 @@ test("robots retrieval forwards the product token and caches policies separately
     assert.equal(options.userAgent, calls === 1 ? "SearqonBot" : "CustomBot");
     assert.equal(options.validateRedirect({ to: "https://example.com/robots.txt" }), true);
     assert.equal(options.validateRedirect({ to: "https://other.example.net/robots.txt" }), false);
-    return { status: 200, headers: { "cache-control": "max-age=600" }, body: Buffer.from("User-agent: *\\\\nAllow: /"), finalUrl: url };
+    return { status: 200, headers: { "cache-control": "max-age=600" }, body: Buffer.from("User-agent: *\\nAllow: /"), finalUrl: url };
   };
   await fetchRobotsPolicy(origin, "SearqonBot", { cache, fetcher, now: () => 1000 });
   await fetchRobotsPolicy(origin, "CustomBot", { cache, fetcher, now: () => 1000 });
   await fetchRobotsPolicy(origin, "SearqonBot", { cache, fetcher, now: () => 1001 });
   assert.equal(calls, 2);
-  assert.equal(cache.has("https://example.com\\\\nsearqonbot"), true);
-  assert.equal(cache.has("https://example.com\\\\ncustombot"), true);
+  assert.equal(cache.has("https://example.com\\nsearqonbot"), true);
+  assert.equal(cache.has("https://example.com\\ncustombot"), true);
 });
 
-test("cross-origin robots redirect results fail closed and are never cached as origin policy", async () => {
+test("cross-origin robots redirect results fail closed and cache only a short-lived denial", async () => {
   const cache = new Map();
   const result = await fetchRobotsPolicy(origin, "SearqonBot", {
     cache,
     fetcher: async () => ({
       status: 200,
       headers: { "cache-control": "max-age=600" },
-      body: Buffer.from("User-agent: *\\\\nAllow: /"),
+      body: Buffer.from("User-agent: *\\nAllow: /"),
       finalUrl: "https://other.example.net/robots.txt",
       redirects: 1
     })
@@ -179,5 +179,5 @@ test("cross-origin robots redirect results fail closed and are never cached as o
   assert.equal(result.error, "Cross-origin robots.txt redirect is not permitted");
   assert.equal(evaluateRobots(result.policy, "https://example.com/", "SearqonBot").allowed, false);
   assert.equal(cache.size, 1); // Short failure cache only; no permissive policy is retained.
-  assert.equal(cache.has("https://example.com\\\\nsearqonbot"), true);
+  assert.equal(cache.has("https://example.com\\nsearqonbot"), true);
 });
