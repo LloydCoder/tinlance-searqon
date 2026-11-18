@@ -79,13 +79,7 @@ if (verifyButton) {
       try {
         await postJson("/api/v1/auth/verify", { token });
         setStatus("You're signed in. Opening your workspace…", "success");
-        const returnTo = sessionStorage.getItem("searqon_auth_return_to");
-        if (returnTo === "/auth/invitation/") {
-          window.location.assign(returnTo);
-        } else {
-          sessionStorage.removeItem("searqon_auth_return_to");
-          window.location.assign("/app/");
-        }
+        window.location.assign("/app/");
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "The sign-in link could not be verified.", "error");
         verifyButton.disabled = false;
