@@ -209,19 +209,17 @@ if (root) {
             getJson("/api/v1/projects/" + encodeURIComponent(project.id) + "/assessments"),
             getJson("/api/v1/projects/" + encodeURIComponent(project.id) + "/recommendations")
           ]);
-          if (assessmentResult.status === "fulfilled") {
-            assessmentsByProject[project.id] = Array.isArray(assessmentResult.value.assessments)
-              ? assessmentResult.value.assessments : [];
+          if (assessmentResult.status === "fulfilled" && Array.isArray(assessmentResult.value.assessments)) {
+            assessmentsByProject[project.id] = assessmentResult.value.assessments;
           } else {
-            assessmentsByProject[project.id] = [];
-            failedProjectReads += 1;
+            assessmentsByProject[project.id] = null;
+            failedAssessmentReads += 1;
           }
-          if (recommendationResult.status === "fulfilled") {
-            recommendationsByProject[project.id] = Array.isArray(recommendationResult.value.recommendations)
-              ? recommendationResult.value.recommendations : [];
+          if (recommendationResult.status === "fulfilled" && Array.isArray(recommendationResult.value.recommendations)) {
+            recommendationsByProject[project.id] = recommendationResult.value.recommendations;
           } else {
-            recommendationsByProject[project.id] = [];
-            failedProjectReads += 1;
+            recommendationsByProject[project.id] = null;
+            failedRecommendationReads += 1;
           }
         }
       });
@@ -230,10 +228,10 @@ if (root) {
 
       const model = buildDashboardModel({ projects, assessmentsByProject, recommendationsByProject });
       render(model);
-      if (failedProjectReads) {
-        setStatus("Partial workspace data: " + failedProjectReads + " project data request(s) could not be loaded. Some counts may be incomplete.", "error");
+      if (failedAssessmentReads || failedRecommendationReads) {
+        setStatus("Partial workspace data: " + failedAssessmentReads + " assessment history request(s) and " + failedRecommendationReads + " recommendation list request(s) failed. Unavailable data is not counted as not assessed or zero.", "error");
       } else {
-        setStatus("Summary uses persisted project assessments and recommendation records. Missing discipline coverage is shown as not assessed, never as zero visibility.");
+        setStatus("Summary uses persisted project assessments and recommendation records. Missing discipline coverage is shown as not assessed only when history was successfully retrieved.");
       }
     } catch (error) {
       if (sequence !== requestSequence) return;
