@@ -6,7 +6,7 @@
 
 This implementation reuses the existing single repository, Node.js runtime, PostgreSQL database, durable job queue, lease/retry protocol, worker runner, authenticated tenant transaction and CI infrastructure. It does not introduce a new cloud account, AWS service, Kubernetes cluster, external sandbox vendor, model provider or paid dependency.
 
-The new workload is a separate process in the existing worker deployment model:
+The new workload is a separate process in the existing worker deployment model. Its input and output contracts are registered as experimental version 1.0.0 schemas (`schemas/agent-simulation-manifest.schema.json` and `schemas/agent-simulation-result.schema.json`); these are standalone contracts, not new evidence observation classes. The implementation consists of:
 
 - `src/agent-sandbox.js` — deterministic, read-only simulation over caller-supplied snapshots.
 - `src/platform/agent-sandbox-service.js` — authenticated-tenant enqueue/result service.
