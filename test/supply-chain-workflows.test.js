@@ -30,12 +30,12 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(release, /gh release create/);
   assert.match(release, /--verify-tag/);
   assert.match(release, /gh release create.*PACKAGE_FILE/);
-  assert.match(releaseVerification, /branches:\\s+\\["verify\\/v\\*"\\]/);
+  assert.match(releaseVerification, /branches:\s+\["verify\/v\*"\]/);
   assert.match(releaseVerification, /gh release download/);
   assert.match(releaseVerification, /sha256sum --check/);
   assert.match(releaseVerification, /gh attestation verify/);
   assert.match(releaseVerification, /--signer-workflow/);
-  assert.match(releaseVerification, /https:\\/\\/cyclonedx\\.org\\/bom/);
+  assert.match(releaseVerification, /https:\/\/cyclonedx\.org\/bom/);
 
 
   assert.match(dependabot, /package-ecosystem: "github-actions"/);
