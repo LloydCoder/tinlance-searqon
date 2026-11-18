@@ -90,6 +90,7 @@ export function rankRecommendations(recommendations, { asOf } = {}) {
  */
 export function compileRemediationPlan({ planId, projectId, createdAt, steps } = {}) {
   identifier(planId, "planId");
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(planId)) throw new TypeError("planId must be a stable ASCII identifier");
   identifier(projectId, "projectId");
   if (typeof createdAt !== "string" || Number.isNaN(Date.parse(createdAt)) || new Date(createdAt).toISOString() !== createdAt) {
     throw new TypeError("createdAt must be a canonical ISO 8601 UTC timestamp");
