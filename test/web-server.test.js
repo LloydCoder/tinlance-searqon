@@ -745,7 +745,7 @@ test("billing webhook route preserves original bytes and returns only durable re
       body:raw
     });
     assert.equal(response.status,202);
-    assert.deepEqual(await response.json(),{received:true,duplicate:true});
+    assert.deepEqual(await response.json(),{received:true,duplicate:true,ignored:false});
     assert.deepEqual(observed.rawBody,raw);
     assert.equal(observed.provider,"fixture");
     assert.equal(observed.headers["x-provider-signature"],"signature");
