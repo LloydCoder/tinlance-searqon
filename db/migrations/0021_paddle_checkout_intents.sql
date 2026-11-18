@@ -68,6 +68,7 @@ RETURNS TABLE (
   intent_state text,
   checkout_url text,
   provider_transaction_id text,
+  expires_at timestamptz,
   is_new boolean
 )
 LANGUAGE plpgsql
@@ -121,7 +122,7 @@ BEGIN
     END IF;
   END IF;
 
-  RETURN QUERY SELECT v_row.id,v_row.state,v_row.checkout_url,v_row.provider_transaction_id,v_inserted;
+  RETURN QUERY SELECT v_row.id,v_row.state,v_row.checkout_url,v_row.provider_transaction_id,v_row.expires_at,v_inserted;
 END;
 $$;
 
