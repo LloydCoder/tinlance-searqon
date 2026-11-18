@@ -53,7 +53,7 @@ The Phase 13 code includes a Paddle adapter that:
 - validates workspace metadata, customer/subscription binding, configured price-to-plan mapping and monthly/annual billing periods;
 - supports paused subscriptions and fails them closed to Free entitlements.
 
-The adapter is not activated. It requires a Paddle seller account, sandbox API key, notification destination secret, approved price catalogue, a server-side `pricePlanMap`, customer/organization mapping and sandbox end-to-end verification. No API key or notification secret is committed.
+The adapter and hosted checkout service are not activated. Checkout uses a tenant-scoped local request ID, configured plan/interval price IDs, a validated approved HTTPS return URL and a signed subscription-created event bound to the originating transaction. Activation still requires a Paddle seller account, sandbox API key, notification destination secret, approved price catalogue, a server-side `pricePlanMap`, payout verification and sandbox end-to-end verification. No API key or notification secret is committed.
 
 ## Required product-owner decision before activation
 
