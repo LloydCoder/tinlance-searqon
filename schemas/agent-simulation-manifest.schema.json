@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tinlance.com/schemas/searqon-agent-simulation-manifest-1.0.0.json",
+  "title": "Searqon Agent Simulation Manifest",
+  "description": "A bounded, read-only journey over caller-supplied public snapshots. Runtime byte limits and origin policy are stricter than JSON Schema can express.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "origin", "documents", "journey"],
+  "properties": {
+    "version": { "const": 1 },
+    "origin": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://[^/?#]+$"
+    },
+    "documents": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "url", "contentType", "content"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "pattern": "^https://[^/?#]+(?:/[^?#]*)?$"
+          },
+          "contentType": {
+            "enum": ["text/html", "text/markdown", "text/plain", "application/json"]
+          },
+          "content": { "type": "string", "maxLength": 8192 }
+        }
+      }
+    },
+    "journey": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action"],
+            "properties": { "action": { "const": "discover" } }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action", "documentId"],
+            "properties": {
+              "action": { "const": "read_document" },
+              "documentId": { "type": "string", "maxLength": 64 }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action", "fromDocumentId", "href"],
+            "properties": {
+              "action": { "const": "follow_link" },
+              "fromDocumentId": { "type": "string", "maxLength": 64 },
+              "href": { "type": "string", "maxLength": 2048 }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action", "documentId"],
+            "properties": {
+              "action": { "const": "inspect_openapi" },
+              "documentId": { "type": "string", "maxLength": 64 }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action", "documentId"],
+            "properties": {
+              "action": { "const": "inspect_mcp_snapshot" },
+              "documentId": { "type": "string", "maxLength": 64 }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

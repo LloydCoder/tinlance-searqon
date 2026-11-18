@@ -11,6 +11,7 @@ function fixture() {
 test("job queue requires a PostgreSQL database pool", () => {
   assert.throws(() => createJobQueue(), /PostgreSQL database pool/);
   assert.throws(() => createJobQueue({ database: { pool: {} } }), /PostgreSQL database pool/);
+  assert.throws(() => createJobQueue({ database: { pool: { connect() {} } }, workerRole: "searqon_app" }), /least-privilege worker database role/);
 });
 
 test("enqueue validates type, payload safety, payload size, priority and idempotency before database access", async () => {
@@ -66,4 +67,12 @@ test("claim validates an explicit allowlist of supported job types before databa
   await assert.rejects(queue.claim(worker,{jobTypes:["alert_delivery","alert_delivery"]}), error => error.code === "invalid_job_types");
   await assert.rejects(queue.claim(worker,{jobTypes:Array(7).fill("alert_delivery")}), error => error.code === "invalid_job_types");
   assert.equal(connects(),0);
+});
+
+test("agent simulation is a supported durable job type", async () => {
+  const { queue, connects } = fixture();
+  const base = { jobType:"agent_simulation", payload:{version:1,origin:"https://docs.example.test",documents:[],journey:[{action:"discover"}]}, idempotencyKey:"agent-simulation-0001" };
+  await assert.rejects(queue.enqueue("10000000-0000-4000-8000-000000000001","20000000-0000-4000-8000-000000000001",base),
+    /database should not be reached/);
+  assert.equal(connects(),1);
 });
