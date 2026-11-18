@@ -196,3 +196,14 @@ test("remote scanner passes one crawler identity to robots evaluation and HTTP a
   assert.equal(result.status, "scanned");
   assert.equal(fetchedUserAgent, "CustomBot");
 });
+
+
+test("remote scanner rejects digits in crawler product tokens before robots access", async () => {
+  let robotsCalled = false;
+  await assert.rejects(() => scanPublicUrl("https://example.com/docs", {
+    confirmAuthorizedTarget: true,
+    userAgent: "SearqonBot2",
+    robotsLoader: async () => { robotsCalled = true; return allowedRobots(); }
+  }), /product token/);
+  assert.equal(robotsCalled, false);
+});
