@@ -263,7 +263,7 @@ export function createJobQueue({ database, workerPool = null, workerRole = "sear
           await appendWorkerEvent(client,row,workerId,"leased",{leaseSeconds});
         }
         return claimed.rows.map(jobRow);
-      });
+      },workerRole);
     },
 
     async complete(workerId, jobId, leaseToken, { resultSha256 = EMPTY_RESULT_DIGEST } = {}) {
@@ -285,7 +285,7 @@ export function createJobQueue({ database, workerPool = null, workerRole = "sear
         if (!result.rows[0]) return { accepted:false, reason:"lease_lost" };
         await appendWorkerEvent(client,result.rows[0],workerId,"succeeded",{resultSha256});
         return { accepted:true, job:jobRow(result.rows[0]) };
-      });
+      },workerRole);
     },
 
     async retry(workerId, jobId, leaseToken, { errorCode, retryDelaySeconds = 30 } = {}) {
@@ -312,7 +312,7 @@ export function createJobQueue({ database, workerPool = null, workerRole = "sear
         const eventType = row.status === "failed" ? "failed" : "retry_scheduled";
         await appendWorkerEvent(client,row,workerId,eventType,{errorCode,retryDelaySeconds});
         return { accepted:true, job:jobRow(row) };
-      });
+      },workerRole);
     },
 
     async extendLease(workerId, jobId, leaseToken, { leaseSeconds = 60 } = {}) {
@@ -331,7 +331,7 @@ export function createJobQueue({ database, workerPool = null, workerRole = "sear
         if (!result.rows[0]) return { extended:false, reason:"lease_lost" };
         await appendWorkerEvent(client,result.rows[0],workerId,"lease_extended",{leaseSeconds});
         return { extended:true, leaseExpiresAt:result.rows[0].lease_expires_at };
-      });
+      },workerRole);
     }
   });
 }
