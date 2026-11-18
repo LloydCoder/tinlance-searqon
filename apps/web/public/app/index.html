@@ -13,7 +13,9 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/app/workspace.css">
+  <link rel="stylesheet" href="/app/dashboard.css">
   <script src="/app/workspace.js" defer></script>
+  <script type="module" src="/app/dashboard.js"></script>
 </head>
 <body class="workspace-body">
   <a class="skip-link" href="#workspace-main">Skip to workspace</a>
@@ -28,7 +30,7 @@
     <aside class="workspace-sidebar" aria-label="Workspace navigation">
       <div class="workspace-org"><span class="org-mark" aria-hidden="true">S</span><div><strong id="organization-name">Loading workspace</strong><small id="organization-role">Workspace</small></div></div>
       <nav class="workspace-nav">
-        <a class="active" href="#overview" aria-current="page">Overview</a>
+        <a class="active" href="#command-center" aria-current="page">Overview</a>
         <a href="#projects">Projects</a>
         <a href="#insights">Insights</a>
         <a href="#agents">Agent readiness</a>
@@ -41,8 +43,33 @@
         <div><div class="eyebrow">INTELLIGENCE WORKSPACE</div><h1>Good to have you here, <span id="user-name">…</span>.</h1><p>One place to understand how your digital properties are discovered, represented and used.</p></div>
         <div class="workspace-account"><strong id="user-email">Loading account…</strong><span>Verified account</span></div>
       </div>
+      <section id="command-center" class="command-center" aria-labelledby="command-center-title">
+        <div class="command-center-heading">
+          <div><span class="eyebrow">WORKSPACE COMMAND CENTER</span><h2 id="command-center-title">Your operating picture</h2><p>See what has been measured, what needs attention and which improvements have been verified.</p></div>
+          <button id="command-center-refresh" class="command-center-refresh" type="button">Refresh data</button>
+        </div>
+        <div id="command-center-metrics" class="command-center-metrics" aria-label="Workspace summary">
+          <div class="command-center-skeleton" aria-hidden="true"></div>
+        </div>
+        <div class="command-center-grid">
+          <section class="command-panel" aria-labelledby="command-actions-title">
+            <div class="command-panel-heading"><div><span class="eyebrow">DECISION QUEUE</span><h3 id="command-actions-title">Highest-priority actions</h3><p>Evidence-linked work, ordered by the current recommendation priority.</p></div><span id="command-actions-count" class="command-panel-count">Top priorities</span></div>
+            <div id="command-center-actions" class="command-action-list"><p class="command-empty">Loading prioritized work…</p></div>
+          </section>
+          <section class="command-panel" aria-labelledby="command-recent-title">
+            <div class="command-panel-heading"><div><span class="eyebrow">RECENT ACTIVITY</span><h3 id="command-recent-title">Assessment history</h3><p>Latest project assessment activity, including failed runs.</p></div></div>
+            <div id="command-center-recent" class="command-recent-list"><p class="command-empty">Loading recent activity…</p></div>
+          </section>
+        </div>
+        <section class="command-coverage" aria-labelledby="command-coverage-title">
+          <div class="command-coverage-heading"><div><span class="eyebrow">MEASUREMENT COVERAGE</span><h3 id="command-coverage-title">What has actually been assessed</h3><p>Counts reflect each project's latest successful assessment.</p></div></div>
+          <div id="command-center-coverage" class="command-coverage-grid"></div>
+        </section>
+        <p class="command-integrity-note"><span aria-hidden="true">◆</span><span><strong>Measurement integrity:</strong> missing observations are not zero visibility. Partial coverage is not a complete audit. This workspace displays evidence-backed counts, not invented composite scores.</span></p>
+        <p id="command-center-status" class="command-status" role="status" aria-live="polite">Loading workspace intelligence…</p>
+      </section>
       <section id="overview" class="workspace-section">
-        <div class="section-heading"><div><span class="eyebrow">OVERVIEW</span><h2>Your visibility baseline</h2><p>Scores appear after a real assessment. No sample values are shown in your workspace.</p></div><span class="workspace-state">AWAITING FIRST PROJECT</span></div>
+        <div class="section-heading"><div><span class="eyebrow">DISCIPLINE DETAIL</span><h2>Your visibility baseline</h2><p>Each discipline reports its actual assessment coverage; no composite score is inferred.</p></div><span class="workspace-state">AWAITING FIRST PROJECT</span></div>
         <div class="workspace-dimensions">
           <article class="dimension-card" data-dimension="SEO"><span class="dimension-mark">01</span><h3>SEO Health</h3><strong>Not assessed</strong><p>Technical quality, crawlability, structure and search fundamentals.</p><span class="dimension-foot">Evidence pending</span></article>
           <article class="dimension-card" data-dimension="AEO"><span class="dimension-mark">02</span><h3>AEO Readiness</h3><strong>Not assessed</strong><p>Answer coverage, entity clarity, direct answers and source eligibility.</p><span class="dimension-foot">Evidence pending</span></article>
@@ -71,10 +98,10 @@
         </div>
       </section>
       <section id="insights" class="workspace-section workspace-empty">
-        <div class="empty-symbol" aria-hidden="true">↗</div><div><span class="eyebrow">INSIGHTS</span><h2>Evidence before recommendations</h2><p>Findings, citations, confidence, methodology and remediation history will appear here after the first assessment.</p></div>
+        <div class="empty-symbol" aria-hidden="true">↗</div><div><span class="eyebrow">INSIGHTS</span><h2>Evidence before recommendations</h2><p>Cross-project insights and deeper visibility analytics will be added as the underlying measurement data becomes available.</p></div>
       </section>
       <section id="agents" class="workspace-section workspace-empty">
-        <div class="empty-symbol" aria-hidden="true">⌘</div><div><span class="eyebrow">AGENT READINESS</span><h2>Discoverability with permission boundaries</h2><p>Agent capability checks will distinguish discoverable interfaces from explicitly authorized actions.</p></div>
+        <div class="empty-symbol" aria-hidden="true">⌘</div><div><span class="eyebrow">AGENT READINESS</span><h2>Discoverability with permission boundaries</h2><p>Current assessments support passive interface diagnostics. Live agent journeys and isolated simulation are not yet available.</p></div>
       </section>
       <section id="settings" class="workspace-section workspace-settings">
         <div><span class="eyebrow">ACCOUNT</span><h2>Workspace identity</h2><p id="settings-summary">Loading membership…</p></div>

@@ -212,6 +212,7 @@ function renderRecommendations(project, recommendations) {
         });
         setStatus("Recommendations synchronized: " + result.counts.created + " new, " + result.counts.updated + " updated.","success");
         await loadRecommendations(project);
+        window.dispatchEvent(new Event("searqon:workspace-data-changed"));
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "Recommendation generation failed.","error");
       } finally {
@@ -250,6 +251,7 @@ function renderRecommendations(project, recommendations) {
           });
           setStatus("Recommendation " + label + ".","success");
           await loadRecommendations(project);
+        window.dispatchEvent(new Event("searqon:workspace-data-changed"));
         } catch (error) {
           setStatus(error instanceof Error ? error.message : "Recommendation update failed.","error");
         }
@@ -282,6 +284,7 @@ function renderRecommendations(project, recommendations) {
               });
               setStatus("Recommendation verification recorded.","success");
               await loadRecommendations(project);
+        window.dispatchEvent(new Event("searqon:workspace-data-changed"));
             } catch (error) {
               setStatus(error instanceof Error ? error.message : "Recommendation verification failed.","error");
             }
@@ -373,6 +376,7 @@ function renderProjectDetail(project) {
       content.value = "";
       await loadAssessmentHistory(project);
       await loadRecommendations(project);
+        window.dispatchEvent(new Event("searqon:workspace-data-changed"));
       setStatus("Assessment completed and saved to the selected project.", "success");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Assessment failed.", "error");
@@ -465,6 +469,7 @@ projectForm?.addEventListener("submit", async event => {
     projectForm.reset();
     await loadProjects();
     selectProject(result.project);
+    window.dispatchEvent(new Event("searqon:workspace-data-changed"));
     setStatus("Project created.", "success");
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Project creation failed.", "error");
