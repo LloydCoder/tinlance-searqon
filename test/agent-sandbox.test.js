@@ -142,3 +142,11 @@ test("simulated external links are blocked without network access", () => {
   assert.equal(result.steps[0].result.reason,"destination_blocked_by_origin_policy");
   assert.equal(result.steps[0].result.networkRequested,false);
 });
+
+test("HTML entity decoding is single-pass and preserves double-escaped markup as text", () => {
+  const input = structuredClone(manifest);
+  input.documents[0].content = "<p>&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt; &amp;amp;</p>";
+  input.journey = [{action:"read_document",documentId:"home"}];
+  const result = simulateAgentJourney(input);
+  assert.equal(result.steps[0].result.textLength,43);
+});
