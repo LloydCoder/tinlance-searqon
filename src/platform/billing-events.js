@@ -71,6 +71,32 @@ export function normalizeVerifiedBillingEvent(input) {
     throw new BillingEventError("invalid_payload", "A normalized subscription payload is required.");
   }
 
+  if(input.eventType==="invoice.payment_succeeded" || input.eventType==="invoice.payment_failed") {
+    const organizationId=requireString(payload.organizationId,"organization_id",UUID);
+    const providerCustomerId=requireString(payload.providerCustomerId,"provider_customer_id",PROVIDER_ID);
+    const providerSubscriptionId=requireString(payload.providerSubscriptionId,"provider_subscription_id",PROVIDER_ID);
+    const providerTransactionId=requireString(payload.providerTransactionId,"provider_transaction_id",/^txn_[a-z0-9]{26}$/i);
+    const currencyCode=requireString(payload.currencyCode,"currency_code",/^[A-Z]{3}$/);
+    const amountPattern=/^(0|[1-9][0-9]{0,17})$/;
+    const totalAmountMinor=requireString(payload.totalAmountMinor,"total_amount_minor",amountPattern);
+    const taxAmountMinor=requireString(payload.taxAmountMinor,"tax_amount_minor",amountPattern);
+    const transactionStatus=input.eventType==="invoice.payment_succeeded"?"completed":"past_due";
+    if(payload.transactionStatus!==transactionStatus) {
+      throw new BillingEventError("invalid_transaction_status","Transaction status does not match the verified event type.");
+    }
+    const invoiceNumber=payload.invoiceNumber===undefined || payload.invoiceNumber===null
+      ? null : requireString(payload.invoiceNumber,"invoice_number",/^[A-Za-z0-9-]{1,64}$/);
+    const checkoutIntentId=payload.checkoutIntentId===undefined || payload.checkoutIntentId===null
+      ? null : requireString(payload.checkoutIntentId,"checkout_intent_id",UUID);
+    return Object.freeze({
+      provider,providerEventId,eventType:input.eventType,eventKind:EVENT_KINDS[input.eventType],
+      verifiedAt,providerCreatedAt,receivedAt,rawBodySha256,
+      organizationId,providerCustomerId,providerSubscriptionId,providerTransactionId,
+      currencyCode,totalAmountMinor,taxAmountMinor,transactionStatus,invoiceNumber,
+      ...(checkoutIntentId?{checkoutIntentId}:{})
+    });
+  }
+
   const organizationId = requireString(payload.organizationId, "organization_id", UUID);
   const providerCustomerId = requireString(payload.providerCustomerId, "provider_customer_id", PROVIDER_ID);
   const providerSubscriptionId = requireString(payload.providerSubscriptionId, "provider_subscription_id", PROVIDER_ID);
