@@ -30,6 +30,19 @@ test("target URL parser normalizes public destinations and drops fragments", () 
   assert.equal(result.isIpLiteral,false);
 });
 
+test("target URL policy rejects non-standard and protocol-mismatched ports", () => {
+  for (const value of [
+    "https://example.com:8443/",
+    "https://example.com:80/",
+    "http://example.com:443/",
+    "http://8.8.8.8:443/"
+  ]) {
+    assert.throws(() => validateTargetUrl(value), /standard HTTP and HTTPS ports/);
+  }
+  assert.equal(validateTargetUrl("https://example.com:443/").port, "");
+  assert.equal(validateTargetUrl("http://example.com:80/").port, "");
+});
+
 test("hostname labels reject underscores and leading or trailing hyphens", () => {
   for (const value of ["https://foo_bar.example.com","https://-bad.example.com","https://bad-.example.com"]) assert.throws(()=>validateTargetUrl(value),/hostname labels/);
 });
