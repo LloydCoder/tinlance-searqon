@@ -100,6 +100,8 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
       timeoutMs: options.timeoutMs ?? 10_000,
       dnsTimeoutMs: options.dnsTimeoutMs ?? 5_000,
       userAgent,
+      // Deliberately stricter than RFC 9309 cross-authority redirect guidance:
+      // a foreign robots file must not silently become this origin's policy.
       validateRedirect: ({ to }) => {
         try { return new URL(to).origin === originKey; }
         catch { return false; }
