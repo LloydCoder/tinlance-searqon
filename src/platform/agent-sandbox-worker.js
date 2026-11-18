@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { simulateAgentJourney } from "../agent-sandbox.js";
 import { createJobQueue } from "./jobs.js";
 import { createWorkerRunner } from "./worker-runner.js";
@@ -11,9 +10,6 @@ export class AgentSimulationWorkerError extends Error {
   }
 }
 
-function digestJson(value) {
-  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
 
 async function persistResult({ pool, workerId, job, result }) {
   const client = await pool.connect();
