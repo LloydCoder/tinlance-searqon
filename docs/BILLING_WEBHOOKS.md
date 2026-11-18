@@ -49,7 +49,7 @@ No checkout session, invoice settlement, refund, dispute or payment-method flow 
 
 ## Runtime integration
 
-The store and worker are server-side primitives. The public HTTP webhook route and process bootstrap are intentionally not enabled until a provider is selected and dedicated credentials, canonical mapping and sandbox verification are available. Do not expose the ingest database role to the general request-serving process.
+The raw-byte HTTP route `POST /api/v1/billing/webhooks/:provider` is implemented and accepts a processor by dependency injection. It returns 503 while no processor/provider adapter is configured. The provider-specific adapter and worker process bootstrap remain intentionally disabled until a provider is selected and dedicated credentials, canonical mapping and sandbox verification are available. Do not expose the ingest database role to the general request-serving process.
 
 The webhook worker handler must return `{ reconciled: true }` only after it has successfully queried canonical provider state and committed the subscription update plus append-only event in one transaction. Failed reconciliation is retried with bounded exponential backoff; expired leases are fenced from completing or retrying another worker's event.
 
