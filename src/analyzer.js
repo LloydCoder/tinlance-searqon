@@ -100,7 +100,8 @@ function analyzeHtml(html, evidenceId) {
 function isSecuritySchemeUriReference(value) {
   if (typeof value !== "string" || value.length === 0 || /[\u0000-\u0020\u007f]/.test(value)) return false;
   const looksLikeUri = value.startsWith("/") || value.startsWith("#") ||
-    value.startsWith("./") || value.startsWith("../") ||
+    value.startsWith("./") || value.startsWith("../") || value.startsWith("?") ||
+    value.includes("/") || value.includes("?") || value.includes("#") ||
     /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value);
   if (!looksLikeUri || /%(?![A-Fa-f0-9]{2})/.test(value) ||
       /[^A-Za-z0-9\-._~%!$&'()*+,;=:@/?#\[\]]/.test(value) ||
