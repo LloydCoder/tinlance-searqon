@@ -57,8 +57,8 @@ export function startPaddleBillingWorker({
     }
     return Object.freeze({shutdown});
   } catch(error) {
-    void ingestPool.end();
-    void workerPool?.end();
+    void ingestPool.end().catch(()=>{});
+    void workerPool?.end().catch(()=>{});
     throw error;
   }
 }
