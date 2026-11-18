@@ -103,22 +103,7 @@ function isSecuritySchemeUriReference(value) {
     value.startsWith("./") || value.startsWith("../") ||
     /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value);
   if (!looksLikeUri || /%(?![A-Fa-f0-9]{2})/.test(value) ||
-      /[^A-Za-z0-9\-._~%!function isSecuritySchemeUriReference(value) {
-  if (typeof value !== "string" || value.length === 0 || /[\\u0000-\\u0020\\u007f]/.test(value)) return false;
-  const looksLikeUri = value.startsWith("/") || value.startsWith("#") ||
-    value.startsWith("./") || value.startsWith("../") ||
-    /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value);
-  if (!looksLikeUri || /%(?![A-Fa-f0-9]{2})/.test(value) ||
-      /[^A-Za-z0-9\\-._~%!$&'()*+,;=:@/?#\\[\\]]/.test(value) ||
-      (value.match(/#/g) ?? []).length > 1) return false;
-  try {
-    new URL(value, "https://searqon.invalid/");
-    return true;
-  } catch {
-    return false;
-  }
-}
-'()*+,;=:@/?#\[\]]/.test(value) ||
+      /[^A-Za-z0-9\-._~%!$&'()*+,;=:@/?#\[\]]/.test(value) ||
       (value.match(/#/g) ?? []).length > 1) return false;
   try {
     new URL(value, "https://searqon.invalid/");
