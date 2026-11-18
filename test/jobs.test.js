@@ -10,7 +10,8 @@ function fixture() {
 
 test("job queue requires a PostgreSQL database pool", () => {
   assert.throws(() => createJobQueue(), /PostgreSQL database pool/);
-  assert.throws(() => createJobQueue({ database: { pool: {} } }), /PostgreSQL database pool/);\n  assert.throws(() => createJobQueue({ database: { pool: { connect() {} } }, workerRole: "searqon_app" }), /least-privilege worker database role/);
+  assert.throws(() => createJobQueue({ database: { pool: {} } }), /PostgreSQL database pool/);
+  assert.throws(() => createJobQueue({ database: { pool: { connect() {} } }, workerRole: "searqon_app" }), /least-privilege worker database role/);
 });
 
 test("enqueue validates type, payload safety, payload size, priority and idempotency before database access", async () => {
