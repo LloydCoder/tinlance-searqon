@@ -106,8 +106,9 @@ For each discipline (SEO, AEO, GEO and AgEO), count projects whose latest succes
 - Full coverage.
 - Partial coverage.
 - No coverage / not assessed.
+- Unavailable when the assessment-history request failed or returned an invalid response.
 
-A project with no successful assessment contributes to `none`. The count is a coverage summary, not a score.
+A project with a successfully retrieved history but no successful assessment contributes to `none`. An unavailable history contributes to `unavailable`, never `none`. The count is a coverage summary, not a score.
 
 ### Refresh and organization scope
 - All data is read through same-origin authenticated APIs.
