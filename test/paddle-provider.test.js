@@ -65,7 +65,7 @@ test("Paddle adapter rejects invalid, malformed and stale signatures before pars
   const adapter=createPaddleProviderAdapter({notificationSecret:secret,apiKey,pricePlanMap,now});
   const request=signedRequest(eventEnvelope());
   await assert.rejects(adapter.verifyAndParse({
-    ...request,headers:{"paddle-signature":"ts=1795003200;h1="+"0".repeat(64)},
+    ...request,headers:{"paddle-signature":"ts="+Math.floor(now().getTime()/1000)+";h1="+"0".repeat(64)},
     receivedAt:"2026-11-18T12:00:00.000Z"
   }),error=>error.statusCode===401 && error.code==="signature_invalid");
   const stale=signedRequest(eventEnvelope(),{timestamp:Math.floor(now().getTime()/1000)-6});
