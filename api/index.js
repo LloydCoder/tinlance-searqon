@@ -2,6 +2,7 @@ import { createAppServer } from "../apps/web/server.js";
 import { createDatabase } from "../src/platform/database.js";
 import { createAuthService } from "../src/platform/auth.js";
 import { createEmailSender } from "../src/platform/email.js";
+import { getAuthConfigurationStatus } from "../src/platform/auth-config.js";
 import { createWorkspaceService } from "../src/platform/workspaces.js";
 
 let applicationServer;
@@ -21,15 +22,19 @@ function createProductionServer() {
     : null;
 
   const emailSender = createEmailSender();
-  const authConfigured = Boolean(
-    database &&
-    process.env.PUBLIC_APP_ORIGIN &&
-    process.env.AUTH_RATE_LIMIT_SECRET &&
-    Buffer.byteLength(process.env.AUTH_RATE_LIMIT_SECRET, "utf8") >= 32 &&
-    emailSender.available
-  );
+  const authConfiguration = getAuthConfigurationStatus({
+    databaseConfigured: Boolean(database),
+    publicOrigin: process.env.PUBLIC_APP_ORIGIN,
+    rateLimitSecret: process.env.AUTH_RATE_LIMIT_SECRET,
+    emailSenderAvailable: emailSender.available
+  });
+  process.stdout.write(JSON.stringify({
+    event: "searqon_auth_configuration",
+    configured: authConfiguration.configured,
+    missing: authConfiguration.missing
+  }) + "\\n");
 
-  const authService = authConfigured
+  const authService = authConfiguration.configured
     ? createAuthService({
         database,
         emailSender,
