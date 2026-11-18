@@ -69,6 +69,17 @@ export function createEmailSender({
           idempotencyKey
         });
         return { accepted: true };
+      },
+      async sendWorkspaceInvitation({ to, url, organizationName, role, idempotencyKey }) {
+        logger({
+          event: "searqon_workspace_invitation_local_only",
+          recipient: to,
+          invitationUrl: url,
+          organizationName,
+          role,
+          idempotencyKey
+        });
+        return { accepted: true };
       }
     };
   }
@@ -76,6 +87,9 @@ export function createEmailSender({
   return {
     available: false,
     async sendMagicLink() {
+      throw new EmailDeliveryError("email_not_configured");
+    },
+    async sendWorkspaceInvitation() {
       throw new EmailDeliveryError("email_not_configured");
     }
   };
