@@ -23,6 +23,9 @@ export function createPaddleBillingRuntime({
   if(typeof workerId!=="string" || workerId.trim().length<3) {
     throw new TypeError("A dedicated Paddle billing worker identity is required.");
   }
+  if(!pricePlanMap || typeof pricePlanMap!=="object" || Array.isArray(pricePlanMap) || Object.keys(pricePlanMap).length===0) {
+    throw new TypeError("An explicit Paddle price-to-plan mapping is required.");
+  }
   const adapter=createPaddleProviderAdapter({
     notificationSecret,apiKey,environment,pricePlanMap,fetchImpl,now
   });
