@@ -45,7 +45,7 @@ A future provider adapter must:
 - enforce provider request timeouts, response-size limits and safe error handling;
 - never log authorization headers, webhook signatures, raw payloads or provider response bodies.
 
-No checkout session, invoice settlement, refund, dispute or payment-method flow is enabled until a provider and its commercial/legal terms are explicitly approved. The current canonical event contract is not proof of money received; settlement requires the provider's canonical invoice/payment object and reconciliation policy.
+The Paddle adapter and runtime factory are implemented but are not activated. No checkout session, invoice settlement, refund, dispute or payment-method flow is enabled until Paddle (or another provider) and its commercial/legal terms are explicitly approved. The current canonical event contract is not proof of money received; settlement requires the provider's canonical invoice/payment object and reconciliation policy.
 
 ## Runtime integration
 
