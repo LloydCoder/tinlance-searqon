@@ -73,11 +73,12 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
   const now = clock();
   if (!Number.isFinite(now)) throw new TypeError("clock must return a finite timestamp");
 
-  const cached = cache.get(originKey);
+  const cacheKey = originKey + "\n" + userAgent.toLowerCase();
+  const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt !== null && cached.expiresAt > now) {
     return immutableResult({ ...cached, cacheHit: true });
   }
-  if (cached) cache.delete(originKey);
+  if (cached) cache.delete(cacheKey);
 
   const fetcher = options.fetcher ?? fetchPublicUrl;
   if (typeof fetcher !== "function") throw new TypeError("fetcher must be a function");
@@ -95,12 +96,20 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
       maxBytes: MAX_ROBOTS_BYTES,
       maxRedirects: 5,
       timeoutMs: options.timeoutMs ?? 10_000,
-      dnsTimeoutMs: options.dnsTimeoutMs ?? 5_000
+      dnsTimeoutMs: options.dnsTimeoutMs ?? 5_000,
+      userAgent,
+      validateRedirect: ({ to }) => {
+        try { return new URL(to).origin === originKey; }
+        catch { return false; }
+      }
     });
     status = response.status;
     headers = response.headers ?? {};
     finalUrl = response.finalUrl ?? sourceUrl;
     redirects = response.redirects ?? 0;
+    if (new URL(finalUrl).origin !== originKey) {
+      throw new Error("Cross-origin robots.txt redirect is not permitted");
+    }
 
     if (Number.isInteger(status) && status >= 200 && status < 300) {
       const body = Buffer.isBuffer(response.body) ? response.body : Buffer.from(response.body ?? "");
@@ -138,7 +147,7 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
   });
 
   if (expiresAt !== null) {
-    cache.set(originKey, result);
+    cache.set(cacheKey, result);
     while (cache.size > maxEntries) cache.delete(cache.keys().next().value);
   }
   return result;
