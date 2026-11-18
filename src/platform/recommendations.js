@@ -465,21 +465,33 @@ export function createRecommendationService({ database } = {}) {
           const resume = existing.status === "not_resolved";
           const clearVerification = reopen || resume;
           const nextStatus = reopen ? "open" : resume ? "in_progress" : existing.status;
+          const previousSeverity = existing.severity;
+          const severityChanged = previousSeverity !== finding.severity;
+          const severityEvent = severityChanged
+            ? PRIORITY[finding.severity] > PRIORITY[previousSeverity] ? "severity_escalated" : "severity_deescalated"
+            : null;
           const updatedResult = await client.query(
             `UPDATE searqon.recommendations
              SET latest_assessment_id=$2,status=$3,occurrence_count=LEAST(occurrence_count+1,1000000),
+                 severity=$5,priority=$6,title=$7,description=$8,recommended_action=$9,
                  last_seen_at=now(),
                  verification_assessment_id=CASE WHEN $4 THEN NULL ELSE verification_assessment_id END,
                  verification_result=CASE WHEN $4 THEN NULL ELSE verification_result END,
                  verified_at=CASE WHEN $4 THEN NULL ELSE verified_at END,
                  updated_at=now()
              WHERE id=$1 RETURNING *`,
-            [existing.id,assessmentId,nextStatus,clearVerification]
+            [existing.id,assessmentId,nextStatus,clearVerification,finding.severity,finding.priority,
+              finding.title,finding.description,finding.recommendedAction]
           );
           const row = updatedResult.rows[0];
           await appendEvent(client,{organizationId,projectId,recommendationId:row.id,actorUserId:userId,
             eventType:reopen ? "reopened" : "finding_reobserved",fromStatus:existing.status,toStatus:nextStatus,
             assessmentId,metadata:{findingKey:finding.findingKey,occurrenceCount:row.occurrence_count}});
+          if (severityEvent) {
+            await appendEvent(client,{organizationId,projectId,recommendationId:row.id,actorUserId:userId,
+              eventType:severityEvent,assessmentId,
+              metadata:{previousSeverity,severity:finding.severity,previousPriority:existing.priority,priority:finding.priority}});
+          }
           updated.push(recommendationRow(row));
         }
         return {
