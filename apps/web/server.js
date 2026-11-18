@@ -312,8 +312,8 @@ export function createAppServer({ database = null, authService = null, workspace
 
     if (url.pathname === "/api/v1/projects") {
       if (request.method !== "GET" && request.method !== "POST") {
-        response.setHeader("allow", "GET, POST");
-        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or POST." } });
+        response.setHeader("allow", recommendationSubroute ? "GET" : "GET, POST");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: recommendationSubroute ? "Use GET." : "Use GET or POST." } });
         return;
       }
       if (!auth || !workspace) {
@@ -412,7 +412,8 @@ export function createAppServer({ database = null, authService = null, workspace
     const projectRecommendationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendations$/);
     if (projectRecommendationsRoute) {
       const projectId = projectRecommendationsRoute[1];
-      if (request.method !== "GET" && request.method !== "POST") {
+      const recommendationSubroute = projectRecommendationsRoute[2] ?? null;
+      if ((recommendationSubroute && request.method !== "GET") || (!recommendationSubroute && request.method !== "GET" && request.method !== "POST")) {
         response.setHeader("allow", "GET, POST");
         sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or POST." } });
         return;
@@ -432,7 +433,11 @@ export function createAppServer({ database = null, authService = null, workspace
           return;
         }
         if (request.method === "GET") {
-          sendJson(response, 200, { recommendations: await recommendations.list(profile.user.id, projectId) });
+          if (recommendationSubroute === "assignees") {
+            sendJson(response, 200, { assignees: await recommendations.listAssignees(profile.user.id, projectId) });
+          } else {
+            sendJson(response, 200, { recommendations: await recommendations.list(profile.user.id, projectId) });
+          }
           return;
         }
         if (!requireJsonContentType(request, response)) return;
@@ -478,6 +483,8 @@ export function createAppServer({ database = null, authService = null, workspace
         const body = await readJsonBody(request, MAX_AUTH_BODY_BYTES);
         if (action === "status") {
           sendJson(response, 200, { recommendation: await recommendations.transition(profile.user.id, recommendationId, body?.status) });
+        } else if (action === "work") {
+          sendJson(response, 200, { recommendation: await recommendations.updateWork(profile.user.id, recommendationId, body) });
         } else {
           sendJson(response, 200, { recommendation: await recommendations.verify(profile.user.id, recommendationId, body?.assessmentId) });
         }
