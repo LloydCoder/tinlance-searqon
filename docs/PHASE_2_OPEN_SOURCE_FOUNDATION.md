@@ -1,7 +1,7 @@
 # Phase 2 — Open-source foundation evidence
 
 **Audit date:** 2026-11-18  
-**Audited base commit:** `3a92895e08c9db8ad149fb51974132239ea6a025`  
+**Audited base commit:** `dd75a590ae6962bdfdb8df49c0721d3d5b379aed`  
 **Package:** `@tinlance/searqon@0.2.0`  
 **Declared project license:** Apache-2.0  
 **Phase status:** IN_PROGRESS — release verified; repository-governance and source-provenance gates remain open
@@ -54,7 +54,7 @@ Audited commit: `3a92895e08c9db8ad149fb51974132239ea6a025`.
 | Release attestation repair for `v0.2.0` | 44395089461 | push to `attest/v0.2.0` | success |
 | Consumer-style release verification for `v0.2.0` | 44395298185 | push to `verify/v0.2.0` | success |
 
-The release repair run checked out the exact tag, ran `npm ci`, `npm test` and `npm audit --audit-level=high`, verified the published SHA-256 manifest, compared rebuilt and published package file trees, generated separate provenance and SBOM attestations, and cryptographically verified both signer identities. The verification run independently downloaded the release assets and passed checksum, archive, SBOM, provenance and SBOM-attestation checks.
+The release repair run checked out the exact tag, ran `npm ci`, `npm test` and `npm audit --audit-level=high`, verified the published SHA-256 manifest, compared rebuilt and published package file trees, generated separate provenance and SBOM attestations, and cryptographically verified both signer identities. The consumer verification run independently downloaded the release assets and passed checksum, archive, SBOM, provenance and SBOM-attestation checks. Current main commit `dd75a590ae6962bdfdb8df49c0721d3d5b379aed` also passed CI run `44396311618`, CodeQL run `44396311521`, full-history secret scan `44396311514`, and release verification run `44396608160`.
 
 The external Vercel preview/deployment status has separately reported `Deployment rate limited — retry in 24 hours`. This is not one of the GitHub source CI/security workflows and is not represented as green. No quota bypass, plan upgrade, paid deployment or production deployment was attempted.
 
@@ -85,13 +85,22 @@ The first release attempt exposed and repaired several real defects: missing Git
 
 The latest main-branch metadata reports `protected: false`; the repository rulesets endpoint returns an empty list. No active main-branch protection or required status checks are configured.
 
-The connected GitHub integration can read repository metadata and rulesets but exposes no operation to create or update repository rulesets. The `GITHUB_TOKEN` permission model used by the release workflows does not grant repository-administration/ruleset-write access. This is an external repository-administration gate; it has not been bypassed or falsely marked complete.
+The connected GitHub integration can read repository rulesets (the repository rulesets endpoint currently returns an empty array) but exposes no operation to create or update them. An attempt to read the legacy branch-protection endpoint returned HTTP 403 from the installed integration. GitHub's Create a repository ruleset API requires repository `Administration: write`; that permission is not granted to this integration. The release workflow's `GITHUB_TOKEN` is not an administrative credential. This is an external repository-administration gate; it has not been bypassed or falsely marked complete. See the official [GitHub rules API permission requirements](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10#fine-grained-access-tokens-for-create-a-repository-ruleset).
 
 Apply the configuration in [REPOSITORY_RULESET_SETUP.md](REPOSITORY_RULESET_SETUP.md): active ruleset targeting `main`; require pull requests; require the unique source checks `CI`, `CodeQL`, and `Secret scanning`; require conversation resolution; require linear history; block force pushes and deletion. Do not require the Vercel preview status while the Hobby daily deployment quota is exhausted; it is a deployment provider check, not a source CI workflow. After applying, verify the active ruleset through GitHub Settings and the repository rulesets API, then record the ruleset ID and required check contexts here.
 
-### 4.3 Provenance and license review
+### 4.3 Bounded source-provenance inventory
 
-The dependency metadata inventory is complete for the locked graph, but a full source-level provenance review of every first-party file, historical contribution, generated asset, and any adapted third-party material has not been evidenced. No blanket claim of legal clearance is made. Keep the upstream attribution/license terms for any future vendored or adapted material and add a third-party notice when the distributed work includes attribution notices that require preservation.
+A repository-level inventory was performed against the current audited main commit `dd75a590ae6962bdfdb8df49c0721d3d5b379aed`:
+
+- The recursive Git tree contains 349 tracked files. No `.gitmodules`, `NOTICE`, vendored/third-party directory, minified JavaScript/CSS bundle, or source-map file was found in the tree.
+- The complete GitHub commit listing contains 164 commits (100 on page 1 and 64 on page 2; page 3 is empty). All 164 commits report the GitHub author login `LloydCoder`. This is repository attribution metadata, not independent proof of the natural person's authorship or of the originality of every line.
+- The locked runtime dependency graph contains 14 non-root packages. Their lockfile SPDX metadata is MIT or ISC; no package has missing license metadata. The direct runtime dependency is `pg@8.23.1` (MIT). The package does not vendor these dependencies into the repository.
+- The repository contains four SVG brand assets and no font binaries. The project-owner-supplied Searqon Brand Kit v1.0 Draft README identifies the kit as built by Tinlance. Its Brand Usage Guide attributes the logo to a custom drawing by Claude and states that the name/logo have not been cleared for trademark or domain use. The separate kit includes Instrument Sans and DM Mono font binaries with SIL Open Font License 1.1 texts; neither font binary is present in the repository tree. The guide is project-supplied provenance evidence, not an independent rights opinion.
+- The source tree does not expose an obvious vendored code bundle, but this inventory is not a line-by-line similarity/origin review of every JavaScript, HTML, CSS, SQL, JSON and SVG file. Git author metadata and an Apache-2.0 LICENSE do not prove originality or establish rights in generated/third-party material.
+
+**Decision:** source provenance is only partially reviewed. A signed owner declaration is still required to confirm that first-party source and included brand assets were authored, commissioned or otherwise licensed for redistribution, and to identify any copied/adapted third-party material. See [source-provenance review](PHASE_2_SOURCE_PROVENANCE_REVIEW.md) and the [owner attestation template](OWNER_SOURCE_PROVENANCE_ATTESTATION_TEMPLATE.md). Do not describe this as legal clearance.
+
 
 ## 5. PR and release hardening history
 
@@ -119,7 +128,7 @@ The Vercel preview/deployment status has been rate-limited by the current Hobby 
 
 ## 6. Decision
 
-Phase 2 remains **IN_PROGRESS**. The v0.2.0 GitHub Release, SBOM/checksum assets, SLSA provenance attestation and CycloneDX SBOM attestation have been published and independently verified. Main-branch Node 22/24 CI, PostgreSQL integration, CodeQL and full-history secret scanning are green on the audited commit. Two hard exit gates remain: active main-branch repository ruleset/required-check enforcement and the complete source-level first-party/third-party provenance review. The Vercel preview quota failure is tracked separately and is not a source CI failure.
+Phase 2 remains **IN_PROGRESS**. The v0.2.0 GitHub Release, SBOM/checksum assets, SLSA provenance attestation and CycloneDX SBOM attestation have been published and independently verified. Main-branch Node 22/24 CI, PostgreSQL integration, CodeQL and full-history secret scanning are green on the audited commit. Two hard exit gates remain: active main-branch repository ruleset/required-check enforcement and a completed source-origin review backed by the owner attestation. The bounded repository inventory is evidence, not a substitute for that attestation. The Vercel preview quota failure is tracked separately and is not a source CI failure.
 
 No paid infrastructure, provider activation, npm publication, production deployment, or bypass of failed checks is authorized by this audit.
 
