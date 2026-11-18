@@ -63,7 +63,7 @@ test("dashboard model summarizes real project assessments without inventing scor
   assert.equal(model.coverage.SEO.partial, 1);
   assert.equal(model.coverage.GEO.none, 2);
   assert.equal(model.recommendations[0].id, "r3");
-  assert.equal(model.recentAssessments[0].id, "a-new");
+  assert.equal(model.recentAssessments[0].id, "a-failed");
   assert.equal("score" in model, false);
 });
 
