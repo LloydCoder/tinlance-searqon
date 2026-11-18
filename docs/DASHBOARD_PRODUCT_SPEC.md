@@ -180,7 +180,7 @@ Summary calculations:
 
 ## 7. UX, accessibility and responsive quality
 
-- Preserve Searqon's warm ivory, navy and restrained amber design language.
+- Follow the supplied Searqon Brand Usage Guide: ivory `#F6F3EC`, ink navy `#12203A`, signal amber `#E8A33D`, slate `#4A5670`, mist `#D9D5CA` and amber-deep `#8A5200`.\n- Use Instrument Sans for interface/body and DM Mono for labels/data. Keep labels tracked uppercase.\n- Use flat color and clear borders; no gradients, shadows or glow. Signal amber is decorative on ivory, never body text; use amber-deep for readable amber text.
 - Use semantic landmarks, visible focus, keyboard-operable controls and status announcements.
 - Do not rely on color alone for severity or lifecycle state.
 - Support narrow mobile viewports without horizontal overflow.
