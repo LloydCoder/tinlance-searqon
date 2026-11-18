@@ -70,6 +70,7 @@ test("remediation plan rejects unsafe paths, invalid patch digests, missing test
   assert.throws(() => compileRemediationPlan({ ...base, steps: [{ ...base.steps[0], patch: { ...patch, path: "../secrets" } }] }), /safe repository-relative/);
   assert.throws(() => compileRemediationPlan({ ...base, steps: [{ ...base.steps[0], patch: { ...patch, sha256: "bad" } }] }), /SHA-256/);
   assert.throws(() => compileRemediationPlan({ ...base, steps: [{ ...base.steps[0], tests: [] }] }), /test evidence/);
+  assert.throws(() => compileRemediationPlan({ ...base, planId: "../unsafe" }), /stable ASCII identifier/);
   assert.throws(() => compileRemediationPlan({ ...base, steps: [{ ...base.steps[0], tests: [{ ...base.steps[0].tests[0], patchSha256: "b".repeat(64) }] }] }), /exact patch SHA-256/);
   assert.throws(() => compileRemediationPlan({ ...base, steps: [
     { ...base.steps[0], dependsOn: ["step-2"] },
