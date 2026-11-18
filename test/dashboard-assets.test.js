@@ -29,5 +29,5 @@ test("dashboard styling preserves the Searqon no-gradient workspace treatment", 
   const css = await readFile(dashboardStyles, "utf8");
   assert.match(css, /#FFFEFA/);
   assert.match(css, /var\(--ink\)/);
-  assert.doesNotMatch(css, /linear-gradient|radial-gradient/);
+  assert.doesNotMatch(css, /linear-gradient|radial-gradient|box-shadow|drop-shadow|text-shadow/);\n  assert.match(css, /font:500 12px\\/18px var\\(--mono\\)/);
 });
