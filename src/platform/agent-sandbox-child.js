@@ -1,6 +1,15 @@
 import { simulateAgentJourney } from "../agent-sandbox.js";
 
-if (!process.permission
+globalThis.fetch = undefined;
+globalThis.WebSocket = undefined;
+globalThis.EventSource = undefined;
+globalThis.WebTransport = undefined;
+
+if (typeof globalThis.fetch !== "undefined"
+  || typeof globalThis.WebSocket !== "undefined"
+  || typeof globalThis.EventSource !== "undefined"
+  || typeof globalThis.WebTransport !== "undefined"
+  || !process.permission
   || process.permission.has("fs.write")
   || process.permission.has("child_process")
   || process.permission.has("worker_threads")) {
