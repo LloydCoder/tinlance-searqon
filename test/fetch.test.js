@@ -43,6 +43,7 @@ test("fetch pins the validated DNS answer and returns bounded response metadata"
   assert.equal(result.finalUrl, "https://example.com/docs");
   assert.equal(seen[0].options.agent, false);
   assert.equal(seen[0].options.headers["accept-encoding"], "identity");
+  assert.match(seen[0].options.headers["user-agent"], /SearqonBot\/0.2/);
   await new Promise((resolve, reject) => {
     seen[0].options.lookup("example.com", { family: 4 }, (error, address, family) => {
       if (error) return reject(error);
@@ -250,4 +251,26 @@ test("fetch blocks a redirect to a different hostname that resolves to a private
   }), /non-public/);
 
   assert.equal(seen.length, 1);
+});
+
+
+test("fetch sends the exact caller-selected crawler product token", async () => {
+  const seen = [];
+  await fetchPublicUrl("https://example.com/docs", {
+    userAgent: "CustomBot",
+    resolver: publicResolver,
+    requestImpl: fakeTransport([{ body: "ok" }], seen)
+  });
+  assert.match(seen[0].options.headers["user-agent"], /CustomBot\\/0.2/);
+  assert.equal(seen[0].options.headers["user-agent"].includes("SearqonBot"), false);
+});
+
+test("fetch rejects malformed crawler product tokens before DNS or network access", async () => {
+  let contacted = false;
+  await assert.rejects(() => fetchPublicUrl("https://example.com/docs", {
+    userAgent: "Bad Bot",
+    resolver: async () => { contacted = true; return [{ address: "93.184.216.34", family: 4 }]; },
+    requestImpl: fakeTransport([{ body: "must not fetch" }])
+  }), /crawler product token/);
+  assert.equal(contacted, false);
 });
