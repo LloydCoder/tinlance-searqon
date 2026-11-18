@@ -83,7 +83,10 @@ test("workspace invitations enforce verified-email binding, one-time acceptance,
     const invitations = await service.listInvitations(ownerId,organizationId);
     assert.ok(invitations.some(item=>item.id===invitation.id && item.acceptedAt));
     assert.ok(invitations.some(item=>item.id===pending.id && item.revokedAt));
-    assert.deepEqual(await service.listInvitations(inviteeId,organizationId), []);
+    await assert.rejects(
+      service.listInvitations(inviteeId,organizationId),
+      error => error.statusCode === 403 && error.code === "workspace_forbidden"
+    );
   } finally {
     await owner.query("DELETE FROM searqon.workspace_invitations WHERE organization_id=$1",[organizationId]).catch(()=>{});
     await owner.query("DELETE FROM searqon.audit_events WHERE organization_id=$1",[organizationId]).catch(()=>{});
