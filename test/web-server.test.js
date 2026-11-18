@@ -772,3 +772,65 @@ test("billing webhook route fails closed when disabled and hides provider verifi
     assert.equal(body.error.message.includes("secret"),false);
   },{billingWebhookProcessor});
 });
+
+
+test("workspace Paddle checkout route requires an authenticated same-origin owner flow",async()=>{
+  const organizationId="20000000-0000-4000-8000-000000000001";
+  const userId="10000000-0000-4000-8000-000000000001";
+  let observed;
+  const authService={
+    publicOrigin:"https://searqon.example.test",
+    async getProfile(cookie){return cookie.includes("session=")?{userId}:null;}
+  };
+  const billingCheckoutService={
+    async createCheckout(actor,organization,input){
+      observed={actor,organization,input};
+      return {
+        intentId:"30000000-0000-4000-8000-000000000001",
+        state:"ready",checkoutUrl:"https://searqon.example.test/billing/checkout/?_ptxn=txn_01h04vsc0qhwtsbsxh3422wjs4",
+        providerTransactionId:"txn_01h04vsc0qhwtsbsxh3422wjs4",
+        expiresAt:"2026-11-18T12:30:00.000Z"
+      };
+    }
+  };
+  await withServer(async base=>{
+    const response=await fetch(base+"/api/v1/workspaces/"+organizationId+"/billing/checkout",{
+      method:"POST",
+      headers:{
+        origin:"https://searqon.example.test",
+        cookie:"session=valid",
+        "content-type":"application/json"
+      },
+      body:JSON.stringify({plan:"growth",billingInterval:"month",requestId:"40000000-0000-4000-8000-000000000001"})
+    });
+    assert.equal(response.status,201);
+    const body=await response.json();
+    assert.equal(body.state,"ready");
+    assert.equal(body.checkoutUrl,"https://searqon.example.test/billing/checkout/?_ptxn=txn_01h04vsc0qhwtsbsxh3422wjs4");
+    assert.equal(observed.actor,userId);
+    assert.equal(observed.organization,organizationId);
+  },{authService,billingCheckoutService});
+});
+
+test("workspace Paddle checkout route rejects cross-origin and unauthenticated requests",async()=>{
+  const organizationId="20000000-0000-4000-8000-000000000001";
+  const authService={
+    publicOrigin:"https://searqon.example.test",
+    async getProfile(){return null;}
+  };
+  const billingCheckoutService={async createCheckout(){assert.fail("checkout must not be called");}};
+  await withServer(async base=>{
+    const crossOrigin=await fetch(base+"/api/v1/workspaces/"+organizationId+"/billing/checkout",{
+      method:"POST",
+      headers:{origin:"https://attacker.example","content-type":"application/json"},
+      body:"{}"
+    });
+    assert.equal(crossOrigin.status,403);
+    const unauthenticated=await fetch(base+"/api/v1/workspaces/"+organizationId+"/billing/checkout",{
+      method:"POST",
+      headers:{origin:"https://searqon.example.test","content-type":"application/json"},
+      body:"{}"
+    });
+    assert.equal(unauthenticated.status,401);
+  },{authService,billingCheckoutService});
+});
