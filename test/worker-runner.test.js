@@ -134,6 +134,6 @@ test("agent simulation child crashes are retried without completing the job", as
   const result = await runner.runOnce();
   assert.deepEqual(result,{claimed:1,completed:0,retried:1,failed:0,leaseLost:0,runnerErrors:0});
   assert.equal(queue.calls.retry[0].options.errorCode,"simulation_child_terminated");
-  assert.equal(queue.calls.retry[0].options.retryDelaySeconds,5);
+  assert.equal(queue.calls.retry[0].options.retryDelaySeconds,10);
   assert.equal(queue.calls.complete.length,0);
 });
