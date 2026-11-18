@@ -62,11 +62,18 @@ test("marketing pages expose crawlable metadata and sitemap resources", async ()
     assert.match(robotsText, /Sitemap:/);
     assert.match(robotsText, /Disallow: \/app\//);
     assert.match(robotsText, /Disallow: \/auth\//);
+    assert.equal(robotsText.includes("\\\\n"), false, "robots.txt contains a literal backslash-n sequence");
     const sitemap = await fetch(base + "/sitemap.xml");
     assert.equal(sitemap.status, 200);
     const xml = await sitemap.text();
     for (const route of ["/", "/product/", "/solutions/", "/methodology/", "/docs/", "/pricing/", "/security/", "/about/", "/contact/", "/privacy/", "/terms/"]) {
       assert.ok(xml.includes("https://searqon.tinlance.com" + route), "missing sitemap route " + route);
+    }
+    assert.equal(xml.includes("\\\\n"), false, "sitemap contains a literal backslash-n sequence");
+    for (const route of ["/contact/", "/privacy/", "/terms/"]) {
+      const entry = "<url><loc>https://searqon.tinlance.com" + route + "</loc></url>";
+      assert.equal(xml.split(entry).length - 1, 1, "sitemap route must appear exactly once: " + route);
+      assert.ok(xml.includes("\n  " + entry + "\n"), "sitemap route must be a distinct XML line: " + route);
     }
     const llms = await fetch(base + "/llms.txt");
     assert.equal(llms.status, 200);
