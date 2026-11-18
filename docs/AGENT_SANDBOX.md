@@ -61,7 +61,7 @@ Apply migrations through the existing migration runner, then start the new worke
 
 ```sh
 npm run db:migrate
-SEARQON_AGENT_WORKER_DATABASE_URL="$DATABASE_URL" \
+SEARQON_AGENT_WORKER_DATABASE_URL="$SEARQON_WORKER_DATABASE_URL" \
 SEARQON_AGENT_WORKER_ID="agent-sandbox-01" \
 npm run start:agent-sandbox-worker
 ```
