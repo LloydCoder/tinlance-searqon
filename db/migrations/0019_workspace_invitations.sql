@@ -30,6 +30,7 @@ CREATE POLICY workspace_invitations_member_read ON searqon.workspace_invitations
     SELECT 1 FROM searqon.memberships m
     WHERE m.organization_id = workspace_invitations.organization_id
       AND m.user_id = searqon.current_user_id()
+      AND m.role IN ('owner','admin')
   ));
 
 CREATE OR REPLACE FUNCTION searqon.create_workspace_invitation(
@@ -229,7 +230,7 @@ END
 $$;
 
 CREATE OR REPLACE FUNCTION searqon.list_workspace_members(p_organization_id uuid)
-RETURNS TABLE(user_id uuid,email text,display_name text,role text,joined_at timestamptz)
+RETURNS TABLE(user_id uuid,display_name text,role text,joined_at timestamptz)
 LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
@@ -243,7 +244,7 @@ BEGIN
     RETURN;
   END IF;
   RETURN QUERY
-  SELECT u.id,u.email,u.display_name,m.role,m.created_at
+  SELECT u.id,u.display_name,m.role,m.created_at
   FROM searqon.memberships m
   JOIN searqon.app_users u ON u.id=m.user_id
   WHERE m.organization_id=p_organization_id
