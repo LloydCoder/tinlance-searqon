@@ -1,38 +1,67 @@
+import { createHash } from "node:crypto";
 import { createEvidenceRecord } from "./evidence.js";
 
-const RULES_VERSION = "2026-11-15.1";
+const RULES_VERSION = "2026-11-18.1";
 
 function finding(data) {
+  const { idSuffix, ...fields } = data;
   return Object.freeze({
-    id: "finding_" + data.ruleId + "_" + data.evidenceId.slice(-8),
-    ...data
+    id: "finding_" + data.ruleId + "_" + data.evidenceId.slice(-8) + (idSuffix ? "_" + idSuffix : ""),
+    ...fields
   });
 }
 
+function getAttribute(tag, name) {
+  const pattern = new RegExp("(?:^|\\s)" + name + "\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'=<>]+))", "i");
+  const match = tag.match(pattern);
+  return match ? (match[1] ?? match[2] ?? match[3] ?? "") : null;
+}
+
+function renderedHtml(html) {
+  return html
+    .replace(/<!--[\\s\\S]*?-->/g, " ")
+    .replace(/<(script|style|textarea|noscript|template)\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>/gi, " ");
+}
+
 function extractTag(html, tag) {
-  const pattern = new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]*?)</" + tag + "\\s*>", "i");
-  const match = html.match(pattern);
-  return match?.[1]?.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() ?? "";
+  const pattern = new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]*?)</" + tag + "\\s*>", "gi");
+  for (const match of html.matchAll(pattern)) {
+    const text = match[1].replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim();
+    if (text) return text;
+  }
+  return "";
 }
 
 function analyzeHtml(html, evidenceId) {
+  const uncommentedHtml = html.replace(/<!--[\\s\\S]*?-->/g, " ");
+  const jsonLd = [...uncommentedHtml.matchAll(/<script\\b[^>]*>/gi)]
+    .some(match => (getAttribute(match[0], "type") ?? "").toLowerCase() === "application/ld+json");
+  const visibleHtml = renderedHtml(uncommentedHtml);
   const findings = [];
-  const title = extractTag(html, "title");
-  const h1 = extractTag(html, "h1");
-  const descriptionMatch = html.match(/<meta\b(?=[^>]*\bname=["']description["'])[^>]*\bcontent=["']([^"']*)["'][^>]*>/i);
-  const descriptionText = descriptionMatch?.[1]?.trim() ?? "";
+  const title = extractTag(visibleHtml, "title");
+  const h1 = extractTag(visibleHtml, "h1");
+  const metaTags = [...visibleHtml.matchAll(/<meta\\b[^>]*>/gi)].map(match => match[0]);
+  const descriptionTag = metaTags.find(tag => (getAttribute(tag, "name") ?? "").toLowerCase() === "description");
+  const descriptionText = (descriptionTag ? getAttribute(descriptionTag, "content") : null)?.trim() ?? "";
   const description = descriptionText.length > 0;
-  const canonical = /<link\b(?=[^>]*\brel=["']canonical["'])[^>]*\bhref=["'][^"']+["'][^>]*>/i.test(html);
-  const jsonLd = /<script\b(?=[^>]*\btype=["']application\/ld\+json["'])/i.test(html);
-  const robotsNoIndex = /<meta\b(?=[^>]*\bname=["']robots["'])[^>]*\bcontent=["'][^"']*noindex/i.test(html);
-  const languagePresent = /<html\b(?=[^>]*\blang=["'][^"']+["'])/i.test(html);
-  const viewportPresent = /<meta\b(?=[^>]*\bname=["']viewport["'])[^>]*\bcontent=["'][^"']+["'][^>]*>/i.test(html);
+  const canonical = [...visibleHtml.matchAll(/<link\\b[^>]*>/gi)].some(match =>
+    (getAttribute(match[0], "rel") ?? "").toLowerCase().split(/\\s+/).includes("canonical") &&
+    Boolean(getAttribute(match[0], "href"))
+  );
+  const robotsTag = metaTags.find(tag => (getAttribute(tag, "name") ?? "").toLowerCase() === "robots");
+  const robotsNoIndex = (getAttribute(robotsTag ?? "", "content") ?? "")
+    .split(/[\\s,]+/).some(directive => directive.toLowerCase() === "noindex");
+  const htmlTag = visibleHtml.match(/<html\\b[^>]*>/i)?.[0] ?? "";
+  const languagePresent = Boolean((getAttribute(htmlTag, "lang") ?? "").trim());
+  const viewportTag = metaTags.find(tag => (getAttribute(tag, "name") ?? "").toLowerCase() === "viewport");
+  const viewportPresent = Boolean((getAttribute(viewportTag ?? "", "content") ?? "").trim());
   const titleLength = title ? [...title].length : null;
   const descriptionLength = description ? [...descriptionText].length : null;
-  const h1Count = [...html.matchAll(/<h1\b[^>]*>/gi)].length;
-  const imagesMissingAlt = [...html.matchAll(/<img\b[^>]*>/gi)].filter(match => !/\balt\s*=/i.test(match[0])).length;
+  const h1Count = [...visibleHtml.matchAll(/<h1\\b[^>]*>/gi)].length;
+  const imagesMissingAlt = [...visibleHtml.matchAll(/<img\\b[^>]*>/gi)]
+    .filter(match => getAttribute(match[0], "alt") === null).length;
 
-  if (!title) findings.push(finding({ruleId:"html.title.missing",dimension:"SEO",severity:"high",title:"Document title is missing",description:"The document has no detectable title element.",recommendation:"Add a concise, page-specific title that describes the page's primary subject.",evidenceId}));
+  if (!title) findings.push(finding({ruleId:"html.title.missing",dimension:"SEO",severity:"high",title:"Document title is missing",description:"The document has no detectable non-empty title element.",recommendation:"Add a concise, page-specific title that describes the page's primary subject.",evidenceId}));
   else if (titleLength < 30 || titleLength > 60) findings.push(finding({ruleId:"html.title.length_out_of_range",dimension:"SEO",severity:"low",title:"Document title length is outside the suggested range",description:"The detected title contains " + titleLength + " characters; this heuristic flags titles shorter than 30 or longer than 60 characters.",recommendation:"Review the title for clarity and specificity; treat the character range as a guideline, not a ranking guarantee.",evidenceId}));
   if (!description) findings.push(finding({ruleId:"html.meta_description.missing",dimension:"SEO",severity:"medium",title:"Meta description is missing",description:"No non-empty meta description was detected.",recommendation:"Add a unique summary of the page's purpose and content.",evidenceId}));
   else if (descriptionLength < 70 || descriptionLength > 160) findings.push(finding({ruleId:"html.meta_description.length_out_of_range",dimension:"SEO",severity:"low",title:"Meta description length is outside the suggested range",description:"The detected description contains " + descriptionLength + " characters; this heuristic flags descriptions shorter than 70 or longer than 160 characters.",recommendation:"Review the description for clarity and usefulness; search engines may generate different snippets.",evidenceId}));
@@ -67,6 +96,21 @@ function analyzeHtml(html, evidenceId) {
       AEO:"HTML primary heading hierarchy and JSON-LD presence"
     }
   };
+}
+function isSecuritySchemeUriReference(value) {
+  if (typeof value !== "string" || value.length === 0 || /[\\u0000-\\u0020\\u007f]/.test(value)) return false;
+  const looksLikeUri = value.startsWith("/") || value.startsWith("#") ||
+    value.startsWith("./") || value.startsWith("../") ||
+    /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value);
+  if (!looksLikeUri || /%(?![A-Fa-f0-9]{2})/.test(value) ||
+      /[^A-Za-z0-9\\-._~%!$&'()*+,;=:@/?#\\[\\]]/.test(value) ||
+      (value.match(/#/g) ?? []).length > 1) return false;
+  try {
+    new URL(value, "https://searqon.invalid/");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function analyzeOpenApi(content, evidenceId) {
@@ -105,19 +149,16 @@ function analyzeOpenApi(content, evidenceId) {
     if (!requirement || typeof requirement !== "object" || Array.isArray(requirement)) continue;
     for (const schemeName of Object.keys(requirement)) {
       if (Object.hasOwn(securitySchemes, schemeName)) continue;
-      // OpenAPI 3.2 permits Security Scheme Object URI references as well as component names.
+      // OpenAPI 3.2 permits explicit URI and relative-URI references. A bare
+      // single-segment name remains a component-name lookup for compatibility.
       const versionParts = document.openapi.split(".").map(Number);
       const supportsUriSchemeReferences = versionParts[0] > 3 || (versionParts[0] === 3 && versionParts[1] >= 2);
-      let isUriReference = false;
-      if (supportsUriSchemeReferences && schemeName.length > 0 && !/\s/.test(schemeName)) {
-        try { new URL(schemeName, "https://searqon.invalid/"); isUriReference = true; }
-        catch { isUriReference = false; }
-      }
+      const isUriReference = supportsUriSchemeReferences && isSecuritySchemeUriReference(schemeName);
       if (!isUriReference) undefinedSchemes.add(schemeName);
     }
   }
   for (const schemeName of undefinedSchemes) {
-    findings.push(finding({ruleId:"openapi.security_scheme.undefined",dimension:"AgEO",severity:"high",title:"Security requirement references an undefined scheme",description:"A security requirement references the scheme '" + schemeName.slice(0,128) + "', but no matching component definition exists.",recommendation:"Add the missing security scheme definition or correct the requirement name.",evidenceId}));
+    findings.push(finding({ruleId:"openapi.security_scheme.undefined",dimension:"AgEO",severity:"high",title:"Security requirement references an undefined scheme",description:"A security requirement references the scheme '" + schemeName.slice(0,128) + "', but no matching component definition exists.",recommendation:"Add the missing security scheme definition or correct the requirement name.",evidenceId,idSuffix:createHash("sha256").update(schemeName).digest("hex").slice(0,8)}));
   }
   if (!document.security && !operations.some(({ operation }) => Array.isArray(operation.security))) findings.push(finding({ruleId:"openapi.security.missing",dimension:"AgEO",severity:"medium",title:"Authentication requirements are not explicit",description:"No root-level or operation-level security requirement was detected. This does not prove an API is unauthenticated.",recommendation:"Explicitly document which operations are public and which require a declared security scheme.",evidenceId}));
   if (!document.info.description) findings.push(finding({ruleId:"openapi.description.missing",dimension:"AEO",severity:"low",title:"API description is missing",description:"The API info object has no description.",recommendation:"Describe the API's purpose, intended users, and primary capabilities.",evidenceId}));
