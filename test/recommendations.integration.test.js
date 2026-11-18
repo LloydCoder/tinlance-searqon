@@ -63,6 +63,18 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     const recommendation = generated.created.find(item => item.ruleId === "html.meta_description.missing");
     assert.ok(recommendation);
     assert.equal(recommendation.status,"open");
+    const assignees = await service.listAssignees(userA,project.id);
+    assert.ok(assignees.some(member=>member.id===viewer && member.role==="viewer"));
+    const scheduled = await service.updateWork(userA,recommendation.id,{assignedTo:viewer,dueDate:"2026-12-01"});
+    assert.equal(scheduled.assignedTo,viewer);
+    assert.equal(scheduled.dueDate,"2026-12-01");
+    await assert.rejects(
+      service.updateWork(userA,recommendation.id,{assignedTo:userB}),
+      error=>error.code==="assignee_not_in_workspace"
+    );
+    const cleared = await service.updateWork(userA,recommendation.id,{assignedTo:null,dueDate:null});
+    assert.equal(cleared.assignedTo,null);
+    assert.equal(cleared.dueDate,null);
     const replay = await service.syncFromAssessment(userA,project.id,baseline.id);
     assert.ok(replay.replayed.some(item => item.id === recommendation.id && item.idempotentReplay));
 
@@ -125,7 +137,7 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
 
     const history = await service.history(viewer,recommendation.id);
     const eventTypes = history.map(item => item.eventType);
-    for (const expected of ["created","status_changed","finding_reobserved","verification_failed","verification_succeeded","reopened"]) {
+    for (const expected of ["created","assignment_changed","due_date_changed","status_changed","finding_reobserved","verification_failed","verification_succeeded","reopened"]) {
       assert.ok(eventTypes.includes(expected), "missing recommendation event " + expected);
     }
     await assert.rejects(
