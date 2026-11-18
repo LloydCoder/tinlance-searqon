@@ -56,3 +56,38 @@ test("phase zero governance pack records personas, boundaries, risks, and durabl
   assert.match(roadmap, /Scope and security decisions recorded/);
   assert.match(decisions, /RECORDED is a traceability record, not proof/);
 });
+
+
+test("phase one validation pack defines real customer evidence and market research limits", async () => {
+  const validation = await read("../docs/validation/PHASE_1_CUSTOMER_VALIDATION.md");
+  assert.match(validation, /15 buyer interviews/);
+  assert.match(validation, /5 qualified design partners/);
+  assert.match(validation, /3 paid-pilot commitments/);
+  assert.match(validation, /Current evidence count at this research cut-off:\*\* 0 qualifying interviews; 0 design partners; 0 paid-pilot commitments/);
+  assert.match(validation, /self-reported/);
+  assert.match(validation, /No interviews have been conducted/);
+  for (const competitor of ["Semrush AI Visibility Toolkit","Ahrefs Brand Radar","Otterly.AI","Peec AI","Scrunch","Elmo","OpenSEO"]) {
+    assert.ok(validation.includes(competitor), `missing competitor evidence: ${competitor}`);
+  }
+  assert.match(validation, /Google Search Central/);
+  assert.match(validation, /Do not ask leading questions/);
+  assert.match(validation, /A non-binding LOI, verbal "yes", free trial/);
+});
+
+
+test("phase one trackers contain only empty slots for real customer evidence", async () => {
+  const interviews = await read("../docs/validation/INTERVIEW_TRACKER.csv");
+  const partners = await read("../docs/validation/DESIGN_PARTNER_TRACKER.csv");
+  const pilots = await read("../docs/validation/PAID_PILOT_TRACKER.csv");
+  assert.equal(interviews.trim().split("\n").length, 16);
+  assert.equal(partners.trim().split("\n").length, 6);
+  assert.equal(pilots.trim().split("\n").length, 4);
+  for (const csv of [interviews, partners, pilots]) {
+    const widths = new Set(csv.trim().split("\n").map((line) => line.split(",").length));
+    assert.equal(widths.size, 1, "CSV rows must match the header width");
+  }
+  assert.match(interviews, /P1-INT-015,api_first_agent_platform/);
+  assert.match(partners, /P1-DP-005/);
+  assert.match(pilots, /P1-PP-003/);
+  assert.ok(!/P1-INT-001,[^,]+,[^,]+,[^,]+/.test(interviews), "interview slots must not invent customer identities");
+});
