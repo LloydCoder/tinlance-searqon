@@ -312,8 +312,8 @@ export function createAppServer({ database = null, authService = null, workspace
 
     if (url.pathname === "/api/v1/projects") {
       if (request.method !== "GET" && request.method !== "POST") {
-        response.setHeader("allow", recommendationSubroute ? "GET" : "GET, POST");
-        sendJson(response, 405, { error: { code: "method_not_allowed", message: recommendationSubroute ? "Use GET." : "Use GET or POST." } });
+        response.setHeader("allow", "GET, POST");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or POST." } });
         return;
       }
       if (!auth || !workspace) {
