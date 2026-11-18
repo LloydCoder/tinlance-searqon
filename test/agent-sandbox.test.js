@@ -133,3 +133,12 @@ test("simulated link traversal requires the link to exist in the source snapshot
   assert.equal(result.steps[0].result.reason,"link_not_present_in_source");
   assert.equal(result.steps[0].result.networkRequested,false);
 });
+
+test("simulated external links are blocked without network access", () => {
+  const input = structuredClone(manifest);
+  input.journey = [{action:"follow_link",fromDocumentId:"home",href:"https://evil.example/"}];
+  const result = simulateAgentJourney(input);
+  assert.equal(result.steps[0].status,"blocked");
+  assert.equal(result.steps[0].result.reason,"destination_blocked_by_origin_policy");
+  assert.equal(result.steps[0].result.networkRequested,false);
+});
