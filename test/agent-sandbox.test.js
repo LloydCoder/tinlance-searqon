@@ -150,3 +150,26 @@ test("HTML entity decoding is single-pass and preserves double-escaped markup as
   const result = simulateAgentJourney(input);
   assert.equal(result.steps[0].result.textLength,43);
 });
+
+test("MCP JSON with prototype-shaped keys remains inert data", () => {
+  const input = structuredClone(manifest);
+  input.documents[2].content = JSON.stringify({
+    "__proto__":{polluted:true},
+    "constructor":{"prototype":{"polluted":true}},
+    tools:[{name:"safe_tool"}]
+  });
+  input.journey = [{action:"inspect_mcp_snapshot",documentId:"mcp"}];
+  const result = simulateAgentJourney(input);
+  assert.deepEqual(result.steps[0].result.toolNames,["safe_tool"]);
+  assert.equal(Object.prototype.polluted,undefined);
+});
+
+test("simulation rejects malformed MCP metadata JSON with a bounded error", () => {
+  const input = structuredClone(manifest);
+  input.documents[2].content = "{malformed";
+  input.journey = [{action:"inspect_mcp_snapshot",documentId:"mcp"}];
+  assert.throws(
+    () => simulateAgentJourney(input),
+    error=>error.code==="invalid_document_json" && !error.message.includes("at ")
+  );
+});
