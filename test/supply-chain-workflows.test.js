@@ -22,7 +22,7 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(release, /push:\s+branches:\s+\["release\/v\*"\]/);
   assert.match(release, /git tag -a/);
   assert.match(release, /git config user\.name "github-actions\[bot\]"/);
-  assert.match(release, /git config user\\.email/);
+  assert.ok(release.includes('git config user.email "41898282+github-actions[bot]@users.noreply.github.com"'));
   assert.match(release, /git push origin "\$RELEASE_TAG"/);
   assert.match(release, /persist-credentials: true/);
 
