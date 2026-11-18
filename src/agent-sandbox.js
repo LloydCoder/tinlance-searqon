@@ -46,10 +46,10 @@ function exactKeys(value, allowed, field) {
   }
 }
 
-function safeUrl(value, origin, field) {
+function safeUrl(value, origin, field, base = origin) {
   if (typeof value !== "string" || value.length > 2048) fail("invalid_document_url",field+" must be an HTTP URL within the declared origin.");
   let url;
-  try { url = new URL(value,origin); }
+  try { url = new URL(value,base); }
   catch { fail("invalid_document_url",field+" is not a valid URL."); }
   if (url.protocol !== "https:" || url.username || url.password || url.origin !== origin || url.search || url.hash) {
     fail("document_origin_mismatch",field+" must be HTTPS, credential-free and within the declared origin without query or fragment data.");
@@ -236,7 +236,7 @@ export function simulateAgentJourney(manifest, { runId = null } = {}) {
     }
     if (step.action === "follow_link") {
       const source = validated.documents.get(step.fromDocumentId);
-      const destination = safeUrl(step.href,new URL(source.url).origin,"journey.href");
+      const destination = safeUrl(step.href,new URL(source.url).origin,"journey.href",source.url);
       const target = [...validated.documents.values()].find(document => document.url === destination.href);
       steps.push({
         index,
