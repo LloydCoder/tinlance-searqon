@@ -62,7 +62,7 @@ The external Vercel preview/deployment status has separately reported `Deploymen
 
 ### 4.1 Release execution
 
-<badge color="success">Verified — v0.2.0</badge>
+**Verified — v0.2.0**
 
 GitHub Release `v0.2.0` was published on 2026-11-18. The release contains:
 
