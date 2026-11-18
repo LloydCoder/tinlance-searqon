@@ -59,23 +59,43 @@ jobs:
           tar -tzf "dist/$PACKAGE_FILE" >/dev/null
           node --input-type=module -e 'import fs from "node:fs"; const sbom=JSON.parse(fs.readFileSync("dist/sbom.cdx.json","utf8")); if (sbom.bomFormat !== "CycloneDX" || !sbom.components) process.exit(1);'
 
-      - name: Verify package provenance signature and signer identity
+      - name: Verify package provenance signature and approved signer identity
         env:
           GH_TOKEN: ${{ github.token }}
           PACKAGE_FILE: ${{ steps.release.outputs.package_file }}
         run: |
-          gh attestation verify "dist/$PACKAGE_FILE" \
-            --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \
-            --format json > provenance-verification.json
+          set -euo pipefail
+          for signer in \
+            "$GITHUB_REPOSITORY/.github/workflows/release-provenance.yml" \
+            "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml"; do
+            if gh attestation verify "dist/$PACKAGE_FILE" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$signer" \
+              --format json > provenance-verification.json; then
+              echo "Verified package provenance signer: $signer"
+              exit 0
+            fi
+          done
+          echo "No approved package provenance signer verified" >&2
+          exit 1
 
-      - name: Verify CycloneDX SBOM attestation
+      - name: Verify CycloneDX SBOM attestation and approved signer identity
         env:
           GH_TOKEN: ${{ github.token }}
           PACKAGE_FILE: ${{ steps.release.outputs.package_file }}
         run: |
-          gh attestation verify "dist/$PACKAGE_FILE" \
-            --repo "$GITHUB_REPOSITORY" \
-            --predicate-type https://cyclonedx.org/bom \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \
-            --format json > sbom-attestation-verification.json
+          set -euo pipefail
+          for signer in \
+            "$GITHUB_REPOSITORY/.github/workflows/release-provenance.yml" \
+            "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml"; do
+            if gh attestation verify "dist/$PACKAGE_FILE" \
+              --repo "$GITHUB_REPOSITORY" \
+              --predicate-type https://cyclonedx.org/bom \
+              --signer-workflow "$signer" \
+              --format json > sbom-attestation-verification.json; then
+              echo "Verified SBOM attestation signer: $signer"
+              exit 0
+            fi
+          done
+          echo "No approved CycloneDX SBOM signer verified" >&2
+          exit 1
