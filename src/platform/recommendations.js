@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { withUserTransaction } from "./database.js";
+import { rankRecommendations } from "./recommendation-plans.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RULE_ID = /^[a-z][a-z0-9_.-]{1,159}$/;
@@ -201,7 +202,15 @@ export function createRecommendationService({ database } = {}) {
              priority DESC, updated_at DESC, id`,
           [projectId]
         );
-        return result.rows.map(row => recommendationRow(row));
+        const recommendations = result.rows.map(row => recommendationRow(row));
+        const ranked = rankRecommendations(recommendations, { asOf: new Date().toISOString().slice(0,10) });
+        const byId = new Map(recommendations.map(item => [item.id,item]));
+        return ranked.map(item => ({
+          ...byId.get(item.id),
+          crossEngineRank: item.rank,
+          crossEnginePriorityScore: item.priorityScore,
+          priorityFactors: item.factors
+        }));
       });
     },
 
