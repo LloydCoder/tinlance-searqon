@@ -261,7 +261,7 @@ test("fetch sends the exact caller-selected crawler product token", async () => 
     resolver: publicResolver,
     requestImpl: fakeTransport([{ body: "ok" }], seen)
   });
-  assert.match(seen[0].options.headers["user-agent"], /CustomBot\\/0.2/);
+  assert.match(seen[0].options.headers["user-agent"], /CustomBot\/0.2/);
   assert.equal(seen[0].options.headers["user-agent"].includes("SearqonBot"), false);
 });
 
