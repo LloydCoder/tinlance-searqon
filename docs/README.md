@@ -21,6 +21,10 @@ This index organizes the documentation by the reader's goal. Existing root-level
 - [Product scope and intended users](PRODUCT_CHARTER.md)
 - [Security policy and threat boundaries](../SECURITY.md)
 
+## Open-source foundation
+- [Phase 2 open-source foundation audit](PHASE_2_OPEN_SOURCE_FOUNDATION.md)
+- [Release and artifact provenance](RELEASING.md)
+
 ## Security
 - [ASVS-aligned security assessment and release gates](SECURITY_ASSESSMENT.md)
 
