@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { withUserTransaction } from "./database.js";
-import { rankRecommendations } from "./recommendation-plans.js";
+import { compileRemediationPlan, rankRecommendations } from "./recommendation-plans.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RULE_ID = /^[a-z][a-z0-9_.-]{1,159}$/;
@@ -288,6 +288,86 @@ export function createRecommendationService({ database } = {}) {
             metadata:{previousDueDate,dueDate:nextDueDate}});
         }
         return recommendationRow(row);
+      });
+    },
+
+    async createPlan(userId, projectId, input = {}) {
+      requireUuid(userId,"user_id");
+      requireUuid(projectId,"project_id");
+      if (!input || typeof input !== "object" || Array.isArray(input)) {
+        throw new RecommendationError(400,"invalid_remediation_plan","A remediation plan object is required.");
+      }
+      const createdAt = new Date().toISOString();
+      const plan = compileRemediationPlan({
+        planId: input.planId,
+        projectId,
+        createdAt,
+        steps: input.steps
+      });
+      const recommendationIds = [...new Set(plan.steps.flatMap(step => step.recommendationIds))].map(id => requireUuid(id,"recommendation_id"));
+      const assessmentIds = [...new Set(plan.steps.flatMap(step => step.tests.map(item => item.assessmentId)))].map(id => requireUuid(id,"assessment_id"));
+      const planDigest = createHash("sha256").update(JSON.stringify(plan),"utf8").digest("hex");
+      return withUserTransaction(database.pool,userId,async client => {
+        const organizationId = await requireProjectMembership(client,userId,projectId,true);
+        const recommendations = await client.query(
+          "SELECT id FROM searqon.recommendations WHERE organization_id=$1 AND project_id=$2 AND id=ANY($3::uuid[])",
+          [organizationId,projectId,recommendationIds]
+        );
+        if (recommendations.rows.length !== recommendationIds.length) {
+          throw new RecommendationError(422,"plan_recommendation_scope_mismatch","Every plan recommendation must belong to this project.");
+        }
+        const assessments = await client.query(
+          "SELECT id FROM searqon.assessments WHERE organization_id=$1 AND project_id=$2 AND status='succeeded' AND completed_at IS NOT NULL AND id=ANY($3::uuid[])",
+          [organizationId,projectId,assessmentIds]
+        );
+        if (assessments.rows.length !== assessmentIds.length) {
+          throw new RecommendationError(422,"plan_assessment_scope_mismatch","Every test evidence reference must point to a successful assessment in this project.");
+        }
+        try {
+          const inserted = await client.query(
+            `INSERT INTO searqon.recommendation_plans
+              (organization_id,project_id,plan_ref,plan_digest,status,plan_document,created_by)
+             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7)
+             RETURNING id,plan_digest,created_by,created_at`,
+            [organizationId,projectId,plan.planId,planDigest,plan.status,JSON.stringify(plan),userId]
+          );
+          return {
+            ...plan,
+            id: inserted.rows[0].id,
+            digest: inserted.rows[0].plan_digest,
+            createdBy: inserted.rows[0].created_by,
+            createdAt: inserted.rows[0].created_at
+          };
+        } catch (error) {
+          if (error?.code === "23505") {
+            throw new RecommendationError(409,"remediation_plan_exists","A plan with this reference already exists in the project.");
+          }
+          throw error;
+        }
+      });
+    },
+
+    async listPlans(userId, projectId) {
+      requireUuid(userId,"user_id");
+      requireUuid(projectId,"project_id");
+      return withUserTransaction(database.pool,userId,async client => {
+        await requireProjectMembership(client,userId,projectId,false);
+        const result = await client.query(
+          `SELECT id,plan_ref,plan_digest,status,plan_document,created_by,created_at
+           FROM searqon.recommendation_plans
+           WHERE project_id=$1
+           ORDER BY created_at DESC,id DESC`,
+          [projectId]
+        );
+        return result.rows.map(row => ({
+          ...row.plan_document,
+          id: row.id,
+          planRef: row.plan_ref,
+          digest: row.plan_digest,
+          status: row.status,
+          createdBy: row.created_by,
+          createdAt: row.created_at
+        }));
       });
     },
 
