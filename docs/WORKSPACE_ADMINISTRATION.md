@@ -29,7 +29,7 @@ Database functions enforce these constraints inside PostgreSQL. The application 
 - Acceptance requires an authenticated account whose verified email exactly matches the invited address.
 - Reissuing an invitation revokes the previous pending invitation for that workspace/email.
 - Invitation email content is escaped and sent with a stable idempotency key.
-- The browser keeps the invitation token in session-scoped memory storage only while the invitee signs in; the URL fragment is removed from browser history. The token is not sent in HTTP referrers.
+- The browser keeps the invitation token in session-scoped storage and removes the URL fragment from browser history. If sign-in opens a separate email tab, the invitee returns to the original invitation email and reopens its link after signing in; the token is not persisted in local storage or sent in HTTP referrers.
 - Invitation list access is limited to workspace owners/admins. Member listings omit email addresses.
 
 ## Email delivery
