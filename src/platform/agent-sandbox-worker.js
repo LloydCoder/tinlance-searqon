@@ -1,4 +1,4 @@
-import { simulateAgentJourney } from "../agent-sandbox.js";
+import { runAgentSimulationIsolated } from "./agent-sandbox-executor.js";
 import { createJobQueue } from "./jobs.js";
 import { createWorkerRunner } from "./worker-runner.js";
 
@@ -65,7 +65,7 @@ export function createAgentSimulationWorker({
   });
   const handler = async (job,{workerId:activeWorkerId,signal}) => {
     if (signal.aborted) throw new AgentSimulationWorkerError("simulation_cancelled","The simulation lease was lost.");
-    const result = simulateAgentJourney(job.payload,{runId:job.id});
+    const result = await runAgentSimulationIsolated(job.payload,{runId:job.id});
     if (signal.aborted) throw new AgentSimulationWorkerError("simulation_cancelled","The simulation lease was lost.");
     const persisted = await persistResult({pool:database.pool,workerId:activeWorkerId,job,result});
     if (signal.aborted) throw new AgentSimulationWorkerError("simulation_cancelled","The simulation lease was lost.");
