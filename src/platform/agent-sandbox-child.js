@@ -11,7 +11,6 @@ if (typeof globalThis.fetch !== "undefined"
   || typeof globalThis.WebTransport !== "undefined"
   || !process.permission
   || process.permission.has("fs.write")
-  || process.permission.has("net")
   || process.permission.has("child_process")
   || process.permission.has("worker_threads")) {
   process.stdout.write(JSON.stringify({errorCode:"sandbox_permissions_unavailable"}));
