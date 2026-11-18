@@ -65,6 +65,7 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     assert.equal(recommendation.status,"open");
     const assignees = await service.listAssignees(userA,project.id);
     assert.ok(assignees.some(member=>member.id===viewer && member.role==="viewer"));
+    assert.ok(!assignees.some(member=>member.id===userB),"cross-tenant users must never appear in the assignee directory");
     const scheduled = await service.updateWork(userA,recommendation.id,{assignedTo:viewer,dueDate:"2026-12-01"});
     assert.equal(scheduled.assignedTo,viewer);
     assert.equal(scheduled.dueDate,"2026-12-01");
