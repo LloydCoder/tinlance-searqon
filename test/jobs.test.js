@@ -73,6 +73,6 @@ test("agent simulation is a supported durable job type", async () => {
   const { queue, connects } = fixture();
   const base = { jobType:"agent_simulation", payload:{version:1,origin:"https://docs.example.test",documents:[],journey:[{action:"discover"}]}, idempotencyKey:"agent-simulation-0001" };
   await assert.rejects(queue.enqueue("10000000-0000-4000-8000-000000000001","20000000-0000-4000-8000-000000000001",base),
-    error => error.code !== "invalid_job_type");
+    /database should not be reached/);
   assert.equal(connects(),1);
 });
