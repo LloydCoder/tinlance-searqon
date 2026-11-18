@@ -54,7 +54,7 @@ BEGIN
   IF v_actor IS NULL OR p_organization_id IS NULL
      OR p_email IS NULL OR p_email <> lower(btrim(p_email))
      OR char_length(p_email) NOT BETWEEN 3 AND 320
-     OR p_role NOT IN ('admin','analyst','viewer')
+     OR p_role IS NULL OR p_role NOT IN ('admin','analyst','viewer')
      OR p_token_hash IS NULL OR octet_length(p_token_hash) <> 32
      OR p_expires_at <= now() OR p_expires_at > now() + interval '7 days' THEN
     RAISE EXCEPTION 'invalid workspace invitation parameters' USING ERRCODE = '22023';
@@ -208,7 +208,7 @@ DECLARE
   v_actor_role text;
   v_target_role text;
 BEGIN
-  IF p_role NOT IN ('admin','analyst','viewer') OR p_member_user_id IS NULL
+  IF p_role IS NULL OR p_role NOT IN ('admin','analyst','viewer') OR p_member_user_id IS NULL
      OR p_member_user_id = v_actor THEN
     RAISE EXCEPTION 'invalid workspace role change' USING ERRCODE = '22023';
   END IF;
