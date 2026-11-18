@@ -32,18 +32,31 @@ function validateEvent(event) {
     || !Number.isFinite(Date.parse(event.receivedAt))) {
     throw new BillingInboxError("invalid_verified_event", "A canonical verified billing event is required.");
   }
-  const payload = {
-    organizationId: event.organizationId,
-    providerCustomerId: event.providerCustomerId,
-    providerSubscriptionId: event.providerSubscriptionId,
-    status: event.status,
-    plan: event.plan,
-    currentPeriodStart: event.currentPeriodStart,
-    currentPeriodEnd: event.currentPeriodEnd,
-    ...(event.trialEndsAt ? { trialEndsAt: event.trialEndsAt } : {}),
-    ...(event.checkoutIntentId ? { checkoutIntentId:event.checkoutIntentId } : {}),
-    ...(event.providerTransactionId ? { providerTransactionId:event.providerTransactionId } : {})
-  };
+  const payload = event.eventKind==="invoice.payment_succeeded" || event.eventKind==="invoice.payment_failed"
+    ? {
+        organizationId:event.organizationId,
+        providerCustomerId:event.providerCustomerId,
+        providerSubscriptionId:event.providerSubscriptionId,
+        providerTransactionId:event.providerTransactionId,
+        currencyCode:event.currencyCode,
+        totalAmountMinor:event.totalAmountMinor,
+        taxAmountMinor:event.taxAmountMinor,
+        transactionStatus:event.transactionStatus,
+        ...(event.invoiceNumber?{invoiceNumber:event.invoiceNumber}:{}),
+        ...(event.checkoutIntentId?{checkoutIntentId:event.checkoutIntentId}:{})
+      }
+    : {
+        organizationId: event.organizationId,
+        providerCustomerId: event.providerCustomerId,
+        providerSubscriptionId: event.providerSubscriptionId,
+        status: event.status,
+        plan: event.plan,
+        currentPeriodStart: event.currentPeriodStart,
+        currentPeriodEnd: event.currentPeriodEnd,
+        ...(event.trialEndsAt ? { trialEndsAt: event.trialEndsAt } : {}),
+        ...(event.checkoutIntentId ? { checkoutIntentId:event.checkoutIntentId } : {}),
+        ...(event.providerTransactionId ? { providerTransactionId:event.providerTransactionId } : {})
+      };
   return Object.freeze({
     provider: event.provider,
     providerEventId: event.providerEventId,
