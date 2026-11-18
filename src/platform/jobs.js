@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { withUserTransaction } from "./database.js";
 
-const JOB_TYPES = new Set(["assessment","site_crawl","geo_sampling","alert_delivery","scheduled_report"]);
+const JOB_TYPES = new Set(["assessment","site_crawl","geo_sampling","alert_delivery","scheduled_report","agent_simulation"]);
+const WORKER_ROLES = new Set(["searqon_worker","searqon_agent_worker"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/;
 const WORKER_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,63}$/;
@@ -116,12 +117,12 @@ function jobRow(row) {
   };
 }
 
-async function withWorkerTransaction(pool, workerId, operation) {
+async function withWorkerTransaction(pool, workerId, operation, workerRole) {
   if (!pool || typeof pool.connect !== "function") throw new JobQueueError(503,"worker_unavailable","A dedicated worker database pool is not configured.");
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    await client.query("SET LOCAL ROLE searqon_worker");
+    await client.query("SET LOCAL ROLE " + workerRole);
     await client.query("SELECT set_config('searqon.worker_id',$1,true)",[workerId]);
     const result = await operation(client);
     await client.query("COMMIT");
@@ -162,7 +163,7 @@ async function appendWorkerEvent(client, job, workerId, eventType, metadata = {}
   );
 }
 
-export function createJobQueue({ database, workerPool = null } = {}) {
+export function createJobQueue({ database, workerPool = null, workerRole = "searqon_worker" } = {}) {
   if (!database?.pool || typeof database.pool.connect !== "function") {
     throw new TypeError("A PostgreSQL database pool is required.");
   }
