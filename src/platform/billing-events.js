@@ -9,6 +9,8 @@ const EVENT_KINDS = Object.freeze({
   "customer.subscription.updated": "subscription.snapshot",
   "customer.subscription.deleted": "subscription.snapshot",
   "invoice.payment_succeeded": "invoice.payment_succeeded",
+  "invoice.payment_failed": "invoice.payment_failed",
+  "invoice.payment_succeeded": "invoice.payment_succeeded",
   "invoice.payment_failed": "invoice.payment_failed"
 });
 
