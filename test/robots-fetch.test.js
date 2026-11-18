@@ -167,6 +167,7 @@ test("cross-origin robots redirect results fail closed and cache only a short-li
   const cache = new Map();
   const result = await fetchRobotsPolicy(origin, "SearqonBot", {
     cache,
+    now: () => 50_000,
     fetcher: async () => ({
       status: 200,
       headers: { "cache-control": "max-age=600" },
@@ -177,6 +178,7 @@ test("cross-origin robots redirect results fail closed and cache only a short-li
   });
   assert.equal(result.outcome, "unreachable");
   assert.equal(result.error, "Cross-origin robots.txt redirect is not permitted");
+  assert.equal(result.expiresAt, 80_000);
   assert.equal(evaluateRobots(result.policy, "https://example.com/", "SearqonBot").allowed, false);
   assert.equal(cache.size, 1); // Short failure cache only; no permissive policy is retained.
   assert.equal(cache.has("https://example.com\nsearqonbot"), true);
