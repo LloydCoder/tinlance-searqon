@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 test("supply-chain workflows pin actions and enforce least-privilege release permissions", async () => {
   const secrets = await readFile(new URL("../.github/workflows/secret-scan.yml", import.meta.url), "utf8");
   const release = await readFile(new URL("../.github/workflows/release-provenance.yml", import.meta.url), "utf8");
+  const releaseVerification = await readFile(new URL("../.github/workflows/release-verification.yml", import.meta.url), "utf8");
   const dependabot = await readFile(new URL("../.github/dependabot.yml", import.meta.url), "utf8");
   assert.match(secrets, /version="8\.30\.1"/);
   assert.match(secrets, /archive="gitleaks_\$\{version\}_linux_x64\.tar\.gz"/);
@@ -29,6 +30,13 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(release, /gh release create/);
   assert.match(release, /--verify-tag/);
   assert.match(release, /gh release create.*PACKAGE_FILE/);
+  assert.match(releaseVerification, /branches:\s+\["verify\/v\*"\]/);
+  assert.match(releaseVerification, /gh release download/);
+  assert.match(releaseVerification, /sha256sum --check/);
+  assert.match(releaseVerification, /gh attestation verify/);
+  assert.match(releaseVerification, /--signer-workflow/);
+  assert.match(releaseVerification, /https:\/\/cyclonedx\.org\/bom/);
+
 
   assert.match(dependabot, /package-ecosystem: "github-actions"/);
   assert.match(dependabot, /package-ecosystem: "npm"/);
