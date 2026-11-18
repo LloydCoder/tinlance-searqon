@@ -12,6 +12,32 @@
   },
   "contracts": [
     {
+      "name": "agent-simulation-manifest",
+      "file": "agent-simulation-manifest.schema.json",
+      "schemaId": "https://tinlance.com/schemas/searqon-agent-simulation-manifest-1.0.0.json",
+      "contractVersion": "1.0.0",
+      "versionField": null,
+      "status": "experimental",
+      "consumers": [
+        "agent-sandbox-service",
+        "agent-sandbox-worker"
+      ],
+      "notes": "Bounded, read-only snapshot journey input. Runtime enforces UTF-8 byte limits, canonical HTTPS origin, supported actions and same-origin snapshot-only link traversal."
+    },
+    {
+      "name": "agent-simulation-result",
+      "file": "agent-simulation-result.schema.json",
+      "schemaId": "https://tinlance.com/schemas/searqon-agent-simulation-result-1.0.0.json",
+      "contractVersion": "1.0.0",
+      "versionField": null,
+      "status": "experimental",
+      "consumers": [
+        "agent-sandbox-worker",
+        "agent-sandbox-service"
+      ],
+      "notes": "Deterministic simulation output with input/result digests. This is not an evidence observation class, a live-agent measurement, or a universal security verdict."
+    },
+    {
       "name": "assessment-report",
       "file": "assessment-report.schema.json",
       "schemaId": "https://tinlance.com/schemas/searqon-assessment-report-1.0.0.json",
