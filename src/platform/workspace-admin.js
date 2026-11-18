@@ -57,8 +57,12 @@ export function createWorkspaceAdminService({
     throw new TypeError("A workspace invitation email sender is required.");
   }
   if (typeof now !== "function") throw new TypeError("A trusted server clock is required.");
-  const origin = new URL(publicOrigin).origin;
-  if (origin !== publicOrigin.replace(/\/$/,"")) throw new TypeError("A canonical public application origin is required.");
+  const parsedOrigin = new URL(publicOrigin);
+  const origin = parsedOrigin.origin;
+  if (origin !== publicOrigin.replace(/\/$/,"")
+    || (parsedOrigin.protocol !== "https:" && !["localhost","127.0.0.1","[::1]"].includes(parsedOrigin.hostname))) {
+    throw new TypeError("A canonical HTTPS public application origin is required outside loopback development.");
+  }
 
   return Object.freeze({
     async createInvitation(userId, organizationId, input) {
@@ -70,13 +74,14 @@ export function createWorkspaceAdminService({
       const email = normalizeEmail(input.email);
       const token = randomBytes(32).toString("base64url");
       const expiresAt = new Date(trustedNow(now).getTime()+MAX_INVITATION_TTL_MS);
-      const result = await withUserTransaction(database.pool,userId,client =>
-        client.query(
+      const invitation = await withUserTransaction(database.pool,userId,async client => {
+        const created = await client.query(
           "SELECT * FROM searqon.create_workspace_invitation($1,$2,$3,$4,$5)",
           [organizationId,email,input.role,tokenHash(token),expiresAt]
-        )
-      );
-      const invitation = result.rows?.[0];
+        );
+        const workspace = await client.query("SELECT name FROM searqon.organizations WHERE id=$1",[organizationId]);
+        return created.rows?.[0] ? {...created.rows[0],organization_name:workspace.rows?.[0]?.name} : null;
+      });
       if (!invitation) throw new WorkspaceAdminError(503,"invitation_unavailable","The workspace invitation could not be created.");
       const invitationUrl = new URL("/auth/invitation/",origin);
       invitationUrl.hash = "token="+token;
@@ -84,7 +89,7 @@ export function createWorkspaceAdminService({
         await emailSender.sendWorkspaceInvitation({
           to: email,
           url: invitationUrl.toString(),
-          organizationName: typeof input.organizationName === "string" ? input.organizationName.slice(0,160) : "your workspace",
+          organizationName: invitation.organization_name ?? "your workspace",
           role: invitation.invited_role,
           idempotencyKey: "searqon-workspace-invitation/"+invitation.invitation_id
         });
