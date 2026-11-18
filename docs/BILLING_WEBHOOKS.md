@@ -32,6 +32,16 @@ GRANT searqon_billing_worker TO searqon_billing_worker_login;
 
 Use separate connection URLs for the ingest and worker pools. Do not reuse `DATABASE_URL`, `MIGRATION_DATABASE_URL`, the application login or a superuser. Remote PostgreSQL connections must retain TLS certificate verification. Keep credentials in an external secret manager; never put them in repository files, logs or support tickets.
 
+## Hosted checkout
+
+The authenticated `POST /api/v1/workspaces/:organizationId/billing/checkout` endpoint is owner/admin-only and same-origin. It accepts a client-generated UUID request ID, a Searqon plan and a monthly/annual interval. The service resolves the configured Paddle price ID server-side; browser input cannot select an arbitrary price.
+
+The service records a tenant-scoped checkout intent before calling Paddle, then creates an automatically-collected transaction with workspace and intent metadata. It validates the returned transaction ID, metadata and checkout URL against the configured HTTPS return origin/path before exposing the URL. A signed `subscription.created` event must carry the matching checkout intent ID and originating Paddle transaction ID; the worker also fetches the canonical subscription and verifies workspace/customer/subscription binding before marking that intent completed.
+
+Paddle's transaction creation call is not assumed to be idempotent. Searqon requires a stable client request ID and persists it locally. If the provider call times out or returns an ambiguous response, the intent is marked `unknown` and is never automatically retried with the same request ID. This avoids accidentally creating multiple checkout transactions. A new request ID is not a recovery mechanism for an unknown provider outcome; reconcile the original intent first.
+
+The checkout service is disabled unless `SEARQON_BILLING_WEBHOOKS_ENABLED=true` and the Paddle API/notification secrets, dedicated database URLs, price-to-plan map, checkout plan/interval map and approved HTTPS return URL are configured. No price IDs or provider credentials are committed.
+
 ## Provider adapter contract
 
 A future provider adapter must:
@@ -45,7 +55,7 @@ A future provider adapter must:
 - enforce provider request timeouts, response-size limits and safe error handling;
 - never log authorization headers, webhook signatures, raw payloads or provider response bodies.
 
-The Paddle adapter and runtime factory are implemented but are not activated. No checkout session, invoice settlement, refund, dispute or payment-method flow is enabled until Paddle (or another provider) and its commercial/legal terms are explicitly approved. The current canonical event contract is not proof of money received; settlement requires the provider's canonical invoice/payment object and reconciliation policy.
+The Paddle adapter, hosted checkout service and runtime factory are implemented but are not activated. The checkout service creates a provider transaction, but Searqon does not yet maintain a complete invoice/transaction ledger or process refunds, disputes or payment-method changes. Those flows remain disabled until Paddle (or another provider) and its commercial/legal terms are explicitly approved. The current canonical event contract is not proof of money received; settlement requires the provider's canonical invoice/payment object and reconciliation policy.
 
 ## Runtime integration
 
