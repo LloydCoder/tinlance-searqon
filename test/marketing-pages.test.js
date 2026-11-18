@@ -149,3 +149,17 @@ test("public pages never expose escaped newline sequences as visible HTML text",
     }
   });
 });
+
+
+test("indexable public pages keep title and description metadata within the analyzer guidance bands", async () => {
+  for (const route of ["/", "/about/", "/docs/", "/pricing/", "/product/", "/security/", "/solutions/", "/contact/", "/privacy/", "/terms/"]) {
+    const response = await fetch(base + route);
+    assert.equal(response.status, 200, "page must load: " + route);
+    const html = await response.text();
+    const title = html.match(/<title>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<[^>]*>/g, " ").trim() ?? "";
+    const descriptionTag = html.match(/<meta\b(?=[^>]*\bname=["']description["'])[^>]*>/i)?.[0] ?? "";
+    const description = descriptionTag.match(/\bcontent=["']([^"']*)["']/i)?.[1] ?? "";
+    assert.ok(title.length >= 30 && title.length <= 60, "title length outside 30-60 for " + route + ": " + title.length);
+    assert.ok(description.length >= 70 && description.length <= 160, "description length outside 70-160 for " + route + ": " + description.length);
+  }
+});
