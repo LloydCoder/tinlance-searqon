@@ -43,6 +43,8 @@ export function validateTargetUrl(value) {
   try { url=new URL(value); }
   catch { throw new TypeError("Target must be an absolute HTTP or HTTPS URL"); }
   if (url.protocol!=="http:" && url.protocol!=="https:") throw new TypeError("Only HTTP or HTTPS targets are allowed");
+  const expectedPort = url.protocol === "https:" ? "443" : "80";
+  if (url.port && url.port !== expectedPort) throw new TypeError("Only standard HTTP and HTTPS ports 80 and 443 are permitted");
   if (url.username || url.password) throw new TypeError("Target URLs must not contain credentials");
   const hostname=normalizeHostname(url.hostname);
   if (!hostname || hostname.endsWith(".")) throw new TypeError("Target hostname is invalid");
