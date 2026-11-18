@@ -62,7 +62,7 @@ test("agent simulation worker claims only simulation jobs, persists bounded resu
   });
   const stats = await worker.runOnce();
   assert.deepEqual(stats,{claimed:1,completed:1,retried:0,failed:0,leaseLost:0,runnerErrors:0});
-  assert.ok(fixture.statements.some(item=>item.sql.includes("job_type = ANY") && item.params[3].includes("agent_simulation")));
+  assert.ok(fixture.statements.some(item=>item.sql.includes("WITH candidates AS") && item.params[3].includes("agent_simulation")));
   assert.ok(fixture.statements.some(item=>item.sql==="SET LOCAL ROLE searqon_agent_worker"));
   assert.equal(fixture.resultRows.length,1);
   assert.equal(fixture.resultRows[0].mode,"read_only_snapshot_simulation");
