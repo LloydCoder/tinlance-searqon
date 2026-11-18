@@ -236,8 +236,8 @@ export function createRecommendationService({ database } = {}) {
         }
         if (hasAssignee && assignedTo !== null) {
           const member = await client.query(
-            "SELECT 1 FROM searqon.memberships WHERE organization_id=$1 AND user_id=$2",
-            [organizationId,assignedTo]
+            "SELECT 1 FROM searqon.list_project_members($1) WHERE user_id=$2",
+            [current.project_id,assignedTo]
           );
           if (!member.rows.length) {
             throw new RecommendationError(422,"assignee_not_in_workspace","The assignee must be an active member of this workspace.");
