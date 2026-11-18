@@ -141,3 +141,89 @@ test("durable jobs enforce tenant RLS, idempotency, fenced leases, retries and a
     await owner.end();
   }
 });
+
+
+test("agent simulation worker is tenant-scoped and cannot access alert delivery secrets", { skip: !disposable }, async () => {
+  const owner = new Pool({ connectionString: databaseUrl });
+  const runtime = new Pool({ connectionString: process.env.SEARQON_RUNTIME_DATABASE_URL, max: 3 });
+  const worker = new Pool({ connectionString: process.env.SEARQON_AGENT_WORKER_DATABASE_URL ?? process.env.SEARQON_WORKER_DATABASE_URL, max: 3 });
+  const queue = createJobQueue({ database: { pool: runtime }, workerPool: worker, workerRole: "searqon_agent_worker" });
+  const userA = randomUUID();
+  const userB = randomUUID();
+  const orgA = randomUUID();
+  const orgB = randomUUID();
+  const workerId = "agent-sandbox-01";
+  const email = id => id + "@agent-sandbox.example.test";
+  const manifest = {
+    version:1,
+    origin:"https://docs.example.test",
+    documents:[{id:"home",url:"https://docs.example.test/",contentType:"text/html",content:"<title>Docs</title>"}],
+    journey:[{action:"discover"},{action:"read_document",documentId:"home"}]
+  };
+
+  try {
+    await owner.query(
+      "INSERT INTO searqon.app_users (id,email,display_name) VALUES ($1,$2,'Sandbox A'),($3,$4,'Sandbox B')",
+      [userA,email(userA),userB,email(userB)]
+    );
+    await owner.query(
+      "INSERT INTO searqon.organizations (id,name,slug) VALUES ($1,'Sandbox A',$2),($3,'Sandbox B',$4)",
+      [orgA,"sandbox-"+userA.replaceAll("-",""),orgB,"sandbox-"+userB.replaceAll("-","")]
+    );
+    await owner.query(
+      "INSERT INTO searqon.memberships (organization_id,user_id,role) VALUES ($1,$2,'owner'),($3,$4,'owner')",
+      [orgA,userA,orgB,userB]
+    );
+
+    const simulation = await queue.enqueue(userA,orgA,{
+      jobType:"agent_simulation",payload:manifest,idempotencyKey:"agent-simulation-job-0001",maxAttempts:2
+    });
+    const alert = await queue.enqueue(userA,orgA,{
+      jobType:"alert_delivery",payload:{alertId:randomUUID()},idempotencyKey:"agent-simulation-alert-0001"
+    });
+    const claimed = await queue.claim(workerId,{limit:10,leaseSeconds:30,jobTypes:["agent_simulation"]});
+    assert.deepEqual(claimed.map(job=>job.id),[simulation.job.id]);
+    assert.equal(claimed.some(job=>job.id===alert.job.id),false);
+
+    const client = await worker.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SET LOCAL ROLE searqon_agent_worker");
+      await client.query("SELECT set_config('searqon.worker_id',$1,true)",[workerId]);
+      await client.query("SELECT set_config('searqon.lease_token',$1,true)",[claimed[0].leaseToken]);
+      const privilege = await client.query(
+        "SELECT has_table_privilege(current_user,'searqon.alert_destinations','SELECT') AS can_read_destinations, has_table_privilege(current_user,'searqon.alert_delivery_outbox','SELECT') AS can_read_outbox"
+      );
+      assert.equal(privilege.rows[0].can_read_destinations,false);
+      assert.equal(privilege.rows[0].can_read_outbox,false);
+      await client.query(
+        "INSERT INTO searqon.agent_simulation_results (job_id,organization_id,input_sha256,result_sha256,result) VALUES ($1,$2,$3,$4,$5::jsonb)",
+        [simulation.job.id,orgA,simulation.job.payloadSha256,"b".repeat(64),JSON.stringify({mode:"read_only_snapshot_simulation",mutations:"disabled"})]
+      );
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(()=>{});
+      throw error;
+    } finally {
+      client.release();
+    }
+
+    const visible = await withUserTransaction(runtime,userA,client=>client.query(
+      "SELECT result_sha256,result FROM searqon.agent_simulation_results WHERE job_id=$1",[simulation.job.id]
+    ));
+    assert.equal(visible.rows.length,1);
+    assert.equal(visible.rows[0].result_sha256,"b".repeat(64));
+    const hidden = await withUserTransaction(runtime,userB,client=>client.query(
+      "SELECT result_sha256 FROM searqon.agent_simulation_results WHERE job_id=$1",[simulation.job.id]
+    ));
+    assert.equal(hidden.rows.length,0);
+
+    const completed = await queue.complete(workerId,simulation.job.id,claimed[0].leaseToken,{resultSha256:"c".repeat(64)});
+    assert.equal(completed.accepted,true);
+    assert.equal(completed.job.status,"succeeded");
+  } finally {
+    await worker.end();
+    await runtime.end();
+    await owner.end();
+  }
+});
