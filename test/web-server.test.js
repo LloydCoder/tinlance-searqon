@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createAppServer } from "../apps/web/server.js";
 
-async function withServer(run, options = {}) {
+async function withServer(run, options = {}, configureServer = () => {}) {
   const server = createAppServer(options);
+  configureServer(server);
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -540,4 +541,74 @@ test("GEO observation APIs enforce authentication and same-origin ingestion", as
     assert.equal((await evidence.json()).integrity.valid,true);
     assert.deepEqual(calls.map(item=>item[0]),["list","submit","evidence"]);
   },{authService,geoObservationService});
+});
+
+
+test("auth registration and magic-link validation survive requests without a socket", async () => {
+  let origin;
+  const calls = [];
+  const authService = {
+    get publicOrigin() { return origin; },
+    async register(body, address) {
+      calls.push({ method: "register", address });
+      if (!body || typeof body !== "object" || Array.isArray(body) ||
+          typeof body.email !== "string" || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(body.email)) {
+        throw Object.assign(new Error("A valid email address is required."), { statusCode: 400 });
+      }
+      return { accepted: true };
+    },
+    async requestMagicLink(email, address) {
+      calls.push({ method: "magic-link", address });
+      if (typeof email !== "string" || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+        throw Object.assign(new Error("A valid email address is required."), { statusCode: 400 });
+      }
+      return { accepted: true };
+    },
+    async verify() {},
+    async getProfile() { return null; },
+    async logout() {}
+  };
+
+  await withServer(async base => {
+    origin = new URL(base).origin;
+    const headers = {
+      "content-type": "application/json",
+      origin,
+      "x-real-ip": "203.0.113.27"
+    };
+
+    const invalidShape = await fetch(base + "/api/v1/auth/register", {
+      method: "POST",
+      headers,
+      body: JSON.stringify([])
+    });
+    assert.equal(invalidShape.status, 400);
+
+    const invalidEmail = await fetch(base + "/api/v1/auth/magic-link", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email: "not-an-email" })
+    });
+    assert.equal(invalidEmail.status, 400);
+
+    const validRegistration = await fetch(base + "/api/v1/auth/register", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        email: "user@example.test",
+        displayName: "User",
+        organizationName: "Workspace"
+      })
+    });
+    assert.equal(validRegistration.status, 202);
+    assert.deepEqual(calls, [
+      { method: "register", address: "203.0.113.27" },
+      { method: "magic-link", address: "203.0.113.27" },
+      { method: "register", address: "203.0.113.27" }
+    ]);
+  }, { authService }, server => {
+    server.prependListener("request", request => {
+      Object.defineProperty(request, "socket", { configurable: true, value: undefined });
+    });
+  });
 });
