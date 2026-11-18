@@ -142,7 +142,7 @@ async function readBoundedResponse(response,maxBytes) {
 }
 
 function canonicalSnapshot(data,event,pricePlanMap) {
-  if(!data || typeof data!=="object" || data.id!==event.providerSubscriptionId
+  if(!data || typeof data!=="object" || data.id!==event.payload?.providerSubscriptionId
     || data.customer_id!==event.payload.providerCustomerId
     || data.custom_data?.organization_id!==event.organizationId
     || !UUID.test(data.custom_data?.organization_id??"")) {
