@@ -140,10 +140,21 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     );
 
     const repeated = await assess(project.id,htmlMissing);
+    await owner.query(
+      `UPDATE searqon.assessments
+       SET report=jsonb_set(report,'{findings}',(
+         SELECT jsonb_agg(CASE WHEN item->>'ruleId'='html.meta_description.missing'
+           THEN jsonb_set(item,'{severity}','"critical"'::jsonb) ELSE item END)
+         FROM jsonb_array_elements(report->'findings') item
+       ))
+       WHERE id=$1`,
+      [repeated.id]
+    );
     await service.syncFromAssessment(userA,project.id,repeated.id);
     const afterRepeat = (await service.list(userA,project.id)).find(item => item.id === recommendation.id);
     assert.equal(afterRepeat.occurrenceCount,2);
     assert.equal(afterRepeat.latestAssessmentId,repeated.id);
+    assert.equal(afterRepeat.severity,"critical");
 
     const methodologyMismatch = await assess(project.id,htmlMissing);
     await owner.query(
@@ -171,11 +182,12 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     const current = (await service.list(userA,project.id)).find(item => item.id === recommendation.id);
     assert.equal(current.status,"open");
     assert.equal(current.latestAssessmentId,regressed.id);
+    assert.equal(current.severity,"medium");
     assert.ok(reopened.updated.some(item => item.id === recommendation.id));
 
     const history = await service.history(viewer,recommendation.id);
     const eventTypes = history.map(item => item.eventType);
-    for (const expected of ["created","assignment_changed","due_date_changed","status_changed","finding_reobserved","verification_failed","verification_succeeded","reopened"]) {
+    for (const expected of ["created","assignment_changed","due_date_changed","status_changed","finding_reobserved","verification_failed","verification_succeeded","reopened","severity_escalated","severity_deescalated"]) {
       assert.ok(eventTypes.includes(expected), "missing recommendation event " + expected);
     }
     await assert.rejects(
