@@ -101,7 +101,7 @@ These are runbooks and control requirements, not evidence of a live KMS integrat
 8. Production roles, network egress, observability, SLOs, incident response, rollback, backup/restore and authorized staging verification.
 9. Product-owner acceptance and evidence that the Phase 13 integration works in the authorized staging environment.
 
-No new paid provider, cloud resource, plan upgrade or production deployment is authorized. Provider and GEO integrations remain disabled until their respective policy, cost and credential gates are approved.
+Paddle is the research recommendation, not an approved provider selection. No new paid provider, cloud resource, plan upgrade or production deployment is authorized. Provider and GEO integrations remain disabled until their respective policy, cost and credential gates are approved.
 
 ## Phase 13 acceptance gates
 
