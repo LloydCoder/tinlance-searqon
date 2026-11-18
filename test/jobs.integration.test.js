@@ -192,10 +192,24 @@ test("agent simulation worker is tenant-scoped and cannot access alert delivery 
       await client.query("SELECT set_config('searqon.worker_id',$1,true)",[workerId]);
       await client.query("SELECT set_config('searqon.lease_token',$1,true)",[claimed[0].leaseToken]);
       const privilege = await client.query(
-        "SELECT has_table_privilege(current_user,'searqon.alert_destinations','SELECT') AS can_read_destinations, has_table_privilege(current_user,'searqon.alert_delivery_outbox','SELECT') AS can_read_outbox"
+        "SELECT has_table_privilege(current_user,'searqon.alert_destinations','SELECT') AS can_read_destinations, has_table_privilege(current_user,'searqon.alert_delivery_outbox','SELECT') AS can_read_outbox, has_table_privilege(current_user,'searqon.agent_simulation_results','UPDATE') AS can_update_results, has_table_privilege(current_user,'searqon.agent_simulation_results','DELETE') AS can_delete_results"
       );
       assert.equal(privilege.rows[0].can_read_destinations,false);
       assert.equal(privilege.rows[0].can_read_outbox,false);
+      assert.equal(privilege.rows[0].can_update_results,false);
+      assert.equal(privilege.rows[0].can_delete_results,false);
+
+      await client.query("SAVEPOINT invalid_simulation_lease");
+      await client.query("SELECT set_config('searqon.lease_token',$1,true)",[randomUUID()]);
+      await assert.rejects(
+        client.query(
+          "INSERT INTO searqon.agent_simulation_results (job_id,organization_id,input_sha256,result_sha256,result) VALUES ($1,$2,$3,$4,$5::jsonb)",
+          [simulation.job.id,orgA,simulation.job.payloadSha256,"d".repeat(64),JSON.stringify({mode:"read_only_snapshot_simulation",mutations:"disabled"})]
+        ),
+        error=>error.code==="42501"
+      );
+      await client.query("ROLLBACK TO SAVEPOINT invalid_simulation_lease");
+      await client.query("SELECT set_config('searqon.lease_token',$1,true)",[claimed[0].leaseToken]);
       await client.query(
         "INSERT INTO searqon.agent_simulation_results (job_id,organization_id,input_sha256,result_sha256,result) VALUES ($1,$2,$3,$4,$5::jsonb)",
         [simulation.job.id,orgA,simulation.job.payloadSha256,"b".repeat(64),JSON.stringify({mode:"read_only_snapshot_simulation",mutations:"disabled"})]
