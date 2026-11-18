@@ -928,6 +928,7 @@ if (invokedPath && pathToFileURL(invokedPath).href === import.meta.url) {
     const database = process.env.DATABASE_URL ? createDatabase() : null;
     let authService = null;
     let billingRuntime = null;
+    let billingCheckoutService = null;
     const billingPools = [];
     try {
       authService = database ? createAuthService({ database, emailSender: createEmailSender() }) : null;
@@ -935,7 +936,9 @@ if (invokedPath && pathToFileURL(invokedPath).href === import.meta.url) {
         if (!database || !process.env.PADDLE_API_KEY || !process.env.PADDLE_NOTIFICATION_SECRET
           || !process.env.SEARQON_BILLING_INGEST_DATABASE_URL
           || !process.env.SEARQON_BILLING_WORKER_DATABASE_URL
-          || !process.env.PADDLE_PRICE_PLAN_MAP_JSON) {
+          || !process.env.PADDLE_PRICE_PLAN_MAP_JSON
+          || !process.env.PADDLE_CHECKOUT_PRICE_MAP_JSON
+          || !process.env.PADDLE_CHECKOUT_RETURN_URL) {
           throw new Error("Billing activation requires the application database, dedicated ingest/worker URLs, Paddle API and notification secrets, and an explicit price map.");
         }
         const ingestPool = createBillingDatabasePool(process.env.SEARQON_BILLING_INGEST_DATABASE_URL,{role:"ingest"});
@@ -950,6 +953,14 @@ if (invokedPath && pathToFileURL(invokedPath).href === import.meta.url) {
           pricePlanMap:process.env.PADDLE_PRICE_PLAN_MAP_JSON,
           workerId:process.env.SEARQON_BILLING_WORKER_ID
         });
+        billingCheckoutService=createPaddleCheckoutService({
+          database,
+          apiKey:process.env.PADDLE_API_KEY,
+          environment:process.env.PADDLE_ENVIRONMENT??"sandbox",
+          checkoutReturnUrl:process.env.PADDLE_CHECKOUT_RETURN_URL,
+          checkoutPriceMap:process.env.PADDLE_CHECKOUT_PRICE_MAP_JSON,
+          pricePlanMap:process.env.PADDLE_PRICE_PLAN_MAP_JSON
+        });
       }
     } catch (error) {
       await Promise.allSettled([...billingPools.map(pool=>pool.end()),...(database?[database.close()]:[])]);
@@ -957,7 +968,11 @@ if (invokedPath && pathToFileURL(invokedPath).href === import.meta.url) {
       process.exitCode = 1;
     }
     if (process.exitCode !== 1) {
-      const server = createAppServer({ database, authService, billingWebhookProcessor:billingRuntime?.processor });
+      const server = createAppServer({
+        database,authService,
+        billingWebhookProcessor:billingRuntime?.processor,
+        billingCheckoutService
+      });
       server.listen(port, host, () => {
         process.stdout.write("Searqon web listening on http://" + host + ":" + port + "\n");
       });
