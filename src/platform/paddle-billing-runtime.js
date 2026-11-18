@@ -36,6 +36,9 @@ export function createPaddleBillingRuntime({
   if(typeof workerId!=="string" || workerId.trim().length<3) {
     throw new TypeError("A dedicated Paddle billing worker identity is required.");
   }
+  if(typeof apiKey!=="string" || apiKey.length<16) {
+    throw new TypeError("A Paddle API key is required for canonical subscription reconciliation.");
+  }
   const resolvedPricePlanMap=resolvePricePlanMap(pricePlanMap);
   const adapter=createPaddleProviderAdapter({
     notificationSecret,apiKey,environment,pricePlanMap:resolvedPricePlanMap,fetchImpl,now
