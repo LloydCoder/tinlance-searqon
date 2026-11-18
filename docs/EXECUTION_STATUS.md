@@ -8,7 +8,7 @@ This register separates implemented repository capabilities from customer, secur
 
 ## 2026-11-18 execution update
 
-- Phase 0 PR #138 merged at `d77f95fcfabf33469806f819d62c9633cfbe9e88`. Main-branch Node 22, Node 24, PostgreSQL tenant isolation and secret scanning passed. CodeQL post-merge was still in progress when this update was prepared.
+- Phase 0 PR #138 merged at `d77f95fcfabf33469806f819d62c9633cfbe9e88`. Main-branch Node 22, Node 24, PostgreSQL tenant isolation, CodeQL and secret scanning all passed.
 - Phase 1 desk research is recorded in `docs/validation/PHASE_1_CUSTOMER_VALIDATION.md`. It distinguishes first-party vendor claims, official Google guidance and self-reported buyer survey evidence. No customer participation has been fabricated.
 - No production deployment or paid infrastructure spend was authorized or attempted.
 
