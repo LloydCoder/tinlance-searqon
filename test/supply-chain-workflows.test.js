@@ -36,6 +36,6 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(gitleaks, /useDefault = true/);
   assert.match(gitleaks, /condition = "AND"/);
   assert.match(gitleaks, /20045e861ccde3dc25efd6c220ac4663734171fb/);
-  assert.match(gitleaks, /test\\/paddle-checkout\\.integration\\.test\\.js/);
-  assert.doesNotMatch(gitleaks, /disabledRules\\s*=\\s*\\[[^\\]]*"generic-api-key"/);
+  assert.match(gitleaks, /paddle-checkout\.integration\.test\.js/);
+  assert.doesNotMatch(gitleaks, /disabledRules\s*=\s*\[[^\]]*"generic-api-key"/);
 });
