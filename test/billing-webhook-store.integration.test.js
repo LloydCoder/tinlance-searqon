@@ -14,36 +14,18 @@ if (databaseUrl && process.env.SEARQON_TEST_DATABASE === "1") {
   } catch {}
 }
 
-function roleQueryPool(owner, role) {
-  return {
-    async query(sql, values) {
-      const client = await owner.connect();
-      try {
-        await client.query("BEGIN");
-        await client.query("SET LOCAL ROLE " + role);
-        const result = await client.query(sql, values);
-        await client.query("COMMIT");
-        return result;
-      } catch (error) {
-        await client.query("ROLLBACK").catch(() => {});
-        throw error;
-      } finally {
-        client.release();
-      }
-    }
-  };
-}
-
 test("verified billing webhook is durably accepted once and processed under a fenced worker lease", { skip: !disposable }, async () => {
   const owner = new Pool({ connectionString: databaseUrl });
+  const ingestPool = new Pool({connectionString:process.env.SEARQON_BILLING_INGEST_DATABASE_URL});
+  const workerPool = new Pool({connectionString:process.env.SEARQON_BILLING_WORKER_DATABASE_URL});
+  const appPool = new Pool({connectionString:process.env.SEARQON_RUNTIME_DATABASE_URL});
   const organizationId = randomUUID();
   const userId = randomUUID();
   const eventId = "evt_" + randomUUID().replaceAll("-", "");
   const rawBody = Buffer.from(JSON.stringify({ id: eventId, type: "customer.subscription.updated" }));
-  const ingestPool = roleQueryPool(owner, "searqon_billing_ingest");
   const store = createBillingWebhookStore({
     ingestPool,
-    workerPool: owner,
+    workerPool,
     leaseSeconds: 30
   });
   let normalizedEvent;
@@ -113,7 +95,6 @@ test("verified billing webhook is durably accepted once and processed under a fe
     assert.equal(persisted.rows[0].raw_body_sha256.length, 64);
     assert.equal(JSON.stringify(persisted.rows[0]).includes(rawBody.toString()), false);
 
-    const appPool = roleQueryPool(owner, "searqon_app");
     await assert.rejects(
       appPool.query("SELECT * FROM searqon.billing_webhook_inbox WHERE provider_event_id=$1", [eventId]),
       error => error.code === "42501"
@@ -123,6 +104,9 @@ test("verified billing webhook is durably accepted once and processed under a fe
     await owner.query("DELETE FROM searqon.memberships WHERE organization_id=$1", [organizationId]).catch(() => {});
     await owner.query("DELETE FROM searqon.organizations WHERE id=$1", [organizationId]).catch(() => {});
     await owner.query("DELETE FROM searqon.app_users WHERE id=$1", [userId]).catch(() => {});
+    await appPool.end();
+    await ingestPool.end();
+    await workerPool.end();
     await owner.end();
   }
 });
