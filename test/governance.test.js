@@ -33,3 +33,26 @@ test("roadmap defines evidence-based acceptance states", async () => {
   }
   assert.match(roadmap, /VERIFIED.*ACCEPTED/s);
 });
+
+test("phase zero governance pack records personas, boundaries, risks, and durable decisions", async () => {
+  const charter = await read("../docs/PRODUCT_CHARTER.md");
+  const risks = await read("../docs/PRODUCT_RISK_REGISTER.md");
+  const decisions = await read("../docs/DECISION_LOG.md");
+  const roadmap = await read("../docs/ROADMAP_16_PHASE.md");
+  assert.match(charter, /Understand Visibility\. Engineer Discoverability\. Enable Agents\./);
+  for (const persona of ["SEO, AEO and digital marketing teams","Technical SEO and digital agencies","SaaS, API-first and developer-tool companies","AI infrastructure"]) {
+    assert.ok(charter.includes(persona), `missing persona segment: ${persona}`);
+  }
+  for (const boundary of ["Searqon owns:","Tinlyt owns:","TAS owns:","FadeReach owns:"]) {
+    assert.ok(charter.includes(boundary), `missing ownership boundary: ${boundary}`);
+  }
+  for (const riskId of ["SR-001","SR-004","SR-005","SR-011","SR-015","SR-017"]) {
+    assert.ok(risks.includes(riskId), `missing material risk: ${riskId}`);
+  }
+  for (const decisionId of ["SD-001","SD-002","SD-003","SD-005","SD-006","SD-008","SD-009"]) {
+    assert.ok(decisions.includes(decisionId), `missing durable decision: ${decisionId}`);
+  }
+  assert.match(roadmap, /0 \| Product governance/);
+  assert.match(roadmap, /Scope and security decisions recorded/);
+  assert.match(decisions, /RECORDED is a traceability record, not proof/);
+});
