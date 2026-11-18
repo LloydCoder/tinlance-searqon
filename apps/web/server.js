@@ -12,6 +12,7 @@ import { createGeoObservationService } from "../../src/platform/geo-observations
 import { createWorkspaceAdminService } from "../../src/platform/workspace-admin.js";
 import { createBillingDatabasePool } from "../../src/platform/billing-database-pools.js";
 import { createPaddleBillingRuntime } from "../../src/platform/paddle-billing-runtime.js";
+import { createPaddleCheckoutService } from "../../src/platform/paddle-checkout.js";
 
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
@@ -241,7 +242,7 @@ async function serveStatic(pathname, response, headOnly = false, acceptsHtml = f
   }
 }
 
-export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null, geoObservationService = null, workspaceAdminService = null, billingWebhookProcessor = null } = {}) {
+export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null, geoObservationService = null, workspaceAdminService = null, billingWebhookProcessor = null, billingCheckoutService = null } = {}) {
   const auth = authService ?? (database ? createAuthService({ database, emailSender: createEmailSender() }) : null);
   const workspace = workspaceService ?? (database ? createWorkspaceService({ database }) : null);
   const workspaceAdmin = workspaceAdminService ?? (database ? createWorkspaceAdminService({ database, emailSender: createEmailSender() }) : null);
@@ -257,6 +258,49 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
+
+    const checkoutRoute=url.pathname.match(/^\\/api\\/v1\\/workspaces\\/([0-9a-f-]{36})\\/billing\\/checkout$/i);
+    if(checkoutRoute) {
+      if(request.method!=="POST") {
+        response.setHeader("allow","POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use POST."}});
+        return;
+      }
+      if(!billingCheckoutService) {
+        sendJson(response,503,{error:{code:"billing_checkout_unavailable",message:"Billing checkout is not configured."}});
+        return;
+      }
+      if(!isSameOrigin(request,authService?.publicOrigin)) {
+        sendJson(response,403,{error:{code:"origin_invalid",message:"Request origin is not allowed."}});
+        return;
+      }
+      if(!requireJsonContentType(request,response)) return;
+      const profile=await authService?.getProfile(request.headers.cookie??"");
+      if(!profile) {
+        sendJson(response,401,{error:{code:"authentication_required",message:"Sign in to manage workspace billing."}});
+        return;
+      }
+      try {
+        const body=await readJsonBody(request,MAX_AUTH_BODY_BYTES);
+        const result=await billingCheckoutService.createCheckout(profile.userId,checkoutRoute[1],body);
+        sendJson(response,result.state==="ready"?201:202,{
+          intentId:result.intentId,
+          state:result.state,
+          checkoutUrl:result.checkoutUrl??null,
+          providerTransactionId:result.providerTransactionId??null,
+          expiresAt:result.expiresAt??null
+        });
+      } catch(error) {
+        const status=Number.isInteger(error?.statusCode)?error.statusCode:503;
+        sendJson(response,status,{
+          error:{
+            code:typeof error?.code==="string"?error.code:"billing_checkout_unavailable",
+            message:status<500?error.message:"The billing checkout request could not be completed."
+          }
+        });
+      }
+      return;
+    }
 
     const billingWebhookRoute=url.pathname.match(/^\/api\/v1\/billing\/webhooks\/([a-z][a-z0-9_-]{1,31})$/);
     if(billingWebhookRoute) {
