@@ -66,7 +66,7 @@ jobs:
         run: |
           gh attestation verify "dist/$PACKAGE_FILE" \
             --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-provenance.yml" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \
             --format json > provenance-verification.json
 
       - name: Verify CycloneDX SBOM attestation
@@ -77,5 +77,5 @@ jobs:
           gh attestation verify "dist/$PACKAGE_FILE" \
             --repo "$GITHUB_REPOSITORY" \
             --predicate-type https://cyclonedx.org/bom \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-provenance.yml" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \
             --format json > sbom-attestation-verification.json

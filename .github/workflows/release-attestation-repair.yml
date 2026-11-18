@@ -1,0 +1,110 @@
+name: Release attestation repair
+
+on:
+  push:
+    branches: ["attest/v*"]
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+jobs:
+  attest-release:
+    name: Rebuild exact release and attest provenance plus SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Resolve exact release tag
+        id: release
+        env:
+          ATTEST_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          RELEASE_TAG="\${ATTEST_BRANCH#attest/}"
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid attestation branch: $ATTEST_BRANCH" >&2
+            exit 1
+          fi
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Check out immutable release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify package version matches release tag
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          node -e 'const p=require("./package.json"); if (process.env.RELEASE_TAG !== "v" + p.version) process.exit(1);'
+
+      - name: Install locked dependencies and test immutable release source
+        run: |
+          npm ci
+          npm test
+          npm audit --audit-level=high
+
+      - name: Download published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          mkdir -p published
+          gh release download "$RELEASE_TAG" --dir published
+
+      - name: Rebuild package and verify published checksum
+        id: package
+        run: |
+          set -euo pipefail
+          npm pack --json > pack.json
+          PACKAGE_FILE="$(node -e 'const p=JSON.parse(require("node:fs").readFileSync("pack.json","utf8")); if (p.length !== 1) process.exit(1); process.stdout.write(p[0].filename)')"
+          test -s "published/$PACKAGE_FILE"
+          (cd published && sha256sum --check SHA256SUMS)
+          cmp "$PACKAGE_FILE" "published/$PACKAGE_FILE"
+          echo "package_file=$PACKAGE_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate published CycloneDX SBOM
+        run: |
+          node --input-type=module -e 'import fs from "node:fs"; const sbom=JSON.parse(fs.readFileSync("published/sbom.cdx.json","utf8")); if (sbom.bomFormat !== "CycloneDX" || !sbom.components) process.exit(1);'
+
+      - name: Generate SLSA provenance attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ github.workspace }}/${{ steps.package.outputs.package_file }}
+
+      - name: Generate CycloneDX SBOM attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ github.workspace }}/${{ steps.package.outputs.package_file }}
+          sbom-path: ${{ github.workspace }}/published/sbom.cdx.json
+
+      - name: Verify package provenance signature and signer identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_FILE: ${{ steps.package.outputs.package_file }}
+        run: |
+          gh attestation verify "$PACKAGE_FILE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \
+            --format json > provenance-verification.json
+
+      - name: Verify CycloneDX SBOM attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_FILE: ${{ steps.package.outputs.package_file }}
+        run: |
+          gh attestation verify "$PACKAGE_FILE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --predicate-type https://cyclonedx.org/bom \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \
+            --format json > sbom-attestation-verification.json
