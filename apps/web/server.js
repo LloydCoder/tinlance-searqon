@@ -14,6 +14,7 @@ import { createWorkspaceAdminService } from "../../src/platform/workspace-admin.
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
 const MAX_AUTH_BODY_BYTES = 16 * 1024;
+const MAX_BILLING_WEBHOOK_BYTES = 256 * 1024;
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = new Set(["text/html", "text/markdown", "application/json"]);
 const MIME_TYPES = Object.freeze({
@@ -59,6 +60,21 @@ function applySecurityHeaders(response) {
   ];
   if (process.env.NODE_ENV === "production") contentSecurityPolicy.push("upgrade-insecure-requests");
   response.setHeader("content-security-policy", contentSecurityPolicy.join("; "));
+}
+
+async function readRawBody(request,maxBytes) {
+  const chunks=[];
+  let size=0;
+  for await (const chunk of request) {
+    size+=chunk.length;
+    if(size>maxBytes) {
+      const error=new Error("request body exceeds the configured limit");
+      error.statusCode=413;
+      throw error;
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
 }
 
 async function readJsonBody(request, maxBytes = MAX_BODY_BYTES) {
@@ -223,7 +239,7 @@ async function serveStatic(pathname, response, headOnly = false, acceptsHtml = f
   }
 }
 
-export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null, geoObservationService = null, workspaceAdminService = null } = {}) {
+export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null, geoObservationService = null, workspaceAdminService = null, billingWebhookProcessor = null } = {}) {
   const auth = authService ?? (database ? createAuthService({ database, emailSender: createEmailSender() }) : null);
   const workspace = workspaceService ?? (database ? createWorkspaceService({ database }) : null);
   const workspaceAdmin = workspaceAdminService ?? (database ? createWorkspaceAdminService({ database, emailSender: createEmailSender() }) : null);
@@ -239,6 +255,37 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
+
+    const billingWebhookRoute=url.pathname.match(/^\/api\/v1\/billing\/webhooks\/([a-z][a-z0-9_-]{1,31})$/);
+    if(billingWebhookRoute) {
+      if(request.method!=="POST") {
+        response.setHeader("allow","POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use POST."}});
+        return;
+      }
+      if(typeof billingWebhookProcessor!=="function") {
+        sendJson(response,503,{error:{code:"billing_webhook_unavailable",message:"Billing webhook ingestion is not configured."}});
+        return;
+      }
+      try {
+        const rawBody=await readRawBody(request,MAX_BILLING_WEBHOOK_BYTES);
+        const result=await billingWebhookProcessor({
+          provider:billingWebhookRoute[1],
+          rawBody,
+          headers:request.headers
+        });
+        sendJson(response,202,{received:true,duplicate:result.duplicate===true});
+      } catch(error) {
+        const status=Number.isInteger(error?.statusCode)?error.statusCode:503;
+        sendJson(response,status,{
+          error:{
+            code:status<500?(error.code??"billing_webhook_rejected"):"billing_webhook_unavailable",
+            message:status<500?error.message:"The billing event could not be durably accepted."
+          }
+        });
+      }
+      return;
+    }
 
     if (url.pathname.startsWith("/api/v1/auth/")) {
       const authPath = url.pathname;
