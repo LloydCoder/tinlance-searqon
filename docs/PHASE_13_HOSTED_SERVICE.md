@@ -58,6 +58,51 @@ This increment adds a provider adapter interface around the existing canonical `
 
 This is an integration boundary, not a live provider integration. No provider-specific cryptographic adapter, HTTP route, database writer credential, checkout, invoice settlement or subscription mutation is included in Increment 1. Provider selection remains an explicit decision.
 
+## Increment 2 — durable billing inbox and canonical reconciliation
+
+Implemented:
+- Migration `0018_billing_worker_boundary.sql` creates separate non-login ingest and billing-worker roles with forced RLS and narrowly scoped privileges. The application role cannot read or mutate the billing inbox.
+- The inbox stores only canonical allowlisted fields, a SHA-256 digest of original request bytes, verification time, provider event creation time and bounded processing metadata. Raw bodies, payment credentials and arbitrary provider fields are not persisted.
+- Duplicate provider/event deliveries are idempotent. Reuse of an event ID with a different tenant or digest is rejected as a collision.
+- Worker claims use `FOR UPDATE SKIP LOCKED`, bounded leases, random fencing tokens, bounded attempts and retry delays. A stale worker cannot complete or retry a lease it no longer owns.
+- Canonical subscription reconciliation fetches current provider state through an injected provider adapter, applies provider-event ordering, enforces tenant/customer/subscription binding and appends immutable subscription events.
+- The generic worker refuses to complete an event unless the injected handler confirms canonical provider reconciliation.
+
+Still not implemented: provider-specific cryptographic adapters, provider API clients, an HTTP webhook route, provider selection, checkout, invoice/payment settlement, refunds or disputes. The dedicated database URLs are placeholders and no production credentials are configured.
+
+## Increment 3 — workspace invitations and administration
+
+Implemented:
+- Seven-day, one-time invitation tokens with SHA-256 hashes at rest and verified-email binding on acceptance.
+- Invitation creation/reissue/revocation and owner/admin role hierarchy enforced in PostgreSQL security-definer functions.
+- Owners may invite administrators; admins may invite analysts/viewers only. Admins cannot modify owner/admin roles. The final workspace owner cannot be demoted.
+- Append-only audit events for invitation creation, acceptance, revocation and role changes.
+- Authenticated, same-origin APIs for invitation management, acceptance, member listing and role updates.
+- Invitation emails use escaped content and idempotency keys. Invite tokens are held in session-scoped browser storage during sign-in and removed from the URL fragment.
+- Member listing omits email addresses; invitation history is visible only to owners/admins.
+
+MFA, passkeys, OAuth/OIDC and enterprise SSO remain deferred until customer demand and an identity-provider decision are validated.
+
+## Increment 4 — operational and data-protection runbooks
+
+Added `docs/HOSTED_SERVICE_OPERATIONS.md` with backup/restore, retention, key custody, tenant deletion and restore-test requirements, and `docs/BILLING_WEBHOOKS.md` plus `docs/WORKSPACE_ADMINISTRATION.md` documenting runtime boundaries and operator procedures.
+
+These are runbooks and control requirements, not evidence of a live KMS integration, automatic retention/deletion, production backup, restore drill, production network policy or incident exercise.
+
+## Remaining Phase 13 blockers
+
+1. Explicit payment-provider selection, terms/legal review, provider credentials and provider sandbox verification.
+2. Provider-specific signature verification and canonical API adapters; production webhook endpoint and worker process wiring.
+3. Checkout, invoice settlement, refunds/disputes and reconciliation of real payment objects.
+4. Proof that every billable API and worker operation uses atomic reserve/settle/release under concurrency, retries and billing-period rollover.
+5. Permitted GEO source/provider selection, terms review, consent, live adapters, scheduled sampling, labelled quality evaluation and hard tenant/provider spend caps. No scraping or unattended collection is enabled.
+6. A managed KMS/secret-manager adapter and production key custody/rotation exercise.
+7. Implemented and exercised tenant data export/deletion and retention enforcement, including legal holds and backup expiry.
+8. Production roles, network egress, observability, SLOs, incident response, rollback, backup/restore and authorized staging verification.
+9. Product-owner acceptance and evidence that the Phase 13 integration works in the authorized staging environment.
+
+No new paid provider, cloud resource, plan upgrade or production deployment is authorized. Provider and GEO integrations remain disabled until their respective policy, cost and credential gates are approved.
+
 ## Phase 13 acceptance gates
 
 - Exact-head Node 22/24 CI, PostgreSQL integration, CodeQL and full-history secret scanning pass.
