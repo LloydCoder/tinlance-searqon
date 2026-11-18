@@ -6,6 +6,8 @@
 
 This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification. Status is evidence-based; implementation does not imply independent assurance or product-owner acceptance.
 
+> **Canonical phase-numbering notice (2026-11-18):** The legacy rows labelled 8–15 below are implementation workstreams and do not match the canonical product phases. Do not use those row numbers as canonical roadmap phase numbers. The authoritative phase mapping and evidence reconciliation is [ROADMAP_RECONCILIATION_2026-11-18.md](ROADMAP_RECONCILIATION_2026-11-18.md); the canonical phase definitions remain in [ROADMAP_16_PHASE.md](ROADMAP_16_PHASE.md). This status table is retained for historical traceability pending full migration to the canonical register.
+
 ## 2026-11-18 execution update
 
 - Phase 0 PR #138 merged at `d77f95fcfabf33469806f819d62c9633cfbe9e88`. Main-branch Node 22, Node 24, PostgreSQL tenant isolation, CodeQL and secret scanning all passed.
