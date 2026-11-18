@@ -200,6 +200,15 @@ export function createBillingSubscriptionReconciler({workerPool,adapters}={}) {
           resulting=snapshotFromRow(previousRow);
         }
 
+        if(event.provider==="paddle" && event.payload?.checkoutIntentId) {
+          await client.query(
+            `UPDATE searqon.billing_checkout_intents
+             SET state='completed',updated_at=now()
+             WHERE id=$1 AND organization_id=$2 AND provider='paddle' AND state<>'completed'`,
+            [event.payload.checkoutIntentId,event.organizationId]
+          );
+        }
+
         await client.query(
           `INSERT INTO searqon.subscription_events
             (organization_id,provider,provider_event_id,event_type,previous_snapshot,resulting_snapshot,occurred_at)
