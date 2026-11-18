@@ -128,3 +128,46 @@ test("Paddle canonical API adapter rejects mismatched workspace metadata and uns
     payload:{providerCustomerId:customerId,providerSubscriptionId:subscriptionId}
   }),error=>error.code==="provider_binding_invalid");
 });
+
+
+test("Paddle adapter maps paused and trialing states without granting a paid plan to a trial",async()=>{
+  const adapter=createPaddleProviderAdapter({notificationSecret:secret,apiKey,pricePlanMap,now});
+  const pausedBody=eventEnvelope({
+    event_type:"subscription.paused",
+    data:{...eventEnvelope().data,status:"paused"}
+  });
+  const pausedRequest=signedRequest(pausedBody);
+  const paused=await adapter.verifyAndParse({...pausedRequest,receivedAt:"2026-11-18T12:00:00.000Z"});
+  assert.equal(paused.payload.status,"paused");
+  assert.equal(paused.payload.plan,"growth");
+
+  const trialBody=eventEnvelope({
+    event_type:"subscription.trialing",
+    data:{
+      ...eventEnvelope().data,status:"trialing",
+      items:[{recurring:true,price:{id:priceId},trial_dates:{starts_at:"2026-11-01T00:00:00.000Z",ends_at:"2026-11-20T00:00:00.000Z"}}]
+    }
+  });
+  const trialRequest=signedRequest(trialBody);
+  const trial=await adapter.verifyAndParse({...trialRequest,receivedAt:"2026-11-18T12:00:00.000Z"});
+  assert.equal(trial.payload.status,"trialing");
+  assert.equal(trial.payload.plan,"trial");
+  assert.equal(trial.payload.trialEndsAt,"2026-11-20T00:00:00.000Z");
+});
+
+test("Paddle canonical reconciliation rejects unsupported multi-month billing frequencies",async()=>{
+  const canonical={
+    id:subscriptionId,customer_id:customerId,custom_data:{organization_id:organizationId},
+    status:"active",billing_cycle:{interval:"month",frequency:3},
+    current_billing_period:{starts_at:"2026-11-01T00:00:00.000Z",ends_at:"2027-02-01T00:00:00.000Z"},
+    items:[{recurring:true,price:{id:priceId},trial_dates:null}]
+  };
+  const adapter=createPaddleProviderAdapter({
+    notificationSecret:secret,apiKey,pricePlanMap,now,
+    fetchImpl:async()=>({ok:true,status:200,text:async()=>JSON.stringify({data:canonical})})
+  });
+  await assert.rejects(adapter.fetchCanonicalSubscription({
+    organizationId,providerEventId:"evt_01gks14ge726w50ch2tmaw2a1x",
+    payload:{providerCustomerId:customerId,providerSubscriptionId:subscriptionId}
+  }),error=>error.code==="provider_interval_unsupported");
+});
