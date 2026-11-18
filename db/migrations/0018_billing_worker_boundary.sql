@@ -17,6 +17,11 @@ ALTER ROLE searqon_billing_ingest NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NO
 ALTER ROLE searqon_billing_worker NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
 
 ALTER TABLE searqon.billing_webhook_inbox
+  ADD COLUMN provider_created_at timestamptz;
+UPDATE searqon.billing_webhook_inbox SET provider_created_at=verified_at WHERE provider_created_at IS NULL;
+ALTER TABLE searqon.billing_webhook_inbox ALTER COLUMN provider_created_at SET NOT NULL;
+
+ALTER TABLE searqon.billing_webhook_inbox
   ADD COLUMN lease_owner text CHECK (lease_owner IS NULL OR lease_owner ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{2,63}$'),
   ADD COLUMN lease_token uuid,
   ADD COLUMN max_attempts smallint NOT NULL DEFAULT 12 CHECK (max_attempts BETWEEN 1 AND 100);
@@ -44,9 +49,9 @@ CREATE POLICY billing_webhook_worker_update ON searqon.billing_webhook_inbox
   WITH CHECK (true);
 
 GRANT USAGE ON SCHEMA searqon TO searqon_billing_ingest, searqon_billing_worker;
-GRANT INSERT (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,received_at,normalized_payload)
+GRANT INSERT (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,provider_created_at,received_at,normalized_payload)
   ON searqon.billing_webhook_inbox TO searqon_billing_ingest;
-GRANT SELECT (id,provider,provider_event_id,organization_id,raw_body_sha256)
+GRANT SELECT (id,provider,provider_event_id,organization_id,raw_body_sha256,provider_created_at)
   ON searqon.billing_webhook_inbox TO searqon_billing_ingest;
 GRANT SELECT ON searqon.billing_webhook_inbox TO searqon_billing_worker;
 GRANT UPDATE (processing_status,attempt_count,next_attempt_at,locked_until,lease_owner,lease_token,processed_at,last_error_code,updated_at)
