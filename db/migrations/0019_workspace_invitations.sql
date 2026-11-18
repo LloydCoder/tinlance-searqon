@@ -49,6 +49,7 @@ DECLARE
   v_actor uuid := searqon.current_user_id();
   v_actor_role text;
   v_invitation_id uuid;
+  v_previous_invitation_id uuid;
 BEGIN
   IF v_actor IS NULL OR p_organization_id IS NULL
      OR p_email IS NULL OR p_email <> lower(btrim(p_email))
@@ -78,10 +79,19 @@ BEGIN
     RAISE EXCEPTION 'user is already a workspace member' USING ERRCODE = '23505';
   END IF;
 
-  UPDATE searqon.workspace_invitations
-  SET revoked_at = now()
-  WHERE organization_id = p_organization_id AND invited_email = p_email
-    AND accepted_at IS NULL AND revoked_at IS NULL;
+  FOR v_previous_invitation_id IN
+    UPDATE searqon.workspace_invitations
+    SET revoked_at = now()
+    WHERE organization_id = p_organization_id AND invited_email = p_email
+      AND accepted_at IS NULL AND revoked_at IS NULL
+    RETURNING id
+  LOOP
+    INSERT INTO searqon.audit_events
+      (organization_id,actor_user_id,event_type,subject_type,subject_id,metadata)
+    VALUES
+      (p_organization_id,v_actor,'workspace.invitation.revoked','invitation',v_previous_invitation_id::text,
+       '{"reason":"reissued"}'::jsonb);
+  END LOOP;
 
   INSERT INTO searqon.workspace_invitations
     (organization_id,invited_email,invited_role,token_hash,invited_by,expires_at)
