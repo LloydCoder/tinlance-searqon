@@ -46,7 +46,9 @@ test("verified billing webhook is durably accepted once and processed under a fe
               status: "active",
               plan: "growth",
               currentPeriodStart: "2026-11-01T00:00:00.000Z",
-              currentPeriodEnd: "2026-12-01T00:00:00.000Z"
+              currentPeriodEnd: "2026-12-01T00:00:00.000Z",
+              checkoutIntentId: randomUUID(),
+              providerTransactionId: "txn_01h04vsc0qhwtsbsxh3422wjs4"
             }
           };
         }
@@ -79,6 +81,8 @@ test("verified billing webhook is durably accepted once and processed under a fe
     assert.ok(job);
     assert.equal(job.providerEventId, eventId);
     assert.equal(job.payload.status, "active");
+    assert.equal(typeof job.payload.checkoutIntentId,"string");
+    assert.equal(job.payload.providerTransactionId,"txn_01h04vsc0qhwtsbsxh3422wjs4");
     assert.equal("rawBody" in job, false);
 
     const completed = await store.complete("billing-worker-001", job.id, job.leaseToken);
