@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { runAgentSimulationIsolated, AgentSandboxExecutionError } from "../src/platform/agent-sandbox-executor.js";
 
 const manifest = {
