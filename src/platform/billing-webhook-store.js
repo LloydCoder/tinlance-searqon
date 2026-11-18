@@ -130,9 +130,22 @@ export function createBillingWebhookStore({
         [event.provider,event.providerEventId,event.organizationId,event.eventType,event.eventKind,
           event.rawBodySha256,event.verifiedAt,event.receivedAt,JSON.stringify(event.normalizedPayload)]
       );
+      const duplicate = result.rows?.length !== 1;
+      if (duplicate) {
+        const existing = await ingestPool.query(
+          `SELECT organization_id,raw_body_sha256
+           FROM searqon.billing_webhook_inbox
+           WHERE provider=$1 AND provider_event_id=$2`,
+          [event.provider,event.providerEventId]
+        );
+        const row = existing.rows?.[0];
+        if (!row || row.organization_id !== event.organizationId || row.raw_body_sha256 !== event.rawBodySha256) {
+          throw new BillingInboxError("event_id_conflict", "The provider event identifier was reused with different verified content.");
+        }
+      }
       return Object.freeze({
         accepted: true,
-        duplicate: result.rows?.length !== 1,
+        duplicate,
         eventId: event.providerEventId
       });
     },
