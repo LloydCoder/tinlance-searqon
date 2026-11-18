@@ -68,18 +68,17 @@ npm run start:agent-sandbox-worker
 
 The database URL must use a restricted worker login that can assume the agent worker role. Do not reuse the web application's privileged migration credentials. The worker is not started automatically by this change and no production deployment or secret change is authorized by this implementation.
 
-## What this does not yet prove
+## Threat model and remaining acceptance work
 
-This increment is a deterministic snapshot simulator, not a general-purpose hostile-code execution environment. The simulation handler itself has no network or filesystem acquisition path, but the deployment has not yet enforced OS/container-level egress denial, CPU/memory/process quotas, per-run ephemeral process destruction, or independent hostile-input escape testing.
+The sandbox threat model is deliberately narrow: trusted, first-party deterministic simulator code processes bounded, untrusted JSON snapshots. It is not a hostile-code runtime. It does not execute page scripts, user-provided code, plugins, MCP tools, or arbitrary model-generated actions; it has no acquisition or network adapter. The per-run child is disposable, receives only the bounded manifest, has no database credentials, and is restricted by Node's permission model, source-only file reads, disabled network globals, a static dependency guard, a 64 MiB heap cap, a 5-second wall-clock kill, and bounded input/output. Queue lease cancellation now kills the child immediately.
 
-Remaining Phase 11 exit work:
+OS/container-level egress denial and cgroup CPU quotas are not represented as controls supplied by this snapshot-only implementation. They are hard prerequisites before adding active network acquisition, arbitrary executable code, or untrusted extensions. Do not describe the current child process as a hardened hostile-code container.
 
-1. Add a verified per-run disposable execution boundary or formally narrow the sandbox threat model to trusted deterministic code plus untrusted data.
-2. Enforce network egress denial at the worker deployment boundary; code-level absence of fetch calls is not an OS egress control.
-3. Add CPU, memory, wall-clock, output and concurrency quotas with cancellation tests.
-4. Add controlled-origin DNS/redirect integration only if active acquisition is later authorized; continue to use the existing SSRF-resistant acquisition module.
-5. Add adversarial tests for malformed documents, parser denial-of-service, prototype pollution, cross-tenant access, lease loss and worker crash/retry.
-6. Add customer-visible run history and evidence export after Phase 1 validates the workflow.
-7. Obtain staging authorization and product-owner acceptance.
+Remaining Phase 11 acceptance work:
+
+1. Complete adversarial parser, prototype-shaped JSON, lease-loss, tenant-isolation, child-crash and retry coverage against the real worker/database boundary.
+2. Confirm worker deployment resource limits and observability in an authorized staging runtime; do not start the worker or change production secrets as part of this code-only PR.
+3. Add customer-visible simulation history and evidence export only after Phase 1 validates the user workflow.
+4. Obtain staging authorization and explicit product-owner acceptance.
 
 No mutation capability should be added by default. Any future write action requires a separate operation-level authorization contract, synthetic staging data and human approval. No model, page, MCP description, tool metadata or job payload can grant that authority.
