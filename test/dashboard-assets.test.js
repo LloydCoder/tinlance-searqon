@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { spawnSync } from "node:child_process";\nimport { once } from "node:events";\nimport { createAppServer } from "../apps/web/server.js";
+import { spawnSync } from "node:child_process";
+import { once } from "node:events";
+import { createAppServer } from "../apps/web/server.js";
 
 const workspaceHtml = new URL("../apps/web/public/app/index.html", import.meta.url);
 const dashboardScript = new URL("../apps/web/public/app/dashboard.js", import.meta.url);
