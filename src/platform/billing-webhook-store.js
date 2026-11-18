@@ -41,7 +41,8 @@ function validateEvent(event) {
     currentPeriodStart: event.currentPeriodStart,
     currentPeriodEnd: event.currentPeriodEnd,
     ...(event.trialEndsAt ? { trialEndsAt: event.trialEndsAt } : {}),
-    ...(event.checkoutIntentId ? { checkoutIntentId:event.checkoutIntentId } : {})
+    ...(event.checkoutIntentId ? { checkoutIntentId:event.checkoutIntentId } : {}),
+    ...(event.providerTransactionId ? { providerTransactionId:event.providerTransactionId } : {})
   };
   return Object.freeze({
     provider: event.provider,
