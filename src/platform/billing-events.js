@@ -63,6 +63,7 @@ export function normalizeVerifiedBillingEvent(input) {
     throw new BillingEventError("unsupported_event_type", "The provider event type is not supported.");
   }
   const verifiedAt = requireUtcTimestamp(input.verifiedAt, "verified_at");
+  const providerCreatedAt = requireUtcTimestamp(input.providerCreatedAt, "provider_created_at");
   const receivedAt = requireUtcTimestamp(input.receivedAt, "received_at");
   const rawBodySha256 = requireString(input.rawBodySha256, "raw_body_sha256", DIGEST);
   const payload = input.payload;
@@ -99,6 +100,7 @@ export function normalizeVerifiedBillingEvent(input) {
     eventType: input.eventType,
     eventKind: EVENT_KINDS[input.eventType],
     verifiedAt,
+    providerCreatedAt,
     receivedAt,
     rawBodySha256,
     organizationId,
