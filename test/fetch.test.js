@@ -266,11 +266,13 @@ test("fetch sends the exact caller-selected crawler product token", async () => 
 });
 
 test("fetch rejects malformed crawler product tokens before DNS or network access", async () => {
-  let contacted = false;
-  await assert.rejects(() => fetchPublicUrl("https://example.com/docs", {
-    userAgent: "Bad Bot",
-    resolver: async () => { contacted = true; return [{ address: "93.184.216.34", family: 4 }]; },
-    requestImpl: fakeTransport([{ body: "must not fetch" }])
-  }), /crawler product token/);
-  assert.equal(contacted, false);
+  for (const userAgent of ["Bad Bot", "Bot2"]) {
+    let contacted = false;
+    await assert.rejects(() => fetchPublicUrl("https://example.com/docs", {
+      userAgent,
+      resolver: async () => { contacted = true; return [{ address: "93.184.216.34", family: 4 }]; },
+      requestImpl: fakeTransport([{ body: "must not fetch" }])
+    }), /crawler product token/);
+    assert.equal(contacted, false);
+  }
 });
