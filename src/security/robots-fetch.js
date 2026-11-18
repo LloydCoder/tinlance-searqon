@@ -1,6 +1,7 @@
 import { fetchPublicUrl } from "./fetch.js";
 import { validateTargetUrl } from "./url-policy.js";
 import { parseRobots } from "./robots.js";
+import { wireUserAgent } from "./user-agent.js";
 
 const MAX_ROBOTS_BYTES = 512 * 1024;
 const MAX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -58,6 +59,7 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
   if (typeof userAgent !== "string" || !userAgent.trim() || userAgent.length > 256) {
     throw new TypeError("A crawler user-agent token of at most 256 characters is required");
   }
+  wireUserAgent(userAgent);
   const target = validateTargetUrl(origin);
   const originUrl = new URL(target.href);
   const originKey = originUrl.origin;
