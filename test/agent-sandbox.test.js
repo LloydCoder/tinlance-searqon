@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { simulateAgentJourney, AgentSandboxError } from "../src/agent-sandbox.js";
 
 const manifest = {
@@ -100,7 +99,11 @@ test("simulation enforces document, step and aggregate byte limits", () => {
   assert.throws(() => simulateAgentJourney(tooManySteps), error => error.code === "too_many_steps");
 
   const tooLarge = structuredClone(manifest);
-  tooLarge.documents[0].content = "x".repeat(13 * 1024);
+  tooLarge.documents = [
+    {id:"large-a",url:"https://docs.example.test/a",contentType:"text/plain",content:"a".repeat(7000)},
+    {id:"large-b",url:"https://docs.example.test/b",contentType:"text/plain",content:"b".repeat(7000)}
+  ];
+  tooLarge.journey = [{action:"discover"}];
   assert.throws(() => simulateAgentJourney(tooLarge), error => error.code === "input_too_large");
 });
 
