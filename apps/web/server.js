@@ -105,6 +105,16 @@ function clearSessionCookie(response) {
   response.setHeader("set-cookie", sessionCookieName() +
     "=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0" + (secure ? "; Secure" : ""));
 }
+function clientAddress(request) {
+  const socketAddress = request.socket?.remoteAddress;
+  if (typeof socketAddress === "string" && socketAddress.length > 0 && socketAddress.length <= 128) {
+    return socketAddress;
+  }
+  const realIp = request.headers["x-real-ip"];
+  if (typeof realIp === "string" && realIp.trim() && realIp.length <= 128) return realIp.trim();
+  return "unknown";
+}
+
 function isSameOrigin(request, expectedOrigin) {
   return typeof request.headers.origin === "string" && request.headers.origin === expectedOrigin;
 }
@@ -274,12 +284,12 @@ export function createAppServer({ database = null, authService = null, workspace
         if (!requireJsonContentType(request, response)) return;
         const body = await readJsonBody(request, MAX_AUTH_BODY_BYTES);
         if (authPath === "/api/v1/auth/register") {
-          await auth.register(body, request.socket.remoteAddress);
+          await auth.register(body, clientAddress(request));
           sendJson(response, 202, { message: "If the address can be registered, a sign-in link will be sent." });
           return;
         }
         if (authPath === "/api/v1/auth/magic-link") {
-          await auth.requestMagicLink(body?.email, request.socket.remoteAddress);
+          await auth.requestMagicLink(body?.email, clientAddress(request));
           sendJson(response, 202, { message: "If the account exists, a sign-in link will be sent." });
           return;
         }

@@ -541,3 +541,81 @@ test("GEO observation APIs enforce authentication and same-origin ingestion", as
     assert.deepEqual(calls.map(item=>item[0]),["list","submit","evidence"]);
   },{authService,geoObservationService});
 });
+
+
+
+test("auth registration and magic-link validation survive requests without a socket", async () => {
+  const calls = [];
+  const authService = {
+    publicOrigin: "https://searqon.example",
+    async register(body, address) {
+      calls.push({ method: "register", address });
+      if (!body || typeof body !== "object" || Array.isArray(body) ||
+          typeof body.email !== "string" || !body.email.includes("@") || !body.email.slice(body.email.indexOf("@")).includes(".")) {
+        throw Object.assign(new Error("A valid email address is required."), { statusCode: 400 });
+      }
+      return { accepted: true };
+    },
+    async requestMagicLink(email, address) {
+      calls.push({ method: "magic-link", address });
+      if (typeof email !== "string" || !email.includes("@") || !email.slice(email.indexOf("@")).includes(".")) {
+        throw Object.assign(new Error("A valid email address is required."), { statusCode: 400 });
+      }
+      return { accepted: true };
+    },
+    async verify() {},
+    async getProfile() { return null; },
+    async logout() {}
+  };
+  const server = createAppServer({ authService });
+
+  async function dispatch(path, body) {
+    const request = {
+      url: path,
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: authService.publicOrigin,
+        "x-real-ip": "203.0.113.27"
+      },
+      socket: undefined,
+      async *[Symbol.asyncIterator]() {
+        yield Buffer.from(JSON.stringify(body));
+      }
+    };
+    return await new Promise(resolve => {
+      const response = {
+        headers: {},
+        statusCode: null,
+        setHeader(name, value) { this.headers[name.toLowerCase()] = value; },
+        writeHead(status, headers = {}) {
+          this.statusCode = status;
+          for (const [name, value] of Object.entries(headers)) this.headers[name.toLowerCase()] = value;
+        },
+        end(value) {
+          const text = value?.toString() ?? "";
+          resolve({ status: this.statusCode, body: JSON.parse(text) });
+        }
+      };
+      server.emit("request", request, response);
+    });
+  }
+
+  const invalidShape = await dispatch("/api/v1/auth/register", []);
+  assert.equal(invalidShape.status, 400);
+
+  const invalidEmail = await dispatch("/api/v1/auth/magic-link", { email: "not-an-email" });
+  assert.equal(invalidEmail.status, 400);
+
+  const validRegistration = await dispatch("/api/v1/auth/register", {
+    email: "user@example.test",
+    displayName: "User",
+    organizationName: "Workspace"
+  });
+  assert.equal(validRegistration.status, 202);
+  assert.deepEqual(calls, [
+    { method: "register", address: "203.0.113.27" },
+    { method: "magic-link", address: "203.0.113.27" },
+    { method: "register", address: "203.0.113.27" }
+  ]);
+});
