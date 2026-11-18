@@ -37,9 +37,14 @@ test("isolated child rejects invalid timeout settings before spawning", async ()
 test("sandbox child and simulator contain no outbound network or dynamic execution imports", async () => {
   const child = await readFile(new URL("../src/platform/agent-sandbox-child.js",import.meta.url),"utf8");
   const simulator = await readFile(new URL("../src/agent-sandbox.js",import.meta.url),"utf8");
-  const forbidden = /node:(?:http|https|net|tls|dgram|dns|child_process|worker_threads)|\\bfetch\\s*\\(|\\beval\\s*\\(|new Function|vm\\.run/i;
-  assert.doesNotMatch(child,forbidden);
-  assert.doesNotMatch(simulator,forbidden);
-  assert.match(child,/globalThis\\.fetch = undefined/);
-  assert.match(child,/process\\.permission\\.has\\("fs\\.write"\\)/);
+  const forbidden = [
+    "node:http","node:https","node:net","node:tls","node:dgram","node:dns",
+    "node:child_process","node:worker_threads","fetch(","eval(","new Function","vm.run"
+  ];
+  for (const token of forbidden) {
+    assert.equal(child.includes(token),false,"child must not include "+token);
+    assert.equal(simulator.includes(token),false,"simulator must not include "+token);
+  }
+  assert.ok(child.includes("globalThis.fetch = undefined"));
+  assert.ok(child.includes('process.permission.has("fs.write")'));
 });
