@@ -57,12 +57,15 @@ test("dashboard model summarizes real project assessments without inventing scor
   assert.equal(model.latestFindingCount, 5);
   assert.equal(model.openActionCount, 2);
   assert.equal(model.verifiedActionCount, 1);
+  assert.equal(model.recommendationCount, 3);
   assert.equal(model.latestSeverity.high, 1);
   assert.equal(model.latestSeverity.medium, 3);
   assert.equal(model.coverage.SEO.full, 1);
   assert.equal(model.coverage.SEO.partial, 1);
   assert.equal(model.coverage.GEO.none, 2);
+  assert.equal(model.recommendations.length, 2);
   assert.equal(model.recommendations[0].id, "r3");
+  assert.equal(model.recommendations[0].targetUrl, "https://docs.example.com");
   assert.equal(model.recentAssessments[0].id, "a-failed");
   assert.equal("score" in model, false);
 });
@@ -73,6 +76,7 @@ test("dashboard model returns an honest empty state for a new workspace", () => 
   assert.equal(model.completedAssessmentCount, 0);
   assert.equal(model.latestFindingCount, 0);
   assert.equal(model.openActionCount, 0);
+  assert.equal(model.recommendationCount, 0);
   assert.deepEqual(model.recommendations, []);
   assert.deepEqual(model.recentAssessments, []);
   for (const dimension of ["SEO", "AEO", "GEO", "AgEO"]) {
