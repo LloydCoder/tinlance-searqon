@@ -233,5 +233,6 @@ if (root) {
   }
 
   organizationSelector?.addEventListener("change", loadDashboard);
+  window.addEventListener("searqon:workspace-data-changed", loadDashboard);
   loadDashboard();
 }
