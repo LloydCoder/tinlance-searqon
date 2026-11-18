@@ -38,7 +38,7 @@ test("billing reconciliation applies provider-canonical snapshots and ignores st
   };
   const workerId="billing-reconcile-worker";
   const store=createBillingWebhookStore({ingestPool:{async query(){throw new Error("ingest is not used in this test");}},workerPool});
-  const reconciler=createBillingSubscriptionReconciler({workerPool,adapters:{fixture:adapter}});
+  const reconciler=createBillingSubscriptionReconciler({workerPool,adapters:{paddle:adapter}});
   const makeEvent=(suffix,createdAt)=>({
     provider:"fixture",providerEventId:"evt_reconcile_"+suffix,eventType:"customer.subscription.updated",
     providerCreatedAt:createdAt,organizationId,payload:{providerCustomerId:customerId,providerSubscriptionId:subscriptionId}
@@ -52,16 +52,26 @@ test("billing reconciliation applies provider-canonical snapshots and ignores st
     await owner.query("INSERT INTO searqon.memberships (organization_id,user_id,role) VALUES ($1,$2,'owner')",
       [organizationId,userId]);
 
+    const checkoutIntentId=randomUUID();
+    const providerTransactionId="txn_01h04vsc0qhwtsbsxh3422wjs4";
+    await owner.query(
+      `INSERT INTO searqon.billing_checkout_intents
+        (id,organization_id,created_by,client_request_id,provider,plan,billing_interval,state,provider_transaction_id,checkout_url,expires_at)
+       VALUES ($1,$2,$3,$4,'paddle','growth','month','ready',$5,$6,now()+interval '30 minutes')`,
+      [checkoutIntentId,organizationId,userId,randomUUID(),providerTransactionId,"https://searqon.example.test/billing/checkout/?_ptxn="+providerTransactionId]
+    );
+
     async function queueAndReconcile(suffix,createdAt) {
       const eventId="evt_reconcile_"+suffix;
       await owner.query(
         `INSERT INTO searqon.billing_webhook_inbox
           (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,provider_created_at,received_at,normalized_payload)
-         VALUES ('fixture',$1,$2,'customer.subscription.updated','subscription.snapshot',$3,now(),$4,now(),$5::jsonb)`,
+         VALUES ('paddle',$1,$2,'customer.subscription.updated','subscription.snapshot',$3,now(),$4,now(),$5::jsonb)`,
         [eventId,organizationId,"a".repeat(64),createdAt,JSON.stringify({
           organizationId,providerCustomerId:customerId,providerSubscriptionId:subscriptionId,
           status:"active",plan:"growth",currentPeriodStart:"2026-11-01T00:00:00.000Z",
-          currentPeriodEnd:"2026-12-01T00:00:00.000Z"
+          currentPeriodEnd:"2026-12-01T00:00:00.000Z",
+          ...(suffix==="01"?{checkoutIntentId,providerTransactionId}:{})
         })]
       );
       const [claimed]=await store.claim(workerId,{limit:1});
@@ -75,6 +85,8 @@ test("billing reconciliation applies provider-canonical snapshots and ignores st
     const first=await queueAndReconcile("01","2026-11-18T10:00:00.000Z");
     assert.equal(first.reconciled,true);
     assert.equal(first.subscription.status,"active");
+    const completedCheckout=await owner.query("SELECT state FROM searqon.billing_checkout_intents WHERE id=$1",[checkoutIntentId]);
+    assert.equal(completedCheckout.rows[0].state,"completed");
 
     const newer=await queueAndReconcile("02","2026-11-18T11:00:00.000Z");
     assert.equal(newer.subscription.status,"past_due");
