@@ -31,7 +31,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, searqon
-AS $
+AS $function$
   SELECT m.user_id, u.display_name, m.role
   FROM searqon.projects p
   JOIN searqon.memberships m ON m.organization_id = p.organization_id
@@ -44,7 +44,7 @@ AS $
     )
   ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 WHEN 'analyst' THEN 2 ELSE 3 END,
     lower(u.display_name),u.id;
-$;
+$function$;
 
 REVOKE ALL ON FUNCTION searqon.list_project_members(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION searqon.list_project_members(uuid) TO searqon_app;
