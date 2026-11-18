@@ -10,7 +10,7 @@ The new workload is a separate process in the existing worker deployment model. 
 
 - `src/agent-sandbox.js` — deterministic, read-only simulation over caller-supplied snapshots.
 - `src/platform/agent-sandbox-service.js` — authenticated-tenant enqueue/result service.
-- `src/platform/agent-sandbox-worker.js` — durable queue handler and result persistence.
+- `src/platform/agent-sandbox-executor.js` and `agent-sandbox-child.js` — one disposable Node child per run, with Node's permission model, source-only read access, no filesystem writes, no child-process/worker-thread permission, a 64 MiB heap cap and a 5-second wall-clock timeout. The child receives only the bounded manifest and has no database credentials.\n- `src/platform/agent-sandbox-worker.js` — durable queue handler and result persistence.
 - `src/platform/agent-sandbox-worker-process.js` — dedicated process entry point and database-role preflight.
 - `db/migrations/0013_agent_simulation_sandbox.sql` — job type, isolated database role and result table.
 - `test/agent-sandbox*.test.js` and the agent-worker case in `test/jobs.integration.test.js` — unit and PostgreSQL isolation coverage.
