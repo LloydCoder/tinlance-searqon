@@ -469,6 +469,7 @@ projectForm?.addEventListener("submit", async event => {
     projectForm.reset();
     await loadProjects();
     selectProject(result.project);
+    window.dispatchEvent(new Event("searqon:workspace-data-changed"));
     setStatus("Project created.", "success");
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Project creation failed.", "error");
