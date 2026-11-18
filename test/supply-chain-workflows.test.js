@@ -6,6 +6,7 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   const secrets = await readFile(new URL("../.github/workflows/secret-scan.yml", import.meta.url), "utf8");
   const release = await readFile(new URL("../.github/workflows/release-provenance.yml", import.meta.url), "utf8");
   const releaseVerification = await readFile(new URL("../.github/workflows/release-verification.yml", import.meta.url), "utf8");
+  const releaseAttestationRepair = await readFile(new URL("../.github/workflows/release-attestation-repair.yml", import.meta.url), "utf8");
   const dependabot = await readFile(new URL("../.github/dependabot.yml", import.meta.url), "utf8");
   assert.match(secrets, /version="8\.30\.1"/);
   assert.match(secrets, /archive="gitleaks_\$\{version\}_linux_x64\.tar\.gz"/);
@@ -30,6 +31,14 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(release, /gh release create/);
   assert.match(release, /--verify-tag/);
   assert.match(release, /gh release create.*PACKAGE_FILE/);
+  assert.equal((release.match(/uses: actions\/attest@/g) || []).length, 2);
+  assert.match(releaseVerification, /release-attestation-repair\.yml/);
+  assert.match(releaseAttestationRepair, /branches:\s+\["attest\/v\*"\]/);
+  assert.match(releaseAttestationRepair, /cmp "\$PACKAGE_FILE" "published\/\$PACKAGE_FILE"/);
+  assert.match(releaseAttestationRepair, /npm audit --audit-level=high/);
+  assert.match(releaseAttestationRepair, /gh attestation verify/);
+  assert.equal((releaseAttestationRepair.match(/uses: actions\/attest@/g) || []).length, 2);
+
   assert.match(releaseVerification, /branches:\s+\["verify\/v\*"\]/);
   assert.match(releaseVerification, /gh release download/);
   assert.match(releaseVerification, /sha256sum --check/);
