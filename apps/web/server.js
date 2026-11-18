@@ -274,7 +274,7 @@ export function createAppServer({ database = null, authService = null, workspace
           rawBody,
           headers:request.headers
         });
-        sendJson(response,202,{received:true,duplicate:result.duplicate===true});
+        sendJson(response,202,{received:true,duplicate:result.duplicate===true,ignored:result.ignored===true});
       } catch(error) {
         const status=Number.isInteger(error?.statusCode)?error.statusCode:503;
         sendJson(response,status,{
