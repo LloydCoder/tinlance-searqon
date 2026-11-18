@@ -83,3 +83,21 @@ test("dashboard model returns an honest empty state for a new workspace", () => 
     assert.equal(model.coverage[dimension].none, 0);
   }
 });
+
+test("dashboard model keeps unassessed coverage separate from unavailable project data", () => {
+  const model = buildDashboardModel({
+    projects: [
+      { id: "known", name: "Known empty project", targetUrl: "https://known.example" },
+      { id: "unavailable", name: "Unavailable project", targetUrl: "https://unavailable.example" }
+    ],
+    assessmentsByProject: { known: [], unavailable: null },
+    recommendationsByProject: { known: [], unavailable: null }
+  });
+
+  assert.equal(model.assessmentUnavailableProjectCount, 1);
+  assert.equal(model.recommendationUnavailableProjectCount, 1);
+  assert.equal(model.coverage.SEO.none, 1);
+  assert.equal(model.coverage.SEO.unavailable, 1);
+  assert.equal(model.coverage.GEO.none, 1);
+  assert.equal(model.coverage.GEO.unavailable, 1);
+});
