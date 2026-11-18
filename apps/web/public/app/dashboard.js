@@ -71,13 +71,15 @@ if (root) {
 
   function renderActions(model) {
     actionsTarget.replaceChildren();
-    actionsCountTarget.textContent = model.recommendationCount + " tracked";
+    actionsCountTarget.textContent = model.openActionCount + " active / " + model.recommendationCount + " tracked";
     const recommendations = model.recommendations;
     if (!recommendations.length) {
       actionsTarget.append(element("p", "command-empty",
-        model.projectCount
-          ? "No tracked recommendations yet. Open a project, run a successful assessment, then generate its evidence-linked worklist."
-          : "Create a project to establish your first evidence-backed baseline."));
+        model.recommendationCount
+          ? "No open actions remain. Tracked recommendations are currently verified or dismissed."
+          : model.projectCount
+            ? "No tracked recommendations yet. Open a project, run a successful assessment, then generate its evidence-linked worklist."
+            : "Create a project to establish your first evidence-backed baseline."));
       return;
     }
     for (const recommendation of recommendations) {
