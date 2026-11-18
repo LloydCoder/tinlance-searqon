@@ -116,3 +116,24 @@ test("worker runner accepts the dedicated agent_simulation job handler", async (
   assert.deepEqual(result,{claimed:1,completed:1,retried:0,failed:0,leaseLost:0,runnerErrors:0});
   assert.deepEqual(queue.calls.claim[0].options.jobTypes,["agent_simulation"]);
 });
+
+test("agent simulation child crashes are retried without completing the job", async () => {
+  const simulationJob = {...job,jobType:"agent_simulation"};
+  const queue = fakeQueue([simulationJob]);
+  const runner = createWorkerRunner({
+    queue,
+    workerId:"worker-agent-01",
+    handlers:{agent_simulation:async () => {
+      const error = new Error("child process terminated unexpectedly");
+      error.code = "simulation_child_terminated";
+      throw error;
+    }},
+    concurrency:1,
+    retryBaseSeconds:5
+  });
+  const result = await runner.runOnce();
+  assert.deepEqual(result,{claimed:1,completed:0,retried:1,failed:0,leaseLost:0,runnerErrors:0});
+  assert.equal(queue.calls.retry[0].options.errorCode,"simulation_child_terminated");
+  assert.equal(queue.calls.retry[0].options.retryDelaySeconds,5);
+  assert.equal(queue.calls.complete.length,0);
+});
