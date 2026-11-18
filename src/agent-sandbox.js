@@ -307,7 +307,7 @@ export function simulateAgentJourney(manifest, { runId = null } = {}) {
     version:1,
     runId,
     mode:"read_only_snapshot_simulation",
-    egress:"none",
+    targetEgress:"none",
     mutations:"disabled",
     inputSha256:validated.inputSha256,
     documents:[...validated.documents.values()].map(document=>({id:document.id,path:document.pathname,contentType:document.contentType,bytes:document.bytes,sha256:document.sha256})),
