@@ -23,6 +23,8 @@ This index organizes the documentation by the reader's goal. Existing root-level
 
 ## Open-source foundation
 - [Phase 2 open-source foundation audit](PHASE_2_OPEN_SOURCE_FOUNDATION.md)
+- [Phase 2 source-provenance inventory](PHASE_2_SOURCE_PROVENANCE_REVIEW.md)
+- [Owner source-provenance attestation template](OWNER_SOURCE_PROVENANCE_ATTESTATION_TEMPLATE.md)
 - [Release and artifact provenance](RELEASING.md)
 - [Main-branch repository ruleset setup](REPOSITORY_RULESET_SETUP.md)
 
