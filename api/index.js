@@ -32,7 +32,7 @@ function createProductionServer() {
     event: "searqon_auth_configuration",
     configured: authConfiguration.configured,
     missing: authConfiguration.missing
-  }) + "\\n");
+  }) + "\n");
 
   const authService = authConfiguration.configured
     ? createAuthService({
