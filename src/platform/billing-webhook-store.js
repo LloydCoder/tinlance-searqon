@@ -28,6 +28,7 @@ function validateEvent(event) {
     || EVENT_KINDS.get(event.eventType) !== event.eventKind
     || !DIGEST.test(event.rawBodySha256 ?? "")
     || !Number.isFinite(Date.parse(event.verifiedAt))
+    || !Number.isFinite(Date.parse(event.providerCreatedAt))
     || !Number.isFinite(Date.parse(event.receivedAt))) {
     throw new BillingInboxError("invalid_verified_event", "A canonical verified billing event is required.");
   }
@@ -49,6 +50,7 @@ function validateEvent(event) {
     eventKind: event.eventKind,
     rawBodySha256: event.rawBodySha256,
     verifiedAt: new Date(event.verifiedAt).toISOString(),
+    providerCreatedAt: new Date(event.providerCreatedAt).toISOString(),
     receivedAt: new Date(event.receivedAt).toISOString(),
     normalizedPayload: payload
   });
@@ -123,12 +125,12 @@ export function createBillingWebhookStore({
       const event = validateEvent(input);
       const result = await ingestPool.query(
         `INSERT INTO searqon.billing_webhook_inbox
-          (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,received_at,normalized_payload)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
+          (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,provider_created_at,received_at,normalized_payload)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb)
          ON CONFLICT (provider,provider_event_id) DO NOTHING
          RETURNING id`,
         [event.provider,event.providerEventId,event.organizationId,event.eventType,event.eventKind,
-          event.rawBodySha256,event.verifiedAt,event.receivedAt,JSON.stringify(event.normalizedPayload)]
+          event.rawBodySha256,event.verifiedAt,event.providerCreatedAt,event.receivedAt,JSON.stringify(event.normalizedPayload)]
       );
       const duplicate = result.rows?.length !== 1;
       if (duplicate) {
@@ -185,7 +187,7 @@ export function createBillingWebhookStore({
            WHERE inbox.id=candidates.id
            RETURNING inbox.id,inbox.provider,inbox.provider_event_id,inbox.organization_id,
              inbox.event_type,inbox.event_kind,inbox.raw_body_sha256,inbox.verified_at,
-             inbox.received_at,inbox.normalized_payload,inbox.attempt_count,inbox.lease_token,inbox.locked_until`,
+             inbox.provider_created_at,inbox.received_at,inbox.normalized_payload,inbox.attempt_count,inbox.lease_token,inbox.locked_until`,
           [batch,lease,owner]
         );
         return result.rows.map(row => Object.freeze({
@@ -197,6 +199,7 @@ export function createBillingWebhookStore({
           eventKind: row.event_kind,
           rawBodySha256: row.raw_body_sha256,
           verifiedAt: row.verified_at,
+          providerCreatedAt: row.provider_created_at,
           receivedAt: row.received_at,
           payload: row.normalized_payload,
           attempt: row.attempt_count,
