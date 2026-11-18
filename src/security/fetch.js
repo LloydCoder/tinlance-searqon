@@ -1,6 +1,7 @@
 import http from "node:http";
 import https from "node:https";
 import { resolvePublicHost, createPinnedLookup, validateTargetUrl, resolveRedirectTarget } from "./url-policy.js";
+import { wireUserAgent } from "./user-agent.js";
 
 const DEFAULT_MAX_BYTES = 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -33,6 +34,7 @@ export async function fetchPublicUrl(value, options = {}) {
   const maxRedirects = validateBound(options.maxRedirects ?? DEFAULT_MAX_REDIRECTS, "maxRedirects", 0, 5);
   const dnsTimeoutMs = validateBound(options.dnsTimeoutMs ?? DEFAULT_DNS_TIMEOUT_MS, "dnsTimeoutMs", 100, 10_000);
   const resolver = options.resolver;
+  const userAgent = wireUserAgent(options.userAgent);
   const requestImpl = options.requestImpl ?? ((url, requestOptions, callback) =>
     (url.protocol === "https:" ? https : http).request(url, requestOptions, callback));
   if (typeof requestImpl !== "function") throw new TypeError("requestImpl must be a function");
@@ -65,7 +67,7 @@ export async function fetchPublicUrl(value, options = {}) {
       headers: {
         "accept": "text/html,application/xhtml+xml,application/json,text/markdown;q=0.9,*/*;q=0.1",
         "accept-encoding": "identity",
-        "user-agent": "Searqon-Scanner/0.1 (+https://github.com/LloydCoder/tinlance-searqon)"
+        "user-agent": userAgent
       }
     };
 
