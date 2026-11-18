@@ -409,13 +409,13 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const projectRecommendationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendations$/);
+    const projectRecommendationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendations(?:\/(assignees))?$/);
     if (projectRecommendationsRoute) {
       const projectId = projectRecommendationsRoute[1];
       const recommendationSubroute = projectRecommendationsRoute[2] ?? null;
       if ((recommendationSubroute && request.method !== "GET") || (!recommendationSubroute && request.method !== "GET" && request.method !== "POST")) {
-        response.setHeader("allow", "GET, POST");
-        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or POST." } });
+        response.setHeader("allow", recommendationSubroute ? "GET" : "GET, POST");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: recommendationSubroute ? "Use GET." : "Use GET or POST." } });
         return;
       }
       if (!auth || !recommendations) {
@@ -451,7 +451,7 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const recommendationActionRoute = url.pathname.match(/^\/api\/v1\/recommendations\/([^/]+)(?:\/(status|verify|events))?$/);
+    const recommendationActionRoute = url.pathname.match(/^\/api\/v1\/recommendations\/([^/]+)(?:\/(status|verify|events|work))?$/);
     if (recommendationActionRoute) {
       const recommendationId = recommendationActionRoute[1];
       const action = recommendationActionRoute[2] ?? "events";
