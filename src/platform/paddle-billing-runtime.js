@@ -16,7 +16,7 @@ export function createPaddleBillingRuntime({
   apiKey=process.env.PADDLE_API_KEY,
   environment=process.env.PADDLE_ENVIRONMENT??"sandbox",
   pricePlanMap,
-  workerId=process.env.SE​​ARQON_BILLING_WORKER_ID,
+  workerId=process.env.SEARQON_BILLING_WORKER_ID,
   fetchImpl=globalThis.fetch,
   now=()=>new Date()
 }={}) {
