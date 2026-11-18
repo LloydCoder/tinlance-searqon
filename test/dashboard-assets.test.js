@@ -7,6 +7,7 @@ const workspaceHtml = new URL("../apps/web/public/app/index.html", import.meta.u
 const dashboardScript = new URL("../apps/web/public/app/dashboard.js", import.meta.url);
 const dashboardModel = new URL("../apps/web/public/app/dashboard-model.js", import.meta.url);
 const dashboardStyles = new URL("../apps/web/public/app/dashboard.css", import.meta.url);
+const workspaceStyles = new URL("../apps/web/public/app/workspace.css", import.meta.url);
 
 test("authenticated workspace loads the additive command center assets", async () => {
   const html = await readFile(workspaceHtml, "utf8");
@@ -25,9 +26,14 @@ test("dashboard browser assets pass Node syntax validation", async () => {
   }
 });
 
-test("dashboard styling preserves the Searqon no-gradient workspace treatment", async () => {
-  const css = await readFile(dashboardStyles, "utf8");
+test("workspace styling follows the supplied flat-color Searqon brand rules", async () => {
+  const [dashboard, workspace] = await Promise.all([
+    readFile(dashboardStyles, "utf8"),
+    readFile(workspaceStyles, "utf8")
+  ]);
+  const css = dashboard + "\n" + workspace;
   assert.match(css, /#FFFEFA/);
   assert.match(css, /var\(--ink\)/);
-  assert.doesNotMatch(css, /linear-gradient|radial-gradient|box-shadow|drop-shadow|text-shadow/);\n  assert.match(css, /font:500 12px\\/18px var\\(--mono\\)/);
+  assert.match(css, /font:500 12px\/18px var\(--mono\)/);
+  assert.doesNotMatch(css, /linear-gradient|radial-gradient|box-shadow|drop-shadow|text-shadow/);
 });
