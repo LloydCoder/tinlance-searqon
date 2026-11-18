@@ -125,8 +125,11 @@ export function createBillingSubscriptionReconciler({workerPool,adapters}={}) {
   }
 
   return Object.freeze({
-    async reconcile(event) {
-      if(!event || typeof event!=="object" || !PROVIDER.test(event.provider??"")
+    async reconcile(event,{workerId}={}) {
+      if(!event || typeof event!=="object" || !UUID.test(event.id??"")
+        || !UUID.test(event.leaseToken??"")
+        || typeof workerId!=="string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{2,63}$/.test(workerId)
+        || !PROVIDER.test(event.provider??"")
         || !UUID.test(event.organizationId??"") || !PROVIDER_ID.test(event.providerEventId??"")
         || !Number.isFinite(Date.parse(event.providerCreatedAt))
         || !Object.hasOwn(adapters,event.provider)) {
@@ -141,6 +144,16 @@ export function createBillingSubscriptionReconciler({workerPool,adapters}={}) {
       }
       const snapshot=validateSnapshot(event,rawSnapshot);
       return withBillingWorkerTransaction(workerPool,async client=>{
+        const lease=await client.query(
+          `SELECT id FROM searqon.billing_webhook_inbox
+           WHERE id=$1 AND processing_status='processing' AND lease_owner=$2
+             AND lease_token=$3 AND locked_until>now()
+           FOR UPDATE`,
+          [event.id,workerId,event.leaseToken]
+        );
+        if(lease.rowCount!==1) {
+          throw new BillingReconciliationError("lease_lost","The billing event lease is no longer owned by this worker.");
+        }
         await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[event.organizationId+":billing-subscription"]);
         const current=await client.query(
           "SELECT * FROM searqon.subscriptions WHERE organization_id=$1 FOR UPDATE",
