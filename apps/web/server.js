@@ -409,6 +409,42 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
+    const projectRecommendationPlansRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendation-plans$/);
+    if (projectRecommendationPlansRoute) {
+      const projectId = projectRecommendationPlansRoute[1];
+      if (request.method !== "GET" && request.method !== "POST") {
+        response.setHeader("allow","GET, POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use GET or POST."}});
+        return;
+      }
+      if (!auth || !recommendations) {
+        sendJson(response,503,{error:{code:"recommendations_unavailable",message:"The authenticated recommendation service is not configured."}});
+        return;
+      }
+      if (request.method === "POST" && !isSameOrigin(request,auth.publicOrigin)) {
+        sendJson(response,403,{error:{code:"origin_rejected",message:"The request origin is not allowed."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in to access remediation plans."}});
+          return;
+        }
+        if (request.method === "GET") {
+          sendJson(response,200,{plans:await recommendations.listPlans(profile.user.id,projectId)});
+          return;
+        }
+        if (!requireJsonContentType(request,response)) return;
+        const body = await readJsonBody(request,MAX_AUTH_BODY_BYTES);
+        sendJson(response,201,{plan:await recommendations.createPlan(profile.user.id,projectId,body)});
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status < 500 ? (error.code ?? "invalid_request") : "recommendations_error",message:status < 500 ? error.message : "The remediation plan request could not be completed."}});
+      }
+      return;
+    }
+
     const projectRecommendationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendations(?:\/(assignees))?$/);
     if (projectRecommendationsRoute) {
       const projectId = projectRecommendationsRoute[1];
