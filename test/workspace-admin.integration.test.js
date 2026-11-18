@@ -27,8 +27,7 @@ test("workspace invitations enforce verified-email binding, one-time acceptance,
     async sendWorkspaceInvitation(message) { sent.push(message); return {accepted:true}; }
   };
   const service = createWorkspaceAdminService({
-    database,emailSender,publicOrigin:"https://searqon.example.test",
-    now:()=>new Date("2026-11-18T12:00:00.000Z")
+    database,emailSender,publicOrigin:"https://searqon.example.test"
   });
 
   try {
