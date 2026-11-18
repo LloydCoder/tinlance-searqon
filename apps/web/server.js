@@ -312,7 +312,7 @@ export function createAppServer({ database = null, authService = null, workspace
     }
 
 
-    const workspaceInvitationsRoute = url.pathname.match(/^\\/api\\/v1\\/workspaces\\/([^/]+)\\/invitations$/);
+    const workspaceInvitationsRoute = url.pathname.match(/^\/api\/v1\/workspaces\/([^/]+)\/invitations$/);
     if (workspaceInvitationsRoute) {
       if (request.method !== "GET" && request.method !== "POST") {
         response.setHeader("allow","GET, POST");
@@ -348,7 +348,7 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const workspaceMembersRoute = url.pathname.match(/^\\/api\\/v1\\/workspaces\\/([^/]+)\\/members$/);
+    const workspaceMembersRoute = url.pathname.match(/^\/api\/v1\/workspaces\/([^/]+)\/members$/);
     if (workspaceMembersRoute) {
       if (request.method !== "GET") {
         response.setHeader("allow","GET");
@@ -373,7 +373,7 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const workspaceMemberRoleRoute = url.pathname.match(/^\\/api\\/v1\\/workspaces\\/([^/]+)\\/members\\/([^/]+)\\/role$/);
+    const workspaceMemberRoleRoute = url.pathname.match(/^\/api\/v1\/workspaces\/([^/]+)\/members\/([^/]+)\/role$/);
     if (workspaceMemberRoleRoute) {
       if (request.method !== "POST") {
         response.setHeader("allow","POST");
@@ -405,7 +405,7 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const invitationRevokeRoute = url.pathname.match(/^\\/api\\/v1\\/workspace-invitations\\/([^/]+)\\/revoke$/);
+    const invitationRevokeRoute = url.pathname.match(/^\/api\/v1\/workspace-invitations\/([^/]+)\/revoke$/);
     if (invitationRevokeRoute) {
       if (request.method !== "POST") {
         response.setHeader("allow","POST");
