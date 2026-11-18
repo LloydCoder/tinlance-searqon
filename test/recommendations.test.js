@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { recommendationFindingKey, recommendationPriority } from "../src/platform/recommendations.js";
+import { recommendationFindingKey, recommendationPriority, normalizeRecommendationDueDate } from "../src/platform/recommendations.js";
 
 const finding = {
   ruleId: "html.meta_description.missing",
@@ -35,4 +35,15 @@ test("recommendation priorities are deterministic and severity ordered", () => {
   assert.equal(recommendationPriority("low"),30);
   assert.equal(recommendationPriority("info"),10);
   assert.throws(() => recommendationPriority("unknown"),/severity/i);
+});
+
+test("recommendation due dates accept real calendar dates and clear with null", () => {
+  assert.equal(normalizeRecommendationDueDate("2026-12-01"),"2026-12-01");
+  assert.equal(normalizeRecommendationDueDate(null),null);
+});
+
+test("recommendation due dates reject invalid, ambiguous and impossible dates", () => {
+  for (const value of ["2026-2-01","2026-02-30","2026-13-01","01-12-2026","2026-12-01T00:00:00Z",42,{}]) {
+    assert.throws(() => normalizeRecommendationDueDate(value),error=>error.code==="invalid_due_date");
+  }
 });
