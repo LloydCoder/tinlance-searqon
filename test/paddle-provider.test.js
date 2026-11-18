@@ -171,3 +171,19 @@ test("Paddle canonical reconciliation rejects unsupported multi-month billing fr
     payload:{providerCustomerId:customerId,providerSubscriptionId:subscriptionId}
   }),error=>error.code==="provider_interval_unsupported");
 });
+
+
+test("Paddle canonical API adapter rejects oversized provider responses before parsing",async()=>{
+  const adapter=createPaddleProviderAdapter({
+    notificationSecret:secret,apiKey,pricePlanMap,now,maxResponseBytes:1024,
+    fetchImpl:async()=>({
+      ok:true,status:200,
+      headers:{get:()=> "2048"},
+      async text(){assert.fail("oversized response must not be read");}
+    })
+  });
+  await assert.rejects(adapter.fetchCanonicalSubscription({
+    organizationId,providerEventId:"evt_01gks14ge726w50ch2tmaw2a1x",
+    payload:{providerCustomerId:customerId,providerSubscriptionId:subscriptionId}
+  }),error=>error.code==="provider_response_too_large");
+});
