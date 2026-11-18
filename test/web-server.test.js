@@ -729,3 +729,46 @@ test("workspace administration API enforces authentication and same-origin write
     assert.deepEqual(calls.map(call=>call[0]),["listInvitations","createInvitation","listMembers","updateMemberRole","revokeInvitation","acceptInvitation"]);
   },{authService,workspaceAdminService});
 });
+
+
+test("billing webhook route preserves original bytes and returns only durable receipt status", async () => {
+  let observed;
+  const billingWebhookProcessor = async input => {
+    observed = input;
+    return {accepted:true,duplicate:true,eventId:"must-not-be-returned"};
+  };
+  await withServer(async base => {
+    const raw = Buffer.from('{"id":"evt_12345678","signed":"raw-bytes"}');
+    const response = await fetch(base + "/api/v1/billing/webhooks/fixture", {
+      method:"POST",
+      headers:{"content-type":"application/json","x-provider-signature":"signature"},
+      body:raw
+    });
+    assert.equal(response.status,202);
+    assert.deepEqual(await response.json(),{received:true,duplicate:true});
+    assert.deepEqual(observed.rawBody,raw);
+    assert.equal(observed.provider,"fixture");
+    assert.equal(observed.headers["x-provider-signature"],"signature");
+  },{billingWebhookProcessor});
+});
+
+test("billing webhook route fails closed when disabled and hides provider verification details", async () => {
+  await withServer(async base => {
+    const disabled = await fetch(base + "/api/v1/billing/webhooks/fixture",{method:"POST",body:"{}"});
+    assert.equal(disabled.status,503);
+    assert.equal((await disabled.json()).error.code,"billing_webhook_unavailable");
+  });
+  const billingWebhookProcessor = async () => {
+    const error=new Error("provider signing secret must not leak");
+    error.statusCode=401;
+    error.code="signature_invalid";
+    throw error;
+  };
+  await withServer(async base => {
+    const rejected = await fetch(base + "/api/v1/billing/webhooks/fixture",{method:"POST",body:"{}"});
+    assert.equal(rejected.status,401);
+    const body=await rejected.json();
+    assert.equal(body.error.code,"signature_invalid");
+    assert.equal(body.error.message.includes("secret"),false);
+  },{billingWebhookProcessor});
+});
