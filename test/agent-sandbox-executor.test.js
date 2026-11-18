@@ -48,3 +48,22 @@ test("sandbox child and simulator contain no outbound network or dynamic executi
   assert.ok(child.includes("globalThis.fetch = undefined"));
   assert.ok(child.includes('process.permission.has("fs.write")'));
 });
+
+test("isolated child is terminated immediately when its queue lease is cancelled", async () => {
+  const controller = new AbortController();
+  const running = runAgentSimulationIsolated(manifest,{signal:controller.signal,timeoutMs:10000});
+  controller.abort();
+  await assert.rejects(
+    running,
+    error=>error instanceof AgentSandboxExecutionError && error.code==="simulation_cancelled"
+  );
+});
+
+test("isolated child does not spawn when cancellation is already signalled", async () => {
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(
+    runAgentSimulationIsolated(manifest,{signal:controller.signal}),
+    error=>error instanceof AgentSandboxExecutionError && error.code==="simulation_cancelled"
+  );
+});
