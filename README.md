@@ -20,6 +20,8 @@
 
 > **Early alpha.** Searqon is a local-first scanner and analysis toolkit. Read [current capabilities and limitations](docs/SCANNER.md) before using it against a remote target.
 
+> **Open-source release:** [v0.2.0](https://github.com/LloydCoder/tinlance-searqon/releases/tag/v0.2.0) is published with a verified package checksum, CycloneDX SBOM, SLSA provenance and SBOM attestations. Main-branch ruleset enforcement and full source-provenance review remain open. See the [Phase 2 release audit](docs/PHASE_2_OPEN_SOURCE_FOUNDATION.md) and [repository ruleset setup](docs/REPOSITORY_RULESET_SETUP.md).
+
 ## Current workflow
 
 The diagram describes the implemented data paths. It is an architecture illustration, not a screenshot or claim of a hosted service.
