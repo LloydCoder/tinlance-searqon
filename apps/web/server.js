@@ -280,7 +280,7 @@ export function createAppServer({ database = null, authService = null, workspace
         sendJson(response,status,{
           error:{
             code:status<500?(error.code??"billing_webhook_rejected"):"billing_webhook_unavailable",
-            message:status<500?error.message:"The billing event could not be durably accepted."
+            message:status===413?"The billing webhook payload exceeds the configured size limit.":"The billing event could not be accepted."
           }
         });
       }
