@@ -87,6 +87,19 @@ export function createBillingWebhookProcessor({
       throw new BillingWebhookError(401, "signature_invalid", "The provider signature could not be verified.");
     }
 
+    if (verified?.ignored === true) {
+      if (typeof verified.providerEventId !== "string"
+        || !/^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/.test(verified.providerEventId)) {
+        throw new BillingWebhookError(400,"event_invalid","The verified provider event identifier is invalid.");
+      }
+      return Object.freeze({
+        accepted:true,
+        duplicate:false,
+        ignored:true,
+        eventId:verified.providerEventId
+      });
+    }
+
     let event;
     try {
       if (!verified || typeof verified !== "object" || Array.isArray(verified)) {
