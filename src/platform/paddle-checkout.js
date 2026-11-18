@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { withUserTransaction } from "./database.js";
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -98,7 +97,7 @@ export function createPaddleCheckoutService({
     async createCheckout(userId,organizationId,input={}) {
       const plan=input.plan;
       const billingInterval=input.billingInterval;
-      const requestId=input.requestId??randomUUID();
+      const requestId=input.requestId;
       if(typeof userId!=="string" || !UUID.test(userId)
         || typeof organizationId!=="string" || !UUID.test(organizationId)
         || !PLANS.has(plan) || !INTERVALS.has(billingInterval)
