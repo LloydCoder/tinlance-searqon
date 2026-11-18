@@ -70,7 +70,10 @@ jobs:
           PACKAGE_FILE="$(node -e 'const p=JSON.parse(require("node:fs").readFileSync("pack.json","utf8")); if (p.length !== 1) process.exit(1); process.stdout.write(p[0].filename)')"
           test -s "published/$PACKAGE_FILE"
           (cd published && sha256sum --check SHA256SUMS)
-          cmp "$PACKAGE_FILE" "published/$PACKAGE_FILE"
+          mkdir -p rebuilt-unpacked published-unpacked
+          tar -xzf "$PACKAGE_FILE" -C rebuilt-unpacked
+          tar -xzf "published/$PACKAGE_FILE" -C published-unpacked
+          diff -qr rebuilt-unpacked/package published-unpacked/package
           echo "package_file=$PACKAGE_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Validate published CycloneDX SBOM
