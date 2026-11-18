@@ -87,7 +87,7 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
         planId:"cross-project-plan",
         steps:[{
           id:"step-1",title:"Invalid cross-project link",recommendationIds:[recommendation.id],
-          patch:{path:"docs/fix.md",sha256:patchSha256,diff:patchDiff},
+          patch:{path:"docs/remediation/meta-description.md",sha256:patchSha256,diff:patchDiff},
           tests:[{testId:"test",assessmentId:randomUUID(),patchSha256,status:"passed"}]
         }]
       }),
