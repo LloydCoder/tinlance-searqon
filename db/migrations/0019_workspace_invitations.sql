@@ -95,7 +95,7 @@ BEGIN
 
   INSERT INTO searqon.workspace_invitations
     (organization_id,invited_email,invited_role,token_hash,invited_by,expires_at)
-  VALUES (p_organization_id,p_email,p_role,p_token_hash,p_expires_at)
+  VALUES (p_organization_id,p_email,p_role,p_token_hash,v_actor,p_expires_at)
   RETURNING id INTO v_invitation_id;
 
   INSERT INTO searqon.audit_events
