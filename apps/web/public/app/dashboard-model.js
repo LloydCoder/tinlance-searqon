@@ -34,13 +34,13 @@ export function buildDashboardModel({
     latestSeverity: emptySeverity(),
     openActionCount: 0,
     verifiedActionCount: 0,
+    recommendationCount: 0,
     coverage: emptyCoverage(),
     recommendations: [],
     recentAssessments: [],
     projectsWithLatestAssessment: 0
   };
 
-  const projectNames = new Map(projects.map(project => [project.id, project.name]));
   for (const project of projects) {
     const assessments = Array.isArray(assessmentsByProject[project.id])
       ? assessmentsByProject[project.id]
@@ -74,7 +74,8 @@ export function buildDashboardModel({
       model.recentAssessments.push({
         ...assessment,
         projectId: project.id,
-        projectName: project.name
+        projectName: project.name,
+        targetUrl: project.targetUrl
       });
     }
 
@@ -83,13 +84,19 @@ export function buildDashboardModel({
       : [];
     for (const recommendation of recommendations) {
       if (!recommendation || typeof recommendation !== "object") continue;
-      const enriched = { ...recommendation, projectId: project.id, projectName: project.name };
+      const enriched = {
+        ...recommendation,
+        projectId: project.id,
+        projectName: project.name,
+        targetUrl: project.targetUrl
+      };
       model.recommendations.push(enriched);
       if (ACTIVE_STATUSES.has(recommendation.status)) model.openActionCount += 1;
       if (recommendation.status === "verified") model.verifiedActionCount += 1;
     }
   }
 
+  model.recommendationCount = model.recommendations.length;
   model.recommendations.sort((a, b) =>
     (Number(b.priority) || 0) - (Number(a.priority) || 0)
     || timestamp(b.updatedAt) - timestamp(a.updatedAt)
