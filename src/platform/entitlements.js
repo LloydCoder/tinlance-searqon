@@ -29,7 +29,7 @@ function activePlan(subscription, now) {
     if (subscription.plan === 'trial') throw new TypeError('Trial must use trialing status');
     return { plan: subscription.plan, status: 'active' };
   }
-  if (['past_due', 'canceled', 'expired', 'free'].includes(subscription.status)) {
+  if (['past_due', 'paused', 'canceled', 'expired', 'free'].includes(subscription.status)) {
     return { plan: 'free', status: subscription.status };
   }
   throw new TypeError('Unknown subscription status');
