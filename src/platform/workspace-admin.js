@@ -74,7 +74,7 @@ export function createWorkspaceAdminService({
       const email = normalizeEmail(input.email);
       const token = randomBytes(32).toString("base64url");
       const expiresAt = new Date(trustedNow(now).getTime()+MAX_INVITATION_TTL_MS);
-      const invitation = await withUserTransaction(database.pool,userId,async client => {
+      const invitation = await transaction(userId,async client => {
         const created = await client.query(
           "SELECT * FROM searqon.create_workspace_invitation($1,$2,$3,$4,$5)",
           [organizationId,email,input.role,tokenHash(token),expiresAt]
@@ -94,7 +94,7 @@ export function createWorkspaceAdminService({
           idempotencyKey: "searqon-workspace-invitation/"+invitation.invitation_id
         });
       } catch {
-        await withUserTransaction(database.pool,userId,client =>
+        await transaction(userId,client =>
           client.query("SELECT searqon.revoke_workspace_invitation($1)",[invitation.invitation_id])
         ).catch(() => {});
         throw new WorkspaceAdminError(503,"invitation_delivery_unavailable","The invitation could not be delivered. The pending invitation was revoked.");
@@ -110,7 +110,7 @@ export function createWorkspaceAdminService({
     async listInvitations(userId, organizationId) {
       requireUuid(userId,"user_id");
       requireUuid(organizationId,"organization_id");
-      return withUserTransaction(database.pool,userId,async client => {
+      return transaction(userId,async client => {
         const result = await client.query(
           `SELECT id,invited_email,invited_role,invited_by,expires_at,accepted_at,revoked_at,created_at
            FROM searqon.workspace_invitations
@@ -128,7 +128,7 @@ export function createWorkspaceAdminService({
     async listMembers(userId, organizationId) {
       requireUuid(userId,"user_id");
       requireUuid(organizationId,"organization_id");
-      return withUserTransaction(database.pool,userId,async client => {
+      return transaction(userId,async client => {
         const result = await client.query("SELECT * FROM searqon.list_workspace_members($1)",[organizationId]);
         return result.rows.map(row => ({
           userId:row.user_id,displayName:row.display_name,role:row.role,joinedAt:row.joined_at
@@ -139,7 +139,7 @@ export function createWorkspaceAdminService({
     async revokeInvitation(userId, invitationId) {
       requireUuid(userId,"user_id");
       requireUuid(invitationId,"invitation_id");
-      return withUserTransaction(database.pool,userId,async client => {
+      return transaction(userId,async client => {
         const result = await client.query("SELECT searqon.revoke_workspace_invitation($1) AS revoked",[invitationId]);
         return {revoked:result.rows?.[0]?.revoked === true};
       });
@@ -150,7 +150,7 @@ export function createWorkspaceAdminService({
       requireUuid(organizationId,"organization_id");
       requireUuid(memberUserId,"member_user_id");
       if (!ROLES.has(role)) throw new WorkspaceAdminError(400,"invalid_role","A supported workspace role is required.");
-      return withUserTransaction(database.pool,userId,async client => {
+      return transaction(userId,async client => {
         const result = await client.query(
           "SELECT searqon.set_workspace_member_role($1,$2,$3) AS updated",
           [organizationId,memberUserId,role]
@@ -164,7 +164,7 @@ export function createWorkspaceAdminService({
       if (typeof rawToken !== "string" || !TOKEN.test(rawToken)) {
         throw new WorkspaceAdminError(400,"invalid_invitation_token","The invitation link is invalid or expired.");
       }
-      return withUserTransaction(database.pool,userId,async client => {
+      return transaction(userId,async client => {
         const result = await client.query(
           "SELECT * FROM searqon.accept_workspace_invitation($1)",
           [tokenHash(rawToken)]
