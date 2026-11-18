@@ -170,7 +170,9 @@ if (root) {
           ? "LATEST PROJECT BASELINES"
           : "AWAITING FIRST ASSESSMENT";
     }
-    refreshTarget.textContent = "Refreshed " + new Date().toLocaleTimeString();
+    const refreshedAt = new Date().toLocaleTimeString();
+    refreshTarget.textContent = "Refresh · " + refreshedAt;
+    refreshTarget.setAttribute("aria-label", "Refresh workspace summary. Last refreshed " + refreshedAt);
   }
 
   async function loadDashboard() {
@@ -243,6 +245,7 @@ if (root) {
     }
   }
 
+  refreshTarget.addEventListener("click", loadDashboard);
   organizationSelector?.addEventListener("change", loadDashboard);
   window.addEventListener("searqon:workspace-data-changed", loadDashboard);
   loadDashboard();
