@@ -38,7 +38,7 @@ test("simulated agent journey is deterministic, read-only and evidence-linked", 
   const first = simulateAgentJourney(manifest);
   const second = simulateAgentJourney(manifest);
   assert.equal(first.mode,"read_only_snapshot_simulation");
-  assert.equal(first.egress,"none");
+  assert.equal(first.targetEgress,"none");
   assert.equal(first.mutations,"disabled");
   assert.equal(first.steps.length,5);
   assert.equal(first.steps[0].status,"completed");
