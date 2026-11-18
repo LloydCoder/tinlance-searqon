@@ -32,7 +32,7 @@ CREATE INDEX billing_checkout_intents_expiry_idx
   WHERE state='ready';
 
 ALTER TABLE searqon.billing_checkout_intents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE searqon.billing_checkout_intents FORCE ROW LEVEL SECURITY;
+ALTER TABLE searqon.billing_checkout_intents NO FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY billing_checkout_member_read ON searqon.billing_checkout_intents
   FOR SELECT TO searqon_app
@@ -90,7 +90,7 @@ BEGIN
   FROM searqon.memberships m
   WHERE m.organization_id=p_organization_id AND m.user_id=v_actor
   FOR UPDATE;
-  IF v_role NOT IN ('owner','admin') THEN
+  IF v_role IS NULL OR v_role NOT IN ('owner','admin') THEN
     RAISE EXCEPTION 'Workspace billing administration is not permitted' USING ERRCODE='42501';
   END IF;
 
@@ -187,7 +187,36 @@ DECLARE
   v_organization_id uuid;
   v_role text;
 BEGIN
-  IF p_state NOT IN ('failed','unknown') OR p_error_code !~ '^[a-z][a-z0-9_]{0,63}$' THEN
+  IF p_state IS NULL OR p_state NOT IN ('failed','unknown')
+     OR p_error_code IS NULL OR p_error_code !~ '^[a-z][a-z0-9_]{0,63}
+    RAISE EXCEPTION 'Invalid checkout failure state' USING ERRCODE='22023';
+  END IF;
+  SELECT organization_id INTO v_organization_id
+  FROM searqon.billing_checkout_intents
+  WHERE id=p_intent_id
+  FOR UPDATE;
+  IF v_organization_id IS NULL THEN RETURN false; END IF;
+  SELECT role INTO v_role FROM searqon.memberships
+  WHERE organization_id=v_organization_id AND user_id=v_actor;
+  IF v_role NOT IN ('owner','admin') THEN
+    RAISE EXCEPTION 'Workspace billing administration is not permitted' USING ERRCODE='42501';
+  END IF;
+  UPDATE searqon.billing_checkout_intents
+  SET state=p_state,last_error_code=p_error_code,updated_at=now()
+  WHERE id=p_intent_id AND state='creating';
+  RETURN FOUND;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION searqon.create_billing_checkout_intent(uuid,uuid,text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION searqon.attach_billing_checkout_transaction(uuid,text,text,timestamptz) FROM PUBLIC;
+REVOKE ALL ON FUNCTION searqon.fail_billing_checkout_intent(uuid,text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION searqon.create_billing_checkout_intent(uuid,uuid,text,text) TO searqon_app;
+GRANT EXECUTE ON FUNCTION searqon.attach_billing_checkout_transaction(uuid,text,text,timestamptz) TO searqon_app;
+GRANT EXECUTE ON FUNCTION searqon.fail_billing_checkout_intent(uuid,text,text) TO searqon_app;
+
+COMMIT;
+ THEN
     RAISE EXCEPTION 'Invalid checkout failure state' USING ERRCODE='22023';
   END IF;
   SELECT organization_id INTO v_organization_id
