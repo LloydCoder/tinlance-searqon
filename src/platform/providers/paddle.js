@@ -145,7 +145,9 @@ function canonicalSnapshot(data,event,pricePlanMap) {
   if(!data || typeof data!=="object" || data.id!==event.payload?.providerSubscriptionId
     || data.customer_id!==event.payload.providerCustomerId
     || data.custom_data?.organization_id!==event.organizationId
-    || !UUID.test(data.custom_data?.organization_id??"")) {
+    || !UUID.test(data.custom_data?.organization_id??"")
+    || (event.payload?.checkoutIntentId
+      && data.custom_data?.searqon_checkout_intent_id!==event.payload.checkoutIntentId)) {
     throw new PaddleAdapterError(502,"provider_binding_invalid","The Paddle subscription does not match the verified workspace and customer binding.");
   }
   const status=data.status;
@@ -237,6 +239,10 @@ export function createPaddleProviderAdapter({
         throw new PaddleAdapterError(400,"provider_status_unsupported","The Paddle subscription status is not supported.");
       }
       const plan=status==="trialing"?"trial":mappedPlan(data,plans);
+      const checkoutIntentId=data.custom_data?.searqon_checkout_intent_id??null;
+      if(checkoutIntentId!==null && !UUID.test(checkoutIntentId)) {
+        throw new PaddleAdapterError(400,"event_invalid","The Paddle checkout intent binding is invalid.");
+      }
       const bounds=periodBounds(data);
       const trialItem=(Array.isArray(data.items)?data.items:[]).find(item=>item?.recurring===true);
       const trialEndsAt=status==="trialing"?validDate(trialItem?.trial_dates?.ends_at):null;
@@ -253,7 +259,8 @@ export function createPaddleProviderAdapter({
           plan,
           currentPeriodStart:bounds.start,
           currentPeriodEnd:bounds.end,
-          trialEndsAt
+          trialEndsAt,
+          ...(checkoutIntentId?{checkoutIntentId}:{})
         }
       };
     },
