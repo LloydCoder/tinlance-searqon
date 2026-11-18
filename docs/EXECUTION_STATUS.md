@@ -1,7 +1,7 @@
 # Searqon Implementation Status
 
 **Last reconciled:** 2026-11-18  
-**Base commit for this status revision:** `f90fef7c55ab30e823eb9836ac2c31aa7b37b6e6`  
+**Base commit for this status revision:** `c211c8dd8a4d387780a0e954651595d4f4d0aac9`  
 **Product maturity:** Early alpha; not production-ready.
 
 This register separates implemented repository capabilities from customer, security, operational, and commercial acceptance. Green CI and CodeQL are necessary engineering gates, not production-readiness certification. Status is evidence-based; implementation does not imply independent assurance or product-owner acceptance.
@@ -13,6 +13,15 @@ This register separates implemented repository capabilities from customer, secur
 - Phase 0 PR #138 merged at `d77f95fcfabf33469806f819d62c9633cfbe9e88`. Main-branch Node 22, Node 24, PostgreSQL tenant isolation, CodeQL and secret scanning all passed.
 - Phase 1 desk research is recorded in `docs/validation/PHASE_1_CUSTOMER_VALIDATION.md`. It distinguishes first-party vendor claims, official Google guidance and self-reported buyer survey evidence. No customer participation has been fabricated.
 - No production deployment or paid infrastructure spend was authorized or attempted.
+
+
+## 2026-11-18 Phase 2 forensic reconciliation
+
+- The audited `main` commit is `c211c8dd8a4d387780a0e954651595d4f4d0aac9`. Node 22/24 CI runs `44359374147` and `44359328226`, CodeQL run `44359328388`, and full-history secret scan `44359328153` completed successfully.
+- The locked 14-package runtime dependency graph records MIT/ISC metadata; the inventory and its scope limitations are documented in `docs/PHASE_2_OPEN_SOURCE_FOUNDATION.md`. `CONTRIBUTING.md` was corrected to distinguish the built-in-only CLI from the hosted PostgreSQL driver.
+- No GitHub Releases or tags exist at audit time. The release-provenance workflow is configured but has not been executed against a published release.
+- The main branch reports `protected: false`; no branch rulesets exist. The connected GitHub integration cannot create/update rulesets, so required checks and branch protection remain an external repository-administration gate.
+- Vercel reports `Deployment rate limited — retry in 24 hours` on the audited commit. Source workflows are green, but the aggregate commit status is not fully green. Phase 2 remains IN_PROGRESS.
 
 ## 2026-11-18 Phase 12 implementation update
 
@@ -336,3 +345,10 @@ This register separates implemented repository capabilities from customer, secur
 - A 24-hour Vercel runtime-error query returned no runtime error clusters at the time of review. This is a bounded observation, not an SLO or uptime guarantee.
 - Dashboard Command Center work is isolated in PR #136 and is not deployed to production. Vercel Hobby preview deployment attempts for the branch were rejected by the `api-deployments-free-per-day` quota. No plan upgrade, billing change, quota workaround or production alias change was performed.
 - The production baseline remains the deployed main commit above until a separately reviewed and verified dashboard change is merged and deployed.
+
+## 2026-11-18 Phase 2 security-workflow hardening
+
+- PR #145 adds the exact dependency-license inventory and release/governance evidence in `docs/PHASE_2_OPEN_SOURCE_FOUNDATION.md`, corrects stale dependency guidance, and indexes the audit.
+- CodeQL and full-history secret scanning now run on pushes to `bootstrap/**`, `feat/**`, and `fix/**`, matching CI branch coverage. Regression tests enforce the triggers.
+- A full-history Gitleaks scan identified three synthetic Paddle sandbox fixture values in historical test-only commit `20045e861ccde3dc25efd6c220ac4663734171fb`. A narrowly scoped commit+path AND allowlist was added; default rules remain enabled. PR-head CI, CodeQL and secret-scan runs 44384769348, 44384769353 and 44384769508 passed at `b5eb0b7440e9595168b4c1a7e7ae31be2a6d4aeb`.
+- Vercel still reports a rate-limit failure on the PR head. No versioned release/tag/attestation exists and main-branch rulesets remain absent. Phase 2 is still IN_PROGRESS and the PR is not merged.

@@ -20,7 +20,7 @@ npm ci
 npm test
 ```
 
-There are currently no runtime package dependencies. The lockfile is committed for reproducible npm workflows.
+The core local scanner CLI uses Node.js built-ins. The hosted web/API and worker components use the pinned `pg` PostgreSQL driver; its transitive dependency graph is recorded in `package-lock.json`. The lockfile is committed for reproducible npm workflows. See the [Phase 2 open-source foundation audit](docs/PHASE_2_OPEN_SOURCE_FOUNDATION.md) for the locked dependency license inventory and release-governance evidence.
 
 ## Contribution workflow
 

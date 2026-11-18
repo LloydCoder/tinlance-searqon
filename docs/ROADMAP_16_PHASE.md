@@ -23,7 +23,7 @@ A green CI workflow is necessary for applicable code changes, not sufficient for
 |---|---|---|---|
 | 0 | Product governance | Charter; four-discipline definitions; non-goals; personas; ownership boundaries; ADRs; risk register; decision log | Scope and security decisions recorded |
 | 1 | Customer validation | 15 buyer interviews; pain ranking; 5 design partners; 3 paid-pilot commitments or evidence-based pivot; competitor map; procurement objections | Interview evidence and paid-pilot decision |
-| 2 | Open-source foundation | Apache-2.0 provenance; license inventory; contribution/security policy; CI; CodeQL; secret scan; SBOM; signed release and attestation | Reproducible governed release |
+| 2 | [Open-source foundation](PHASE_2_OPEN_SOURCE_FOUNDATION.md) | Apache-2.0 provenance; license inventory; contribution/security policy; CI; CodeQL; secret scan; SBOM; signed release and attestation | Reproducible governed release |
 | 3 | Domain contracts | Assessment/evidence schemas; observation/action enums; confidence semantics; compatibility ADR; API boundaries; threat model | Schema and migration tests; architecture review |
 | 4 | Secure acquisition | SSRF; DNS rebinding; IPv4/IPv6 special ranges; redirects; robots policy; limits; parser isolation; authorized source scope | Adversarial acquisition suite passes |
 | 5 | Evidence and provenance | Append-oriented ledger; source maps; content digest; custody; signed checkpoints; retention/deletion/redaction; audit events | Provenance and lifecycle tests pass |

@@ -1,0 +1,9 @@
+title = "Searqon Gitleaks policy"
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Synthetic Paddle sandbox API-key fixtures in a test-only historical commit; scoped to the exact commit and test file. This does not disable generic API-key detection elsewhere."
+condition = "AND"
+commits = ["20045e861ccde3dc25efd6c220ac4663734171fb"]
+paths = ['''^test/paddle-checkout\.integration\.test\.js$''']
