@@ -113,6 +113,6 @@ export function normalizeVerifiedBillingEvent(input) {
     currentPeriodStart,
     currentPeriodEnd,
     trialEndsAt,
-    checkoutIntentId
+    ...(checkoutIntentId ? { checkoutIntentId } : {})
   });
 }
