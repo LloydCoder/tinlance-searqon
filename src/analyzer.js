@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { createEvidenceRecord } from "./evidence.js";
 
-const RULES_VERSION = "2026-11-18.1";
+const RULES_VERSION = "2026-11-18.2";
 
 function finding(data) {
   const { idSuffix, ...fields } = data;
@@ -446,15 +446,96 @@ function buildAssessments(findings, assessedDimensions, scopes) {
 }
 
 
+function parseMarkdownFrontMatter(markdown) {
+  const normalized = markdown.startsWith("\uFEFF") ? markdown.slice(1) : markdown;
+  const lines = normalized.split(/\r?\n/);
+  if (lines[0] !== "---") return {state:"absent",present:false,metadata:Object.create(null),body:normalized};
+  const close = lines.findIndex((line,index) => index > 0 && (line === "---" || line === "..."));
+  if (close < 0) return {state:"rejected",present:true,metadata:Object.create(null),body:normalized};
+  const body = lines.slice(close + 1).join("\n");
+  if (lines.slice(1,close).join("\n").length > 16384 || close > 256) return {state:"rejected",present:true,metadata:Object.create(null),body};
+  const metadata = Object.create(null);
+  const supported = new Set(["title","description","canonical","robots","url","lang","language"]);
+  for (const line of lines.slice(1,close)) {
+    if (!line.trim() || /^\s*#/.test(line)) continue;
+    const match = line.match(/^([A-Za-z][A-Za-z0-9_-]{0,63})\s*:\s*(.*?)\s*$/);
+    if (!match) return {state:"rejected",present:true,metadata:Object.create(null),body};
+    const key = match[1].toLowerCase();
+    if (!supported.has(key)) continue;
+    if (Object.hasOwn(metadata,key)) return {state:"rejected",present:true,metadata:Object.create(null),body};
+    let value = match[2];
+    if (/^(?:[&*!]|<<\s*:)/.test(value) || /[{}[\]]/.test(value)) return {state:"rejected",present:true,metadata:Object.create(null),body};
+    if (value.startsWith('"')) {
+      try { value = JSON.parse(value); } catch { return {state:"rejected",present:true,metadata:Object.create(null),body}; }
+      if (typeof value !== "string") return {state:"rejected",present:true,metadata:Object.create(null),body};
+    } else if (value.startsWith("'")) {
+      if (!value.endsWith("'") || value.length < 2) return {state:"rejected",present:true,metadata:Object.create(null),body};
+      value = value.slice(1,-1).replace(/''/g,"'");
+    } else value = value.replace(/\s+#.*$/,"").trim();
+    metadata[key] = value;
+  }
+  return {state:"parsed",present:true,metadata,body};
+}
+
+function inspectMarkdownHeadings(markdown) {
+  const headings = [];
+  let fence = null;
+  let inComment = false;
+  for (const line of markdown.split(/\r?\n/)) {
+    const fenceMatch = line.match(/^\s{0,3}(\x60{3,}|~{3,})/);
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0];
+      if (fence === null) fence = marker;
+      else if (fence === marker) fence = null;
+      continue;
+    }
+    if (fence !== null) continue;
+    let visible = line;
+    if (inComment) {
+      const close = visible.indexOf("-->");
+      if (close < 0) continue;
+      visible = visible.slice(close + 3);
+      inComment = false;
+    }
+    while (visible.includes("<!--")) {
+      const open = visible.indexOf("<!--");
+      const close = visible.indexOf("-->",open + 4);
+      if (close < 0) { visible = visible.slice(0,open); inComment = true; break; }
+      visible = visible.slice(0,open) + visible.slice(close + 3);
+    }
+    const match = visible.match(/^\s{0,3}(#{1,6})(?:\s+|$)(.*?)\s*#*\s*$/);
+    if (match && match[2].trim()) headings.push({level:match[1].length,text:match[2].trim()});
+  }
+  let headingHierarchyIssueCount = 0;
+  let previousLevel = 0;
+  for (const heading of headings) {
+    if (previousLevel > 0 && heading.level > previousLevel + 1) headingHierarchyIssueCount += 1;
+    previousLevel = heading.level;
+  }
+  return {headingCount:headings.length,h1Count:headings.filter(item => item.level === 1).length,headingHierarchyIssueCount};
+}
+
 function analyzeMarkdown(markdown, evidenceId) {
+  const parsed = parseMarkdownFrontMatter(markdown);
+  const metadata = parsed.metadata;
+  const headingData = inspectMarkdownHeadings(parsed.body);
+  const titleValue = typeof metadata.title === "string" ? metadata.title.trim() : "";
+  const descriptionValue = typeof metadata.description === "string" ? metadata.description.trim() : "";
+  const canonicalValue = typeof metadata.canonical === "string" ? metadata.canonical.trim() : "";
+  const robotsValue = typeof metadata.robots === "string" ? metadata.robots : "";
+  const descriptionState = parsed.state !== "parsed" || !Object.hasOwn(metadata,"description") ? "not_assessable" : descriptionValue ? "present" : "empty";
+  const robotsNoIndex = robotsValue.split(/[\s,]+/).some(value => value.toLowerCase() === "noindex");
+  const authenticationGuidancePresent = /\b(authentication|authorization|api[- ]key|bearer|oauth|mtls)\b/i.test(parsed.body);
+  const errorHandlingGuidancePresent = /\b(error handling|error codes?|http [45]\d\d|status codes?|problem details)\b/i.test(parsed.body);
+  const rateLimitGuidancePresent = /\b(rate limit|throttl|requests? per (second|minute|hour)|quota)\b/i.test(parsed.body);
+  const versioningGuidancePresent = /\b(api )?version(ing|ed)?\b/i.test(parsed.body);
+  const codeExamplesPresent = /(^|\n)\x60{3}[\s\S]+?\x60{3}/m.test(parsed.body);
   const findings = [];
-  const headingPresent = /^#{1,6}\s+\S/m.test(markdown);
-  const authenticationGuidancePresent = /\b(authentication|authorization|api[- ]key|bearer|oauth|mtls)\b/i.test(markdown);
-  const errorHandlingGuidancePresent = /\b(error handling|error codes?|http [45]\d\d|status codes?|problem details)\b/i.test(markdown);
-  const rateLimitGuidancePresent = /\b(rate limit|throttl|requests? per (second|minute|hour)|quota)\b/i.test(markdown);
-  const versioningGuidancePresent = /\b(api )?version(ing|ed)?\b/i.test(markdown);
-  const codeExamplesPresent = /(^|\n)\x60\x60\x60[\s\S]+?\x60\x60\x60/m.test(markdown);
-  if (!headingPresent) findings.push(finding({ruleId:"docs.heading.missing",dimension:"AEO",severity:"medium",title:"Documentation heading is missing",description:"No Markdown heading was detected.",recommendation:"Add a descriptive heading that identifies the API or product documented.",evidenceId}));
+  if (!headingData.headingCount) findings.push(finding({ruleId:"docs.heading.missing",dimension:"AEO",severity:"medium",title:"Documentation heading is missing",description:"No Markdown heading was detected outside fenced code blocks and HTML comments.",recommendation:"Add a descriptive heading that identifies the API or product documented.",evidenceId}));
+  if (descriptionState === "empty") findings.push(finding({ruleId:"markdown.meta_description.empty",dimension:"SEO",severity:"medium",title:"Markdown description metadata is explicitly empty",description:"The supported front matter contains a description key with an empty value.",recommendation:"Add a concise, accurate description in the site's documented front matter convention, or remove the empty field if the publishing system supplies it elsewhere.",evidenceId}));
+  if (titleValue === "" && Object.hasOwn(metadata,"title")) findings.push(finding({ruleId:"markdown.title.empty",dimension:"SEO",severity:"medium",title:"Markdown title metadata is explicitly empty",description:"The supported front matter contains a title key with an empty value.",recommendation:"Provide a descriptive title in the site's documented front matter convention.",evidenceId}));
+  if (robotsNoIndex) findings.push(finding({ruleId:"markdown.robots.noindex",dimension:"SEO",severity:"medium",title:"Markdown front matter requests noindex",description:"The supplied front matter includes a noindex directive. This may be intentional for private, staging, duplicate, or deliberately excluded content; the source alone cannot determine intent or rendered crawler behavior.",recommendation:"Confirm that the publishing system emits the intended robots directive and that excluding this URL from indexing is deliberate.",evidenceId}));
+  if (headingData.headingHierarchyIssueCount) findings.push(finding({ruleId:"markdown.heading.hierarchy",dimension:"AEO",severity:"low",title:"Markdown heading hierarchy skips levels",description:"One or more headings jump over a heading level in the source document.",recommendation:"Use a logical heading hierarchy so sections and subsections are clearly structured.",evidenceId}));
   if (!authenticationGuidancePresent) findings.push(finding({ruleId:"docs.authentication.missing",dimension:"AgEO",severity:"high",title:"Authentication guidance is not detectable",description:"No common authentication or authorization terminology was found.",recommendation:"Document authentication methods, credential handling, scopes, and authorization expectations without publishing secrets.",evidenceId}));
   if (!errorHandlingGuidancePresent) findings.push(finding({ruleId:"docs.error_handling.missing",dimension:"AgEO",severity:"medium",title:"Error handling guidance is not detectable",description:"No common error-handling or HTTP status terminology was found.",recommendation:"Document error response formats, common status codes, retryability, and remediation guidance.",evidenceId}));
   if (!rateLimitGuidancePresent) findings.push(finding({ruleId:"docs.rate_limits.missing",dimension:"AgEO",severity:"low",title:"Rate-limit guidance is not detectable",description:"No rate-limit, throttling, or quota guidance was found.",recommendation:"Document applicable quotas, rate limits, response headers, and retry behavior.",evidenceId}));
@@ -462,9 +543,19 @@ function analyzeMarkdown(markdown, evidenceId) {
   if (!codeExamplesPresent) findings.push(finding({ruleId:"docs.code_examples.missing",dimension:"AEO",severity:"low",title:"Code examples are not detectable",description:"No fenced code example was found.",recommendation:"Provide a minimal, safe, copyable request or integration example.",evidenceId}));
   return {
     findings,
-    observations:{headingPresent,authenticationGuidancePresent,errorHandlingGuidancePresent,rateLimitGuidancePresent,versioningGuidancePresent,codeExamplesPresent},
-    assessedDimensions:["AEO","AgEO"],
-    scopes:{AEO:"Markdown heading and code-example presence",AgEO:"Markdown authentication, error, rate-limit, and versioning guidance"}
+    observations:{
+      headingPresent:headingData.headingCount > 0,authenticationGuidancePresent,errorHandlingGuidancePresent,rateLimitGuidancePresent,versioningGuidancePresent,codeExamplesPresent,
+      markdownFrontMatterPresent:parsed.present,markdownFrontMatterState:parsed.state,markdownTitlePresent:Boolean(titleValue),
+      markdownDescriptionPresent:descriptionState === "present",markdownDescriptionState:descriptionState,markdownCanonicalPresent:Boolean(canonicalValue),
+      markdownRobotsNoIndex:robotsNoIndex,markdownH1Count:headingData.h1Count,markdownHeadingCount:headingData.headingCount,
+      markdownHeadingHierarchyIssueCount:headingData.headingHierarchyIssueCount
+    },
+    assessedDimensions:["SEO","AEO","AgEO"],
+    scopes:{
+      SEO:"Supported scalar Markdown front matter fields and source-level robots directives; rendered HTML metadata and crawler behavior are not verified",
+      AEO:"Markdown heading presence, count, and source-level heading hierarchy",
+      AgEO:"Markdown authentication, error, rate-limit, and versioning guidance"
+    }
   };
 }
 

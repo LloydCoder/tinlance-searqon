@@ -480,3 +480,58 @@ test("OpenAPI 3.2 rejects malformed security scheme URI references", () => {
   assert.equal(result.observations.undefinedSecuritySchemeCount, 1);
   assert.ok(result.findings.some(item => item.ruleId === "openapi.security_scheme.undefined"));
 });
+
+
+test("Markdown front matter and visible headings are parsed without treating source as rendered HTML", () => {
+  const content = [
+    "---",
+    'title: "A practical guide to resilient APIs"',
+    'description: "A concise guide covering API reliability, authentication, and safe integration patterns."',
+    "canonical: https://example.test/guides/resilient-apis",
+    "robots: noindex, follow",
+    "---",
+    "# Resilient APIs",
+    "## Authentication",
+    "```md",
+    "# This is a code sample, not a document heading",
+    "```"
+  ].join("\n");
+  const result = analyzeDocument({source:"guide.md",contentType:"text/markdown",content});
+  assert.equal(result.observations.markdownFrontMatterPresent,true);
+  assert.equal(result.observations.markdownTitlePresent,true);
+  assert.equal(result.observations.markdownDescriptionPresent,true);
+  assert.equal(result.observations.markdownCanonicalPresent,true);
+  assert.equal(result.observations.markdownRobotsNoIndex,true);
+  assert.equal(result.observations.markdownH1Count,1);
+  assert.equal(result.observations.markdownHeadingCount,2);
+  assert.equal(result.observations.markdownHeadingHierarchyIssueCount,0);
+  assert.equal(result.assessments.SEO.coverage,"partial");
+  assert.ok(result.findings.some(item => item.ruleId === "markdown.robots.noindex"));
+  assert.equal(result.findings.some(item => item.ruleId === "docs.heading.missing"),false);
+});
+
+test("Markdown distinguishes explicitly empty metadata from metadata that is not assessable", () => {
+  const empty = analyzeDocument({
+    source:"empty-description.md",
+    contentType:"text/markdown",
+    content:'---\ntitle: "Useful title"\ndescription: ""\n---\n# Useful title'
+  });
+  assert.equal(empty.observations.markdownDescriptionState,"empty");
+  assert.ok(empty.findings.some(item => item.ruleId === "markdown.meta_description.empty"));
+
+  const absent = analyzeDocument({
+    source:"no-frontmatter.md",
+    contentType:"text/markdown",
+    content:"# A useful heading\n\nBody text."
+  });
+  assert.equal(absent.observations.markdownFrontMatterPresent,false);
+  assert.equal(absent.observations.markdownDescriptionState,"not_assessable");
+  assert.equal(absent.findings.some(item => item.ruleId === "markdown.meta_description.missing"),false);
+});
+
+test("Markdown front matter parser rejects oversized or structurally unsafe metadata without throwing", () => {
+  const oversized = "---\n" + "x".repeat(17000) + "\n---\n# Heading";
+  const result = analyzeDocument({source:"large.md",contentType:"text/markdown",content:oversized});
+  assert.equal(result.observations.markdownFrontMatterState,"rejected");
+  assert.equal(result.observations.markdownH1Count,1);
+});
