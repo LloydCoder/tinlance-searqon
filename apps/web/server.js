@@ -259,7 +259,7 @@ export function createAppServer({ database = null, authService = null, workspace
     }
 
 
-    const checkoutRoute=url.pathname.match(/^\\/api\\/v1\\/workspaces\\/([0-9a-f-]{36})\\/billing\\/checkout$/i);
+    const checkoutRoute=url.pathname.match(/^\/api\/v1\/workspaces\/([0-9a-f-]{36})\/billing\/checkout$/i);
     if(checkoutRoute) {
       if(request.method!=="POST") {
         response.setHeader("allow","POST");
