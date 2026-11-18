@@ -19,7 +19,7 @@ jobs:
       - name: Resolve exact release tag
         id: release
         env:
-          ATTEST_BRANCH: \${{ github.ref_name }}
+          ATTEST_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           RELEASE_TAG="\${ATTEST_BRANCH#attest/}"
@@ -32,7 +32,7 @@ jobs:
       - name: Check out immutable release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: \${{ steps.release.outputs.tag }}
+          ref: ${{ steps.release.outputs.tag }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -44,7 +44,7 @@ jobs:
 
       - name: Verify package version matches release tag
         env:
-          RELEASE_TAG: \${{ steps.release.outputs.tag }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
           node -e 'const p=require("./package.json"); if (process.env.RELEASE_TAG !== "v" + p.version) process.exit(1);'
 
@@ -56,8 +56,8 @@ jobs:
 
       - name: Download published release assets
         env:
-          GH_TOKEN: \${{ github.token }}
-          RELEASE_TAG: \${{ steps.release.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
           mkdir -p published
           gh release download "$RELEASE_TAG" --dir published
@@ -80,31 +80,31 @@ jobs:
       - name: Generate SLSA provenance attestation
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
-          subject-path: \${{ github.workspace }}/\${{ steps.package.outputs.package_file }}
+          subject-path: ${{ github.workspace }}/${{ steps.package.outputs.package_file }}
 
       - name: Generate CycloneDX SBOM attestation
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
-          subject-path: \${{ github.workspace }}/\${{ steps.package.outputs.package_file }}
-          sbom-path: \${{ github.workspace }}/published/sbom.cdx.json
+          subject-path: ${{ github.workspace }}/${{ steps.package.outputs.package_file }}
+          sbom-path: ${{ github.workspace }}/published/sbom.cdx.json
 
       - name: Verify package provenance signature and signer identity
         env:
-          GH_TOKEN: \${{ github.token }}
-          PACKAGE_FILE: \${{ steps.package.outputs.package_file }}
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_FILE: ${{ steps.package.outputs.package_file }}
         run: |
-          gh attestation verify "$PACKAGE_FILE" \\
-            --repo "$GITHUB_REPOSITORY" \\
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \\
+          gh attestation verify "$PACKAGE_FILE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \
             --format json > provenance-verification.json
 
       - name: Verify CycloneDX SBOM attestation
         env:
-          GH_TOKEN: \${{ github.token }}
-          PACKAGE_FILE: \${{ steps.package.outputs.package_file }}
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE_FILE: ${{ steps.package.outputs.package_file }}
         run: |
-          gh attestation verify "$PACKAGE_FILE" \\
-            --repo "$GITHUB_REPOSITORY" \\
-            --predicate-type https://cyclonedx.org/bom \\
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \\
+          gh attestation verify "$PACKAGE_FILE" \
+            --repo "$GITHUB_REPOSITORY" \
+            --predicate-type https://cyclonedx.org/bom \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-attestation-repair.yml" \
             --format json > sbom-attestation-verification.json
