@@ -9,6 +9,7 @@ import { createEmailSender } from "../../src/platform/email.js";
 import { createWorkspaceService } from "../../src/platform/workspaces.js";
 import { createRecommendationService } from "../../src/platform/recommendations.js";
 import { createGeoObservationService } from "../../src/platform/geo-observations.js";
+import { createWorkspaceAdminService } from "../../src/platform/workspace-admin.js";
 
 const ROOT = resolve(fileURLToPath(new URL("./public/", import.meta.url)));
 const MAX_BODY_BYTES = 2 * 1024 * 1024 + 8192;
@@ -222,9 +223,10 @@ async function serveStatic(pathname, response, headOnly = false, acceptsHtml = f
   }
 }
 
-export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null, geoObservationService = null } = {}) {
+export function createAppServer({ database = null, authService = null, workspaceService = null, recommendationService = null, geoObservationService = null, workspaceAdminService = null } = {}) {
   const auth = authService ?? (database ? createAuthService({ database, emailSender: createEmailSender() }) : null);
   const workspace = workspaceService ?? (database ? createWorkspaceService({ database }) : null);
+  const workspaceAdmin = workspaceAdminService ?? (database ? createWorkspaceAdminService({ database, emailSender: createEmailSender() }) : null);
   const recommendations = recommendationService ?? (database ? createRecommendationService({ database }) : null);
   const geoObservations = geoObservationService ?? (database ? createGeoObservationService({ database }) : null);
   const server = createServer(async (request, response) => {
@@ -309,6 +311,159 @@ export function createAppServer({ database = null, authService = null, workspace
       }
     }
 
+
+    const workspaceInvitationsRoute = url.pathname.match(/^\\/api\\/v1\\/workspaces\\/([^/]+)\\/invitations$/);
+    if (workspaceInvitationsRoute) {
+      if (request.method !== "GET" && request.method !== "POST") {
+        response.setHeader("allow","GET, POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use GET or POST."}});
+        return;
+      }
+      if (!auth || !workspaceAdmin) {
+        sendJson(response,503,{error:{code:"workspace_admin_unavailable",message:"Workspace administration is not configured."}});
+        return;
+      }
+      if (request.method === "POST" && !isSameOrigin(request,auth.publicOrigin)) {
+        sendJson(response,403,{error:{code:"origin_rejected",message:"The request origin is not allowed."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in to manage workspace invitations."}});
+          return;
+        }
+        if (request.method === "GET") {
+          sendJson(response,200,{invitations:await workspaceAdmin.listInvitations(profile.user.id,workspaceInvitationsRoute[1])});
+          return;
+        }
+        if (!requireJsonContentType(request,response)) return;
+        const body = await readJsonBody(request,MAX_AUTH_BODY_BYTES);
+        const invitation = await workspaceAdmin.createInvitation(profile.user.id,workspaceInvitationsRoute[1],body);
+        sendJson(response,201,{invitation});
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status<500?(error.code??"invalid_request"):"workspace_admin_error",message:status<500?error.message:"The workspace administration request could not be completed."}});
+      }
+      return;
+    }
+
+    const workspaceMembersRoute = url.pathname.match(/^\\/api\\/v1\\/workspaces\\/([^/]+)\\/members$/);
+    if (workspaceMembersRoute) {
+      if (request.method !== "GET") {
+        response.setHeader("allow","GET");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use GET."}});
+        return;
+      }
+      if (!auth || !workspaceAdmin) {
+        sendJson(response,503,{error:{code:"workspace_admin_unavailable",message:"Workspace administration is not configured."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in to view workspace members."}});
+          return;
+        }
+        sendJson(response,200,{members:await workspaceAdmin.listMembers(profile.user.id,workspaceMembersRoute[1])});
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status<500?(error.code??"invalid_request"):"workspace_admin_error",message:status<500?error.message:"The workspace administration request could not be completed."}});
+      }
+      return;
+    }
+
+    const workspaceMemberRoleRoute = url.pathname.match(/^\\/api\\/v1\\/workspaces\\/([^/]+)\\/members\\/([^/]+)\\/role$/);
+    if (workspaceMemberRoleRoute) {
+      if (request.method !== "POST") {
+        response.setHeader("allow","POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use POST."}});
+        return;
+      }
+      if (!auth || !workspaceAdmin) {
+        sendJson(response,503,{error:{code:"workspace_admin_unavailable",message:"Workspace administration is not configured."}});
+        return;
+      }
+      if (!isSameOrigin(request,auth.publicOrigin)) {
+        sendJson(response,403,{error:{code:"origin_rejected",message:"The request origin is not allowed."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in to manage workspace roles."}});
+          return;
+        }
+        if (!requireJsonContentType(request,response)) return;
+        const body = await readJsonBody(request,MAX_AUTH_BODY_BYTES);
+        const result = await workspaceAdmin.updateMemberRole(profile.user.id,workspaceMemberRoleRoute[1],workspaceMemberRoleRoute[2],body?.role);
+        sendJson(response,200,result);
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status<500?(error.code??"invalid_request"):"workspace_admin_error",message:status<500?error.message:"The workspace administration request could not be completed."}});
+      }
+      return;
+    }
+
+    const invitationRevokeRoute = url.pathname.match(/^\\/api\\/v1\\/workspace-invitations\\/([^/]+)\\/revoke$/);
+    if (invitationRevokeRoute) {
+      if (request.method !== "POST") {
+        response.setHeader("allow","POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use POST."}});
+        return;
+      }
+      if (!auth || !workspaceAdmin) {
+        sendJson(response,503,{error:{code:"workspace_admin_unavailable",message:"Workspace administration is not configured."}});
+        return;
+      }
+      if (!isSameOrigin(request,auth.publicOrigin)) {
+        sendJson(response,403,{error:{code:"origin_rejected",message:"The request origin is not allowed."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in to revoke workspace invitations."}});
+          return;
+        }
+        sendJson(response,200,await workspaceAdmin.revokeInvitation(profile.user.id,invitationRevokeRoute[1]));
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status<500?(error.code??"invalid_request"):"workspace_admin_error",message:status<500?error.message:"The workspace administration request could not be completed."}});
+      }
+      return;
+    }
+
+    if (url.pathname === "/api/v1/workspace-invitations/accept") {
+      if (request.method !== "POST") {
+        response.setHeader("allow","POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use POST."}});
+        return;
+      }
+      if (!auth || !workspaceAdmin) {
+        sendJson(response,503,{error:{code:"workspace_admin_unavailable",message:"Workspace administration is not configured."}});
+        return;
+      }
+      if (!isSameOrigin(request,auth.publicOrigin)) {
+        sendJson(response,403,{error:{code:"origin_rejected",message:"The request origin is not allowed."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in with the invited email address before accepting this invitation."}});
+          return;
+        }
+        if (!requireJsonContentType(request,response)) return;
+        const body = await readJsonBody(request,MAX_AUTH_BODY_BYTES);
+        const membership = await workspaceAdmin.acceptInvitation(profile.user.id,body?.token);
+        sendJson(response,200,{membership});
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status<500?(error.code??"invalid_request"):"workspace_admin_error",message:status<500?error.message:"The workspace administration request could not be completed."}});
+      }
+      return;
+    }
 
     if (url.pathname === "/api/v1/projects") {
       if (request.method !== "GET" && request.method !== "POST") {
