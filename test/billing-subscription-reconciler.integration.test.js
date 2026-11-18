@@ -16,7 +16,7 @@ if(databaseUrl && process.env.SEARQON_TEST_DATABASE==="1") {
 
 test("billing reconciliation applies provider-canonical snapshots and ignores stale event ordering", {skip:!disposable}, async()=>{
   const owner=new Pool({connectionString:databaseUrl});
-  const workerPool=new Pool({connectionString:databaseUrl,max:2});
+  const workerPool=new Pool({connectionString:process.env.SEARQON_BILLING_WORKER_DATABASE_URL,max:2});
   const organizationId=randomUUID();
   const userId=randomUUID();
   const customerId="cus_"+randomUUID().replaceAll("-","").slice(0,16);
