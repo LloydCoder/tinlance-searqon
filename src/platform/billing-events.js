@@ -74,6 +74,8 @@ export function normalizeVerifiedBillingEvent(input) {
   const organizationId = requireString(payload.organizationId, "organization_id", UUID);
   const providerCustomerId = requireString(payload.providerCustomerId, "provider_customer_id", PROVIDER_ID);
   const providerSubscriptionId = requireString(payload.providerSubscriptionId, "provider_subscription_id", PROVIDER_ID);
+  const checkoutIntentId = payload.checkoutIntentId === undefined || payload.checkoutIntentId === null
+    ? null : requireString(payload.checkoutIntentId,"checkout_intent_id",UUID);
   if (!STATUSES.has(payload.status)) throw new BillingEventError("invalid_status", "Subscription status is not supported.");
   if (!PLANS.has(payload.plan)) throw new BillingEventError("invalid_plan", "Subscription plan is not supported.");
   if ((payload.status === "trialing") !== (payload.plan === "trial")) {
@@ -110,6 +112,7 @@ export function normalizeVerifiedBillingEvent(input) {
     plan: payload.plan,
     currentPeriodStart,
     currentPeriodEnd,
-    trialEndsAt
+    trialEndsAt,
+    checkoutIntentId
   });
 }
