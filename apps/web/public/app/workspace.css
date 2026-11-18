@@ -3,42 +3,42 @@
 .project-panel,.project-detail{background:#FFFEFA;border:1px solid var(--line);border-radius:10px;padding:20px;min-width:0}
 .project-panel-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .project-panel-heading h3,.project-detail h3{font-size:17px;margin:0}
-.project-panel-heading span{font:11px var(--mono);color:var(--slate)}
-.project-panel label,.assessment-form label{display:block;font-size:11px;font-weight:650;color:var(--ink);margin:13px 0 6px}
+.project-panel-heading span{font:13px var(--mono);color:var(--slate)}
+.project-panel label,.assessment-form label{display:block;font-size:13px;font-weight:650;color:var(--ink);margin:13px 0 6px}
 .organization-select,.project-form input,.assessment-form select,.assessment-form textarea{width:100%;border:1px solid var(--mist);border-radius:6px;background:#fffefa;color:var(--ink);font:12px var(--sans);padding:10px 11px;min-width:0}
 .project-form input:focus,.organization-select:focus,.assessment-form select:focus,.assessment-form textarea:focus{outline:2px solid var(--amber-deep);outline-offset:2px}
 .projects-list{display:grid;gap:7px;margin:12px 0 18px}
 .project-list-item,.history-item{width:100%;text-align:left;background:#F6F3EC;border:1px solid var(--line);border-radius:6px;padding:10px;display:grid;gap:5px;color:var(--ink);cursor:pointer;min-width:0}
 .project-list-item:hover,.project-list-item.selected,.history-item:hover{border-color:var(--amber-deep);background:#fffaf0}
 .project-list-item strong,.history-item strong{font-size:12px;overflow-wrap:anywhere}
-.project-list-item span,.history-item span{font-size:10px;color:var(--slate);overflow-wrap:anywhere}
+.project-list-item span,.history-item span{font-size:12px;color:var(--slate);overflow-wrap:anywhere}
 .project-form{border-top:1px solid var(--line);padding-top:14px}
 .project-form button{margin-top:13px}
 .project-detail-empty{padding:28px 12px}
 .project-detail-empty h3{margin:9px 0}
-.project-detail-empty p,.muted-copy{font-size:11px;line-height:1.6;color:var(--slate)}
+.project-detail-empty p,.muted-copy{font-size:13px;line-height:1.6;color:var(--slate)}
 .project-detail-heading{border-bottom:1px solid var(--line);padding-bottom:15px}
 .project-detail-heading h3{font-size:20px;margin:6px 0}
-.project-url{font-size:11px;color:var(--slate);overflow-wrap:anywhere;margin:0}
+.project-url{font-size:13px;color:var(--slate);overflow-wrap:anywhere;margin:0}
 .assessment-form{padding:16px 0;border-bottom:1px solid var(--line)}
 .assessment-form h4,.assessment-history h4{font-size:13px;margin:0 0 7px}
 .assessment-form .muted-copy{margin:0 0 12px}
-.assessment-form textarea{resize:vertical;min-height:180px;font:11px/1.6 var(--mono);margin-bottom:12px}
+.assessment-form textarea{resize:vertical;min-height:180px;font:13px/1.6 var(--mono);margin-bottom:12px}
 .assessment-form button{margin-top:8px}
 .assessment-result{padding:14px 0;border-bottom:1px solid var(--line)}
 .assessment-result-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.assessment-result-header strong{font:10px var(--mono);color:var(--amber-deep);text-transform:uppercase}
+.assessment-result-header strong{font:12px var(--mono);color:var(--amber-deep);text-transform:uppercase}
 .assessment-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
 .assessment-summary div{font-size:14px;font-weight:700;overflow-wrap:anywhere}
-.assessment-summary span{font:9px var(--mono);color:var(--slate);text-transform:uppercase}
+.assessment-summary span{font:12px var(--mono);color:var(--slate);text-transform:uppercase}
 .finding-list{padding-left:20px;display:grid;gap:12px}
 .finding-item{padding:0 0 10px 3px;border-bottom:1px solid var(--line)}
 .finding-item strong{display:block;font-size:12px;margin:6px 0}
-.finding-item p{font-size:11px;line-height:1.55;color:var(--slate);margin:5px 0}
+.finding-item p{font-size:13px;line-height:1.55;color:var(--slate);margin:5px 0}
 .finding-recommendation{color:var(--ink)!important}
-.finding-severity{font:9px var(--mono);text-transform:uppercase;color:var(--amber-deep)}
+.finding-severity{font:12px var(--mono);text-transform:uppercase;color:var(--amber-deep)}
 .finding-severity.critical,.finding-severity.high{color:var(--red)}
-.evidence-note{font-size:10px;line-height:1.6;color:var(--slate);padding:10px;background:#F6F3EC;border-left:2px solid var(--amber)}
+.evidence-note{font-size:12px;line-height:1.6;color:var(--slate);padding:10px;background:#F6F3EC;border-left:2px solid var(--amber)}
 .assessment-history{padding-top:14px}
 .assessment-history h4{margin-bottom:9px}
 .history-item{margin:6px 0}
@@ -53,7 +53,7 @@
 .workspace-nav a{min-height:40px;display:flex;align-items:center}
 .workspace-nav a:focus-visible,.project-list-item:focus-visible,.history-item:focus-visible,.workspace-header button:focus-visible{outline:3px solid var(--amber-deep);outline-offset:2px}
 .project-url,.project-list-item span,.history-item span{overflow-wrap:anywhere;word-break:break-word}
-@media(max-width:360px){.workspace-header{padding-inline:12px}.workspace-brand img{width:108px}.workspace-main{padding:20px 14px}.workspace-sidebar{padding-inline:12px}.workspace-nav a{padding-inline:8px;font-size:10px}.workspace-empty,.workspace-settings{padding:14px}}
+@media(max-width:360px){.workspace-header{padding-inline:12px}.workspace-brand img{width:108px}.workspace-main{padding:20px 14px}.workspace-sidebar{padding-inline:12px}.workspace-nav a{padding-inline:8px;font-size:12px}.workspace-empty,.workspace-settings{padding:14px}}
 
 
 /* Evidence-linked recommendation workflow. */
@@ -63,11 +63,11 @@
 .recommendation-heading h4{font-size:17px;margin:0}
 .recommendation-heading .muted-copy{margin:0;max-width:620px}
 .recommendation-heading button{grid-column:2;grid-row:1/4;align-self:center}
-.recommendation-disclaimer{font-size:10px;line-height:1.55;color:var(--slate);padding:10px 12px;margin:14px 0;background:#F6F3EC;border-left:2px solid var(--amber)}
+.recommendation-disclaimer{font-size:12px;line-height:1.55;color:var(--slate);padding:10px 12px;margin:14px 0;background:#F6F3EC;border-left:2px solid var(--amber)}
 .recommendation-list{display:grid;gap:12px}
 .recommendation-card{min-width:0;padding:14px;border:1px solid var(--line);border-radius:8px;background:#FFFEFB}
 .recommendation-card-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.recommendation-dimension,.recommendation-severity,.recommendation-state{font:9px var(--mono);text-transform:uppercase;letter-spacing:.04em}
+.recommendation-dimension,.recommendation-severity,.recommendation-state{font:12px var(--mono);text-transform:uppercase;letter-spacing:.04em}
 .recommendation-dimension{color:var(--slate)}
 .recommendation-severity{color:var(--amber-deep)}
 .recommendation-severity.critical,.recommendation-severity.high{color:var(--red)}
@@ -75,12 +75,12 @@
 .recommendation-state.verified{background:#EAF3EC;color:#23633f}
 .recommendation-state.dismissed{color:var(--slate)}
 .recommendation-card h5{font-size:13px;line-height:1.4;margin:10px 0 6px}
-.recommendation-description,.recommendation-action{font-size:11px;line-height:1.55;margin:6px 0;color:var(--slate)}
+.recommendation-description,.recommendation-action{font-size:13px;line-height:1.55;margin:6px 0;color:var(--slate)}
 .recommendation-action{color:var(--ink);padding-left:10px;border-left:2px solid var(--amber)}
-.recommendation-meta{font:9px var(--mono);color:var(--slate);margin:10px 0}
+.recommendation-meta{font:12px var(--mono);color:var(--slate);margin:10px 0}
 .recommendation-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .recommendation-actions button{min-height:30px}
-.recommendation-history{border-top:1px solid var(--line);margin-top:12px;padding-top:8px;font-size:10px;color:var(--slate)}
+.recommendation-history{border-top:1px solid var(--line);margin-top:12px;padding-top:8px;font-size:12px;color:var(--slate)}
 .recommendation-history summary{cursor:pointer;min-height:26px;display:flex;align-items:center}
 .recommendation-event-list{padding-left:18px;display:grid;gap:5px;line-height:1.45}
 @media(max-width:520px){
