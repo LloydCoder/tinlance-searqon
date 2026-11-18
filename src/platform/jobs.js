@@ -167,6 +167,9 @@ export function createJobQueue({ database, workerPool = null, workerRole = "sear
   if (!database?.pool || typeof database.pool.connect !== "function") {
     throw new TypeError("A PostgreSQL database pool is required.");
   }
+  if (typeof workerRole !== "string" || !WORKER_ROLES.has(workerRole)) {
+    throw new TypeError("A supported least-privilege worker database role is required.");
+  }
 
   return Object.freeze({
     async enqueue(userId, organizationId, input) {
