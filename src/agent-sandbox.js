@@ -283,6 +283,8 @@ export function simulateAgentJourney(manifest, { runId = null } = {}) {
     documents:[...validated.documents.values()].map(document=>({id:document.id,path:document.pathname,contentType:document.contentType,bytes:document.bytes,sha256:document.sha256})),
     steps
   };
-  const resultSha256 = sha256(stableJson(result));
+  const serializedResult = stableJson(result);
+  if (Buffer.byteLength(serializedResult,"utf8") > 48 * 1024) fail("result_too_large","The simulated journey result exceeded its 48 KiB safety limit.");
+  const resultSha256 = sha256(serializedResult);
   return Object.freeze({...result,resultSha256});
 }
