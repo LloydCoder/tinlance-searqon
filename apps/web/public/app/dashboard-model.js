@@ -19,7 +19,7 @@ function emptySeverity() {
 }
 
 function emptyCoverage() {
-  return Object.fromEntries(DIMENSIONS.map(dimension => [dimension, { full: 0, partial: 0, none: 0 }]));
+  return Object.fromEntries(DIMENSIONS.map(dimension => [dimension, { full: 0, partial: 0, none: 0, unavailable: 0 }]));
 }
 
 export function buildDashboardModel({
@@ -35,6 +35,8 @@ export function buildDashboardModel({
     openActionCount: 0,
     verifiedActionCount: 0,
     recommendationCount: 0,
+    assessmentUnavailableProjectCount: 0,
+    recommendationUnavailableProjectCount: 0,
     coverage: emptyCoverage(),
     recommendations: [],
     recentAssessments: [],
@@ -42,47 +44,52 @@ export function buildDashboardModel({
   };
 
   for (const project of projects) {
-    const assessments = Array.isArray(assessmentsByProject[project.id])
-      ? assessmentsByProject[project.id]
-      : [];
-    model.completedAssessmentCount += assessments.filter(item => item?.status === "succeeded").length;
-
-    const latest = latestSuccessfulAssessment(assessments);
-    if (latest) {
-      model.projectsWithLatestAssessment += 1;
-      const report = latest.report;
-      model.latestFindingCount += Number.isSafeInteger(report.summary?.findingCount)
-        ? report.summary.findingCount
-        : Array.isArray(report.findings) ? report.findings.length : 0;
-
-      for (const severity of SEVERITIES) {
-        const count = report.summary?.bySeverity?.[severity];
-        if (Number.isSafeInteger(count) && count >= 0) model.latestSeverity[severity] += count;
-      }
-
-      for (const dimension of DIMENSIONS) {
-        const coverage = report.assessments?.[dimension]?.coverage;
-        if (coverage === "full" || coverage === "partial") model.coverage[dimension][coverage] += 1;
-        else model.coverage[dimension].none += 1;
-      }
+    const assessmentHistory = assessmentsByProject[project.id];
+    if (!Array.isArray(assessmentHistory)) {
+      model.assessmentUnavailableProjectCount += 1;
+      for (const dimension of DIMENSIONS) model.coverage[dimension].unavailable += 1;
     } else {
-      for (const dimension of DIMENSIONS) model.coverage[dimension].none += 1;
+      model.completedAssessmentCount += assessmentHistory.filter(item => item?.status === "succeeded").length;
+      const latest = latestSuccessfulAssessment(assessmentHistory);
+      if (latest) {
+        model.projectsWithLatestAssessment += 1;
+        const report = latest.report;
+        model.latestFindingCount += Number.isSafeInteger(report.summary?.findingCount)
+          ? report.summary.findingCount
+          : Array.isArray(report.findings) ? report.findings.length : 0;
+
+        for (const severity of SEVERITIES) {
+          const count = report.summary?.bySeverity?.[severity];
+          if (Number.isSafeInteger(count) && count >= 0) model.latestSeverity[severity] += count;
+        }
+
+        for (const dimension of DIMENSIONS) {
+          const coverage = report.assessments?.[dimension]?.coverage;
+          if (coverage === "full" || coverage === "partial") model.coverage[dimension][coverage] += 1;
+          else model.coverage[dimension].none += 1;
+        }
+      } else {
+        for (const dimension of DIMENSIONS) model.coverage[dimension].none += 1;
+      }
+
+      for (const assessment of assessmentHistory) {
+        if (!assessment || typeof assessment !== "object") continue;
+        model.recentAssessments.push({
+          ...assessment,
+          projectId: project.id,
+          projectName: project.name,
+          targetUrl: project.targetUrl
+        });
+      }
     }
 
-    for (const assessment of assessments) {
-      if (!assessment || typeof assessment !== "object") continue;
-      model.recentAssessments.push({
-        ...assessment,
-        projectId: project.id,
-        projectName: project.name,
-        targetUrl: project.targetUrl
-      });
+    const recommendationHistory = recommendationsByProject[project.id];
+    if (!Array.isArray(recommendationHistory)) {
+      model.recommendationUnavailableProjectCount += 1;
+      continue;
     }
 
-    const recommendations = Array.isArray(recommendationsByProject[project.id])
-      ? recommendationsByProject[project.id]
-      : [];
-    for (const recommendation of recommendations) {
+    for (const recommendation of recommendationHistory) {
       if (!recommendation || typeof recommendation !== "object") continue;
       model.recommendationCount += 1;
       if (ACTIVE_STATUSES.has(recommendation.status)) {
