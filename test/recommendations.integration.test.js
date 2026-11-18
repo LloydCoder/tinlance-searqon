@@ -117,7 +117,10 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
       service.syncFromAssessment(viewer,project.id,baseline.id),
       error => error.code === "insufficient_role"
     );
-    assert.equal((await service.list(viewer,project.id)).length,generated.created.length);
+    const viewerWorklist = await service.list(viewer,project.id);
+    assert.equal(viewerWorklist.length,generated.created.length);
+    assert.ok(viewerWorklist.every(item=>Number.isInteger(item.crossEngineRank)));
+    assert.ok(viewerWorklist.every(item=>Number.isInteger(item.crossEnginePriorityScore)));
     await assert.rejects(
       service.list(userB,project.id),
       error => error.code === "project_not_found"
