@@ -104,11 +104,10 @@ test("verified billing webhook is durably accepted once and processed under a fe
     assert.equal(persisted.rows[0].raw_body_sha256.length, 64);
     assert.equal(JSON.stringify(persisted.rows[0]).includes(rawBody.toString()), false);
 
+    const appPool = roleQueryPool(owner, "searqon_app");
     await assert.rejects(
-      owner.query("SELECT * FROM searqon.billing_webhook_inbox WHERE provider_event_id=$1", [eventId]).then(() => {
-        throw new Error("owner query unexpectedly rejected");
-      }),
-      error => error.message === "owner query unexpectedly rejected"
+      appPool.query("SELECT * FROM searqon.billing_webhook_inbox WHERE provider_event_id=$1", [eventId]),
+      error => error.code === "42501"
     );
   } finally {
     await owner.query("DELETE FROM searqon.billing_webhook_inbox WHERE organization_id=$1", [organizationId]).catch(() => {});
