@@ -109,6 +109,38 @@ function periodBounds(data) {
   return {start,end};
 }
 
+async function readBoundedResponse(response,maxBytes) {
+  const declared=Number(response.headers?.get?.("content-length"));
+  if(Number.isFinite(declared) && declared>maxBytes) {
+    throw new PaddleAdapterError(502,"provider_response_too_large","Paddle returned an oversized subscription response.");
+  }
+  if(response.body && typeof response.body.getReader==="function") {
+    const reader=response.body.getReader();
+    const chunks=[];
+    let size=0;
+    try {
+      while(true) {
+        const {done,value}=await reader.read();
+        if(done) break;
+        size+=value.byteLength;
+        if(size>maxBytes) {
+          await reader.cancel().catch(()=>{});
+          throw new PaddleAdapterError(502,"provider_response_too_large","Paddle returned an oversized subscription response.");
+        }
+        chunks.push(Buffer.from(value));
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    return Buffer.concat(chunks).toString("utf8");
+  }
+  const text=await response.text();
+  if(Buffer.byteLength(text,"utf8")>maxBytes) {
+    throw new PaddleAdapterError(502,"provider_response_too_large","Paddle returned an oversized subscription response.");
+  }
+  return text;
+}
+
 function canonicalSnapshot(data,event,pricePlanMap) {
   if(!data || typeof data!=="object" || data.id!==event.providerSubscriptionId
     || data.customer_id!==event.payload.providerCustomerId
@@ -132,6 +164,10 @@ function canonicalSnapshot(data,event,pricePlanMap) {
   if(status==="trialing" && (!trialEndsAt || Date.parse(trialEndsAt)<=Date.parse(bounds.start))) {
     throw new PaddleAdapterError(502,"provider_trial_invalid","The Paddle trial period is invalid.");
   }
+  const canceledAt=data.canceled_at===null || data.canceled_at===undefined?null:validDate(data.canceled_at);
+  if(data.canceled_at!==null && data.canceled_at!==undefined && !canceledAt) {
+    throw new PaddleAdapterError(502,"provider_snapshot_invalid","Paddle returned an invalid cancellation timestamp.");
+  }
   return {
     organizationId:event.organizationId,
     providerCustomerId:data.customer_id,
@@ -143,7 +179,7 @@ function canonicalSnapshot(data,event,pricePlanMap) {
     currentPeriodEnd:bounds.end,
     trialEndsAt,
     cancelAtPeriodEnd:data.scheduled_change?.action==="cancel",
-    canceledAt:data.canceled_at?validDate(data.canceled_at):null
+    canceledAt
   };
 }
 
@@ -236,9 +272,11 @@ export function createPaddleProviderAdapter({
         redirect:"error",
         signal:AbortSignal.timeout(8_000)
       }).catch(()=>{throw new PaddleAdapterError(503,"provider_api_unavailable","Paddle canonical subscription lookup failed.");});
-      const text=await response.text().catch(()=>{throw new PaddleAdapterError(503,"provider_api_unavailable","Paddle canonical subscription lookup failed.");});
-      if(text.length>maxResponseBytes) throw new PaddleAdapterError(502,"provider_response_too_large","Paddle returned an oversized subscription response.");
       if(!response.ok) throw new PaddleAdapterError(503,"provider_api_unavailable","Paddle canonical subscription lookup failed.");
+      const text=await readBoundedResponse(response,maxResponseBytes).catch(error=>{
+        if(error instanceof PaddleAdapterError) throw error;
+        throw new PaddleAdapterError(503,"provider_api_unavailable","Paddle canonical subscription lookup failed.");
+      });
       let body;
       try { body=JSON.parse(text); }
       catch { throw new PaddleAdapterError(502,"provider_response_invalid","Paddle returned an invalid subscription response."); }
