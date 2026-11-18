@@ -89,3 +89,11 @@
   .recommendation-card{padding:12px}
   .recommendation-state{margin-left:0}
 }
+
+
+/* Phase 12: explicit recommendation ownership and scheduling. */
+.recommendation-work-form{display:grid;grid-template-columns:minmax(150px,1fr) minmax(130px,.7fr) auto;gap:10px;align-items:end;margin-top:12px;padding:12px;background:#F6F3EC;border:1px solid var(--line);border-radius:7px}
+.recommendation-work-form label{display:grid;gap:5px;font-size:11px;font-weight:650;color:var(--slate)}
+.recommendation-assignee,.recommendation-due-date{width:100%;min-width:0;min-height:36px;border:1px solid var(--mist);border-radius:5px;background:#FFFEFA;color:var(--ink);padding:7px 9px;font:12px var(--sans)}
+.recommendation-work-form button{min-height:36px;white-space:nowrap}
+@media(max-width:520px){.recommendation-work-form{grid-template-columns:1fr}.recommendation-work-form button{justify-self:start}}
