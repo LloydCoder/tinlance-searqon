@@ -19,6 +19,7 @@ function eventEnvelope(overrides={}) {
     occurred_at:"2026-11-18T11:59:59.000Z",
     data:{
       id:subscriptionId,
+      transaction_id:"txn_01h04vsc0qhwtsbsxh3422wjs4",
       customer_id:customerId,
       status:"active",
       custom_data:{organization_id:organizationId},
@@ -49,6 +50,7 @@ test("Paddle adapter verifies raw bytes and normalizes subscription events",asyn
   assert.equal(result.payload.organizationId,organizationId);
   assert.equal(result.payload.plan,"growth");
   assert.equal(result.payload.status,"active");
+  assert.equal(result.payload.providerTransactionId,"txn_01h04vsc0qhwtsbsxh3422wjs4");
 });
 
 test("Paddle adapter supports multiple h1 signatures during secret rotation",async()=>{
