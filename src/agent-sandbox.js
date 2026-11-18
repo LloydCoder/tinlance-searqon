@@ -236,7 +236,7 @@ export function simulateAgentJourney(manifest, { runId = null, now = () => new D
     }
     if (step.action === "follow_link") {
       const source = validated.documents.get(step.fromDocumentId);
-      const destination = safeUrl(step.href,source.url,"journey.href");
+      const destination = safeUrl(step.href,new URL(source.url).origin,"journey.href");
       const target = [...validated.documents.values()].find(document => document.url === destination.href);
       steps.push({
         index,
