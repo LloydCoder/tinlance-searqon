@@ -91,7 +91,7 @@ These are runbooks and control requirements, not evidence of a live KMS integrat
 
 ## Remaining Phase 13 blockers
 
-1. Explicit payment-provider selection, terms/legal review, provider credentials and provider sandbox verification.
+1. Explicit payment-provider selection, terms/legal review, seller onboarding/payout verification, provider credentials and provider sandbox verification.
 2. Provider-specific signature verification and canonical API adapters; production webhook endpoint and worker process wiring.
 3. Checkout, invoice settlement, refunds/disputes and reconciliation of real payment objects.
 4. Proof that every billable API and worker operation uses atomic reserve/settle/release under concurrency, retries and billing-period rollover.
