@@ -1,7 +1,7 @@
 # Searqon Repository-to-Roadmap Reconciliation
 
 **Audit date:** 2026-11-18  
-**Audited main commit:** `3a92895e08c9db8ad149fb51974132239ea6a025`  
+**Audited main commit:** `dd75a590ae6962bdfdb8df49c0721d3d5b379aed`  
 **Canonical roadmap:** [ROADMAP_16_PHASE.md](ROADMAP_16_PHASE.md)  
 **Status register:** [EXECUTION_STATUS.md](EXECUTION_STATUS.md)  
 **Product maturity:** Early alpha; not production-ready.
@@ -120,19 +120,21 @@ The existing user instruction to avoid new spend remains in force. No paid provi
 
 1. Correct the status register so its canonical phase table matches this document and the canonical roadmap; move legacy engineering categories into cross-cutting workstreams.
 2. Refresh campaign delivery states and record invitations/replies/opt-outs in a private campaign ledger; never count them as completed interviews.
-3. Close the remaining Phase 2 main-branch ruleset and source-provenance gates, then continue serially with Phases 3 and 5 without rebuilding established components.
+3. Close the remaining Phase 2 main-branch ruleset and owner source-provenance attestation gates, then continue serially with Phase 3 and Phase 5 without rebuilding established components.
 4. Build and adversarially test the missing Phase 11 sandbox before enabling any simulated agent execution.
 5. Connect permitted GEO acquisition to measurement and monitoring only after legal/policy review, cost caps and labelled evaluation are in place.
 6. Complete hosted lifecycle and operational controls for Phase 13.
 7. Conduct independent security/privacy assurance and design-partner pilots for Phase 14.
 8. Make commercial v1 launch decisions only through Phase 15 acceptance.
 
-**Current overall verdict:** substantial early-alpha engineering exists across many phases; canonical Phase 0 and bounded Phase 4 have verified implementation gates; Phase 1 remains commercially unvalidated; Phases 2–10, 12–14 remain in progress to differing degrees; Phase 11 is the major missing engineering capability; Phase 15 has not started. No claim of 100% roadmap completion or production readiness is supported.
+**Current overall verdict:** substantial early-alpha engineering exists across many phases; canonical Phase 0 and bounded Phase 4 have verified implementation gates; Phase 1 remains commercially unvalidated; Phases 2–15 are not complete. Phase 11 now has a bounded read-only sandbox foundation but still needs authorized staging verification and acceptance; Phase 15 has not started. No claim of 100% roadmap completion or production readiness is supported.
 
 
-## 2026-11-18 — Phase 11 merge and Phase 12 ownership increment
+## 2026-11-18 — Phase 11–13 implementation and Phase 2 release reconciliation
 
-- Phase 11 PR #141 merged to `main` as `837f23f977433ea03094ed6153303b7eddfd5b63`. Exact-head Node 22/24 test/package validation, PostgreSQL tenant isolation, CodeQL and full-history secret scanning passed.
-- The Vercel preview check remained rate-limited by the existing Hobby build quota. No plan upgrade, spend, production deployment or worker deployment was performed. Phase 11's authorized staging verification and explicit product-owner acceptance remain outstanding; merge is not a claim of full production acceptance.
-- Phase 12 already had its foundational recommendation lifecycle and evidence-gated verification from PRs #120/#121. PR #142 starts the next increment: tenant-member assignment, strict optional calendar due dates, append-only assignment/due-date events, authenticated assignee lookup, and workspace ownership/scheduling controls.
-- PR #142 adds migration `0014_recommendation_work_management.sql`, service validation, API routes and unit/API/PostgreSQL integration coverage. It is a draft and remains subject to exact-head CI, security review and customer/product acceptance.
+- Phase 11 PR #141 is merged to `main` as `837f23f977433ea03094ed6153303b7eddfd5b63`. It provides a bounded read-only sandbox foundation; authorized staging verification, resource/observability evidence and owner acceptance remain outstanding.
+- Phase 12 PR #142 is merged to `main` as `8199e64df261048733fcac95e161186765fc99a3`. It adds workspace assignment/due dates, cross-discipline worklist ranking, severity regression history and immutable remediation-plan proposals bound to exact diff digests and successful assessment references. It does not apply patches, execute tests or mutate source control. Customer evaluation and staging verification remain outstanding.
+- Phase 13 PR #143 is merged to `main` as `c211c8dd8a4d387780a0e954651595d4f4d0aac9`. Billing adapter/runtime remains opt-in and disabled; provider selection, seller onboarding, sandbox E2E, complete metering, managed secrets, retention, backup/restore and operational acceptance remain open.
+- Phase 2 release/security increments PRs #145–#154 are merged (PR #150 was closed as a stale duplicate). Release `v0.2.0` is published and cryptographically verified. Current main commit `dd75a590ae6962bdfdb8df49c0721d3d5b379aed` passed CI run `44396311618`, CodeQL `44396311521`, secret scan `44396311514` and release verification `44396608160`.
+- Phase 2 remains IN_PROGRESS: the repository rulesets endpoint returns no rulesets, and the bounded source-provenance inventory is not a substitute for a signed owner declaration. The GitHub integration lacks repository Administration: write permission. See `docs/PHASE_2_OPEN_SOURCE_FOUNDATION.md`.
+- The Vercel preview quota failure is tracked separately from GitHub source CI. No plan upgrade, paid deployment, production alias change or quota bypass was performed.
