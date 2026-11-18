@@ -47,10 +47,9 @@ if (!token || !TOKEN_PATTERN.test(token)) {
   try {
     const profile = await getProfile();
     if (!profile?.user?.id) {
-      sessionStorage.setItem("searqon_auth_return_to", "/auth/invitation/");
       signInLink.hidden = false;
       acceptButton.hidden = true;
-      setStatus("Sign in using the email address that received this invitation. Your invitation will remain available in this browser session.");
+      setStatus("Sign in using the email address that received this invitation. After signing in, reopen the original invitation link from your email to accept it.");
     } else {
       acceptButton.disabled = false;
       setStatus("You are signed in. Accept the invitation to join the workspace.");
@@ -72,7 +71,6 @@ acceptButton.addEventListener("click", async () => {
   try {
     const result = await postJson("/api/v1/workspace-invitations/accept", { token: currentToken });
     sessionStorage.removeItem("searqon_invitation_token");
-    sessionStorage.removeItem("searqon_auth_return_to");
     setStatus("Invitation accepted. Opening your workspace…", "success");
     window.location.assign("/app/");
   } catch (error) {
