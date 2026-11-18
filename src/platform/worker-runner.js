@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-const JOB_TYPES = new Set(["assessment","site_crawl","geo_sampling","alert_delivery","scheduled_report"]);
+const JOB_TYPES = new Set(["assessment","site_crawl","geo_sampling","alert_delivery","scheduled_report","agent_simulation"]);
 const WORKER_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,63}$/;
 const ERROR_CODE = /^[a-z][a-z0-9_]{0,63}$/;
 
