@@ -1,12 +1,12 @@
 # Billing webhook ingestion and reconciliation
 
-**Status:** Provider-neutral implementation foundation. No payment provider is selected or configured.
+**Status:** Paddle adapter and provider-neutral ingestion foundation implemented. Paddle remains unselected and disabled pending seller onboarding, credentials, price mapping and sandbox verification.
 
 ## Security boundary
 
 The billing flow is deliberately split into three independent trust boundaries:
 
-1. A provider adapter verifies the signature against the exact original HTTP request bytes and returns a minimal event containing `providerCreatedAt`, `verifiedAt`, provider event ID, event type and normalized subscription identity.
+1. The Paddle adapter verifies `Paddle-Signature` over the exact original HTTP request bytes using HMAC-SHA256 and returns a minimal event containing `providerCreatedAt`, `verifiedAt`, provider event ID, event type and normalized subscription identity. Other providers require their own reviewed adapters.
 2. `createBillingWebhookProcessor` enforces provider allowlisting, body limits, verification freshness, canonical schema validation and a raw-body SHA-256 digest. It does not persist raw bytes and does not grant entitlements.
 3. `createBillingWebhookStore` accepts the canonical event into the redacted inbox using the dedicated ingest role. Provider/event IDs are unique; a repeated ID with a different tenant or raw-body digest is rejected as an event-ID collision.
 
