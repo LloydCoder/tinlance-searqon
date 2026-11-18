@@ -64,6 +64,19 @@ export function createWorkspaceAdminService({
     throw new TypeError("A canonical HTTPS public application origin is required outside loopback development.");
   }
 
+  async function requireWorkspaceRole(client,userId,organizationId,{adminOnly=false}={}) {
+    const result=await client.query(
+      "SELECT role FROM searqon.memberships WHERE organization_id=$1 AND user_id=$2",
+      [organizationId,userId]
+    );
+    const role=result.rows?.[0]?.role;
+    if(!role) throw new WorkspaceAdminError(404,"workspace_not_found","The requested workspace was not found.");
+    if(adminOnly && !["owner","admin"].includes(role)) {
+      throw new WorkspaceAdminError(403,"workspace_forbidden","Your workspace role cannot view invitation history.");
+    }
+    return role;
+  }
+
   async function transaction(userId,work) {
     try {
       return await withUserTransaction(database.pool,userId,work);
@@ -107,9 +120,16 @@ export function createWorkspaceAdminService({
           idempotencyKey: "searqon-workspace-invitation/"+invitation.invitation_id
         });
       } catch {
-        await transaction(userId,client =>
-          client.query("SELECT searqon.revoke_workspace_invitation($1)",[invitation.invitation_id])
-        ).catch(() => {});
+        let revoked=false;
+        try {
+          const result=await transaction(userId,client =>
+            client.query("SELECT searqon.revoke_workspace_invitation($1) AS revoked",[invitation.invitation_id])
+          );
+          revoked=result.rows?.[0]?.revoked===true;
+        } catch {}
+        if(!revoked) {
+          throw new WorkspaceAdminError(503,"invitation_delivery_state_unknown","Invitation delivery failed and the pending invitation state could not be confirmed. Ask a workspace owner to review and revoke it if necessary.");
+        }
         throw new WorkspaceAdminError(503,"invitation_delivery_unavailable","The invitation could not be delivered. The pending invitation was revoked.");
       }
       return Object.freeze({
@@ -124,6 +144,7 @@ export function createWorkspaceAdminService({
       requireUuid(userId,"user_id");
       requireUuid(organizationId,"organization_id");
       return transaction(userId,async client => {
+        await requireWorkspaceRole(client,userId,organizationId,{adminOnly:true});
         const result = await client.query(
           `SELECT id,invited_email,invited_role,invited_by,expires_at,accepted_at,revoked_at,created_at
            FROM searqon.workspace_invitations
@@ -142,6 +163,7 @@ export function createWorkspaceAdminService({
       requireUuid(userId,"user_id");
       requireUuid(organizationId,"organization_id");
       return transaction(userId,async client => {
+        await requireWorkspaceRole(client,userId,organizationId);
         const result = await client.query("SELECT * FROM searqon.list_workspace_members($1)",[organizationId]);
         return result.rows.map(row => ({
           userId:row.user_id,displayName:row.display_name,role:row.role,joinedAt:row.joined_at
