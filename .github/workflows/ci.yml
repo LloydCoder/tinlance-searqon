@@ -74,6 +74,11 @@ jobs:
         env:
           SEARQON_TEST_DATABASE: "1"
           SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
+      - name: Verify recommendation ownership, due dates and evidence-gated lifecycle
+        run: node --test test/recommendations.integration.test.js
+        env:
+          SEARQON_TEST_DATABASE: "1"
+          SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
       - name: Verify atomic usage reservations, settlement and tenant isolation
         run: node --test test/usage-ledger.integration.test.js
         env:
