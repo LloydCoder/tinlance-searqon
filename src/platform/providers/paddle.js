@@ -243,6 +243,10 @@ export function createPaddleProviderAdapter({
       if(checkoutIntentId!==null && !UUID.test(checkoutIntentId)) {
         throw new PaddleAdapterError(400,"event_invalid","The Paddle checkout intent binding is invalid.");
       }
+      const providerTransactionId=event.event_type==="subscription.created"?data.transaction_id:null;
+      if(event.event_type==="subscription.created" && !/^txn_[a-z0-9]{26}$/i.test(providerTransactionId??"")) {
+        throw new PaddleAdapterError(400,"event_invalid","The Paddle subscription-created event is missing its originating transaction ID.");
+      }
       const bounds=periodBounds(data);
       const trialItem=(Array.isArray(data.items)?data.items:[]).find(item=>item?.recurring===true);
       const trialEndsAt=status==="trialing"?validDate(trialItem?.trial_dates?.ends_at):null;
@@ -260,7 +264,8 @@ export function createPaddleProviderAdapter({
           currentPeriodStart:bounds.start,
           currentPeriodEnd:bounds.end,
           trialEndsAt,
-          ...(checkoutIntentId?{checkoutIntentId}:{})
+          ...(checkoutIntentId?{checkoutIntentId}:{}),
+          ...(providerTransactionId?{providerTransactionId}:{})
         }
       };
     },
