@@ -98,3 +98,21 @@ test("worker loop exits cleanly on AbortSignal", async () => {
   const result = await running;
   assert.deepEqual(result,{stopped:true});
 });
+
+test("worker runner accepts the dedicated agent_simulation job handler", async () => {
+  const simulationJob = {
+    ...job,
+    jobType:"agent_simulation",
+    payload:{version:1,origin:"https://docs.example.test",documents:[],journey:[{action:"discover"}]}
+  };
+  const queue = fakeQueue([simulationJob]);
+  const runner = createWorkerRunner({
+    queue,
+    workerId:"worker-agent-01",
+    handlers:{agent_simulation:async () => ({mode:"read_only_snapshot_simulation"})},
+    concurrency:1
+  });
+  const result = await runner.runOnce();
+  assert.deepEqual(result,{claimed:1,completed:1,retried:0,failed:0,leaseLost:0,runnerErrors:0});
+  assert.deepEqual(queue.calls.claim[0].options.jobTypes,["agent_simulation"]);
+});
