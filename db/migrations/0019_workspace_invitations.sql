@@ -169,7 +169,7 @@ BEGIN
   END IF;
   SELECT role INTO v_actor_role FROM searqon.memberships
   WHERE organization_id=v_invitation.organization_id AND user_id=v_actor;
-  IF v_actor_role NOT IN ('owner','admin')
+  IF v_actor_role IS NULL OR v_actor_role NOT IN ('owner','admin')
      OR (v_actor_role='admin' AND v_invitation.invited_role='admin') THEN
     RAISE EXCEPTION 'workspace administrator role required' USING ERRCODE = '42501';
   END IF;
@@ -210,6 +210,12 @@ BEGIN
   IF v_actor_role IS NULL OR v_target_role IS NULL OR v_actor_role NOT IN ('owner','admin')
      OR (v_actor_role='admin' AND (p_role='admin' OR v_target_role IN ('owner','admin'))) THEN
     RAISE EXCEPTION 'workspace role change is not authorized' USING ERRCODE = '42501';
+  END IF;
+  IF v_target_role='owner' AND (
+    SELECT count(*) FROM searqon.memberships
+    WHERE organization_id=p_organization_id AND role='owner'
+  ) <= 1 THEN
+    RAISE EXCEPTION 'a workspace must retain at least one owner' USING ERRCODE = '23514';
   END IF;
   UPDATE searqon.memberships SET role=p_role
   WHERE organization_id=p_organization_id AND user_id=p_member_user_id;
