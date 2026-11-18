@@ -64,6 +64,19 @@ export function createWorkspaceAdminService({
     throw new TypeError("A canonical HTTPS public application origin is required outside loopback development.");
   }
 
+  async function transaction(userId,work) {
+    try {
+      return await withUserTransaction(database.pool,userId,work);
+    } catch (error) {
+      if (error instanceof WorkspaceAdminError) throw error;
+      if (error?.code === "42501") throw new WorkspaceAdminError(403,"workspace_forbidden","Your workspace role cannot perform this action.");
+      if (error?.code === "23505") throw new WorkspaceAdminError(409,"workspace_conflict","The invitation or membership conflicts with existing workspace state.");
+      if (error?.code === "23514") throw new WorkspaceAdminError(409,"workspace_invariant","The requested change would violate a workspace ownership invariant.");
+      if (error?.code === "22023") throw new WorkspaceAdminError(400,"invalid_invitation","The invitation or role request is invalid or expired.");
+      throw new WorkspaceAdminError(503,"workspace_admin_unavailable","The workspace administration request could not be completed.");
+    }
+  }
+
   return Object.freeze({
     async createInvitation(userId, organizationId, input) {
       requireUuid(userId,"user_id");
