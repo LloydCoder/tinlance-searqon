@@ -80,12 +80,12 @@ function documentTitle(document) {
 
 function sourceLinks(document) {
   if (document.contentType === "text/html") {
-    return [...document.content.matchAll(/\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))/gi)]
+    return [...document.content.matchAll(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi)]
       .map(match => match[1] ?? match[2] ?? match[3])
       .filter(value => typeof value === "string" && value.length > 0);
   }
   if (document.contentType === "text/markdown") {
-    return [...document.content.matchAll(/\\[[^\\]]*\\]\\(([^)]+)\\)/g)]
+    return [...document.content.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)]
       .map(match => match[1].trim())
       .filter(value => value.length > 0);
   }
