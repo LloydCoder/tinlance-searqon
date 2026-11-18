@@ -250,7 +250,18 @@ export function simulateAgentJourney(manifest, { runId = null } = {}) {
     }
     if (step.action === "follow_link") {
       const source = validated.documents.get(step.fromDocumentId);
-      const destination = safeUrl(step.href,new URL(source.url).origin,"journey.href",source.url);
+      let destination;
+      try { destination = safeUrl(step.href,new URL(source.url).origin,"journey.href",source.url); }
+      catch {
+        steps.push({
+          index,
+          action:step.action,
+          status:"blocked",
+          evidence:{documentId:source.id,sourcePath:source.pathname},
+          result:{reason:"destination_blocked_by_origin_policy",networkRequested:false}
+        });
+        continue;
+      }
       const linked = sourceLinks(source).some(href => {
         try { return safeUrl(href,new URL(source.url).origin,"source link",source.url).href === destination.href; }
         catch { return false; }
