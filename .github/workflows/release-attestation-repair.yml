@@ -59,8 +59,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
-          mkdir -p published
-          gh release download "$RELEASE_TAG" --dir published
+          PUBLISHED_DIR="$RUNNER_TEMP/searqon-release"
+          mkdir -p "$PUBLISHED_DIR"
+          gh release download "$RELEASE_TAG" --dir "$PUBLISHED_DIR"
 
       - name: Rebuild package and verify published checksum
         id: package
@@ -68,17 +69,20 @@ jobs:
           set -euo pipefail
           npm pack --json > pack.json
           PACKAGE_FILE="$(node -e 'const p=JSON.parse(require("node:fs").readFileSync("pack.json","utf8")); if (p.length !== 1) process.exit(1); process.stdout.write(p[0].filename)')"
-          test -s "published/$PACKAGE_FILE"
-          (cd published && sha256sum --check SHA256SUMS)
-          mkdir -p rebuilt-unpacked published-unpacked
-          tar -xzf "$PACKAGE_FILE" -C rebuilt-unpacked
-          tar -xzf "published/$PACKAGE_FILE" -C published-unpacked
-          diff -qr rebuilt-unpacked/package published-unpacked/package
+          PUBLISHED_DIR="$RUNNER_TEMP/searqon-release"
+          test -s "$PUBLISHED_DIR/$PACKAGE_FILE"
+          (cd "$PUBLISHED_DIR" && sha256sum --check SHA256SUMS)
+          mkdir -p "$RUNNER_TEMP/rebuilt-unpacked" "$RUNNER_TEMP/published-unpacked"
+          tar -xzf "$PACKAGE_FILE" -C "$RUNNER_TEMP/rebuilt-unpacked"
+          tar -xzf "$PUBLISHED_DIR/$PACKAGE_FILE" -C "$RUNNER_TEMP/published-unpacked"
+          diff -qr "$RUNNER_TEMP/rebuilt-unpacked/package" "$RUNNER_TEMP/published-unpacked/package"
           echo "package_file=$PACKAGE_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Validate published CycloneDX SBOM
+        env:
+          PUBLISHED_SBOM: ${{ runner.temp }}/searqon-release/sbom.cdx.json
         run: |
-          node --input-type=module -e 'import fs from "node:fs"; const sbom=JSON.parse(fs.readFileSync("published/sbom.cdx.json","utf8")); if (sbom.bomFormat !== "CycloneDX" || !sbom.components) process.exit(1);'
+          node --input-type=module -e 'import fs from "node:fs"; const sbom=JSON.parse(fs.readFileSync(process.env.PUBLISHED_SBOM,"utf8")); if (sbom.bomFormat !== "CycloneDX" || !sbom.components) process.exit(1);'
 
       - name: Generate SLSA provenance attestation
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
@@ -89,7 +93,7 @@ jobs:
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: ${{ github.workspace }}/${{ steps.package.outputs.package_file }}
-          sbom-path: ${{ github.workspace }}/published/sbom.cdx.json
+          sbom-path: ${{ runner.temp }}/searqon-release/sbom.cdx.json
 
       - name: Verify package provenance signature and signer identity
         env:

@@ -36,6 +36,7 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(releaseAttestationRepair, /branches:\s+\["attest\/v\*"\]/);
   assert.match(releaseAttestationRepair, /RELEASE_TAG="\$\{ATTEST_BRANCH#attest\/\}"/);
   assert.match(releaseAttestationRepair, /diff -qr/);
+  assert.match(releaseAttestationRepair, /RUNNER_TEMP/);
   assert.doesNotMatch(releaseAttestationRepair, /cmp "\$PACKAGE_FILE"/);
   assert.match(releaseAttestationRepair, /npm audit --audit-level=high/);
   assert.match(releaseAttestationRepair, /gh attestation verify/);
