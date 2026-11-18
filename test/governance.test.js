@@ -81,7 +81,11 @@ test("phase one trackers contain only empty slots for real customer evidence", a
   const pilots = await read("../docs/validation/PAID_PILOT_TRACKER.csv");
   assert.equal(interviews.trim().split("\n").length, 16);
   assert.equal(partners.trim().split("\n").length, 6);
-  assert.equal(pilots.trim().split("\n").length, 4);\n  for (const csv of [interviews, partners, pilots]) {\n    const widths = new Set(csv.trim().split("\n").map((line) => line.split(",").length));\n    assert.equal(widths.size, 1, "CSV rows must match the header width");\n  }
+  assert.equal(pilots.trim().split("\n").length, 4);
+  for (const csv of [interviews, partners, pilots]) {
+    const widths = new Set(csv.trim().split("\n").map((line) => line.split(",").length));
+    assert.equal(widths.size, 1, "CSV rows must match the header width");
+  }
   assert.match(interviews, /P1-INT-015,api_first_agent_platform/);
   assert.match(partners, /P1-DP-005/);
   assert.match(pilots, /P1-PP-003/);
