@@ -32,4 +32,10 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(codeql, /github\/codeql-action\/analyze@33d7b85da1a04171e211befe2c739303b9a4c066/);
   assert.match(codeql, /push:\s+branches:\s+\[main, "bootstrap\/\*\*", "feat\/\*\*", "fix\/\*\*"\]/);
   assert.match(secrets, /push:\s+branches:\s+\[main, "bootstrap\/\*\*", "feat\/\*\*", "fix\/\*\*"\]/);
+  const gitleaks = await readFile(new URL("../.gitleaks.toml", import.meta.url), "utf8");
+  assert.match(gitleaks, /useDefault = true/);
+  assert.match(gitleaks, /condition = "AND"/);
+  assert.match(gitleaks, /20045e861ccde3dc25efd6c220ac4663734171fb/);
+  assert.match(gitleaks, /test\\/paddle-checkout\\.integration\\.test\\.js/);
+  assert.doesNotMatch(gitleaks, /disabledRules\\s*=\\s*\\[[^\\]]*"generic-api-key"/);
 });
