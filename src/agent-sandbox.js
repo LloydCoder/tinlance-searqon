@@ -58,17 +58,22 @@ function safeUrl(value, origin, field, base = origin) {
 }
 
 function htmlText(content) {
+  const entities = new Map([
+    ["nbsp"," "],
+    ["#160"," "],
+    ["amp","&"],
+    ["lt","<"],
+    ["gt",">"],
+    ["quot",'"'],
+    ["#39","'"],
+    ["apos","'"]
+  ]);
   return content
-    .replace(/<!--[\s\S]*?-->/g," ")
-    .replace(/<(script|style|noscript|template|svg|iframe)\b[^>]*>[\s\S]*?<\/\1\s*>/gi," ")
+    .replace(/<!--[\\s\\S]*?-->/g," ")
+    .replace(/<(script|style|noscript|template|svg|iframe)\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>/gi," ")
     .replace(/<[^>]*>/g," ")
-    .replace(/&nbsp;|&#160;/gi," ")
-    .replace(/&amp;/gi,"&")
-    .replace(/&lt;/gi,"<")
-    .replace(/&gt;/gi,">")
-    .replace(/&quot;/gi,'"')
-    .replace(/&#39;|&apos;/gi,"'")
-    .replace(/\s+/g," ")
+    .replace(/&(nbsp|#160|amp|lt|gt|quot|#39|apos);/gi,(_,entity) => entities.get(entity.toLowerCase()))
+    .replace(/\\s+/g," ")
     .trim();
 }
 
