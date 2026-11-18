@@ -112,6 +112,11 @@ jobs:
         env:
           SEARQON_TEST_DATABASE: "1"
           SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
+      - name: Verify Paddle checkout authorization, idempotency and ambiguous outcomes
+        run: node --test test/paddle-checkout.integration.test.js
+        env:
+          SEARQON_TEST_DATABASE: "1"
+          SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
       - name: Verify canonical subscription entitlement resolution
         run: node --test test/subscription-entitlements.integration.test.js
         env:
