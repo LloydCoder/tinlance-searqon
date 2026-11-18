@@ -153,11 +153,7 @@ test("HTML entity decoding is single-pass and preserves double-escaped markup as
 
 test("MCP JSON with prototype-shaped keys remains inert data", () => {
   const input = structuredClone(manifest);
-  input.documents[2].content = JSON.stringify({
-    "__proto__":{polluted:true},
-    "constructor":{"prototype":{"polluted":true}},
-    tools:[{name:"safe_tool"}]
-  });
+  input.documents[2].content = '{"__proto__":{"polluted":true},"constructor":{"prototype":{"polluted":true}},"tools":[{"name":"safe_tool"}]}';
   input.journey = [{action:"inspect_mcp_snapshot",documentId:"mcp"}];
   const result = simulateAgentJourney(input);
   assert.deepEqual(result.steps[0].result.toolNames,["safe_tool"]);
