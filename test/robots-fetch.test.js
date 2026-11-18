@@ -183,3 +183,10 @@ test("cross-origin robots redirect results fail closed and cache only a short-li
   assert.equal(cache.size, 1); // Short failure cache only; no permissive policy is retained.
   assert.equal(cache.has("https://example.com\nsearqonbot"), true);
 });
+
+
+test("robots retrieval rejects product tokens containing digits", async () => {
+  await assert.rejects(() => fetchRobotsPolicy(origin, "SearqonBot2", {
+    fetcher: async () => { throw new Error("network must not be reached"); }
+  }), /crawler product token/);
+});

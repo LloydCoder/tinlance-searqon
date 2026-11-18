@@ -76,8 +76,8 @@ export async function scanPublicUrl(value, options = {}) {
   }
   const allowedRedirectOrigins = validateAllowedRedirectOrigins(options.allowedRedirectOrigins);
   const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
-  if (typeof userAgent !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(userAgent)) {
-    throw new TypeError("userAgent must be a crawler product token of 1-64 ASCII letters, digits, underscores, or hyphens");
+  if (typeof userAgent !== "string" || !/^[A-Za-z_-]{1,64}$/.test(userAgent)) {
+    throw new TypeError("userAgent must be a crawler product token of 1-64 ASCII letters, underscores, or hyphens");
   }
   const maxBytes = options.maxBytes ?? MAX_SCAN_BYTES;
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_SCAN_BYTES) {
@@ -136,7 +136,7 @@ export async function scanPublicUrl(value, options = {}) {
     }
     let destinationRobots;
     try {
-      destinationRobots = await robotsLoader(destinationOrigin, userAgent, robotsOptions);
+      destinationRobots = await robotsLoader(destinationOrigin, userAgent, { ...robotsOptions, userAgent });
     } catch {
       redirectBlockReason = "robots_unreachable";
       return false;
