@@ -22,4 +22,31 @@ ALTER TABLE searqon.recommendation_events
 
 GRANT UPDATE (assigned_to,due_date) ON searqon.recommendations TO searqon_app;
 
+-- Membership RLS intentionally exposes only the current user's own membership.
+-- This narrowly-scoped SECURITY DEFINER function returns non-sensitive assignee fields
+-- only when the caller is a member of the project tenant.
+CREATE OR REPLACE FUNCTION searqon.list_project_members(p_project_id uuid)
+RETURNS TABLE(user_id uuid, display_name text, role text)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, searqon
+AS $
+  SELECT m.user_id, u.display_name, m.role
+  FROM searqon.projects p
+  JOIN searqon.memberships m ON m.organization_id = p.organization_id
+  JOIN searqon.app_users u ON u.id = m.user_id
+  WHERE p.id = p_project_id
+    AND EXISTS (
+      SELECT 1 FROM searqon.memberships actor
+      WHERE actor.organization_id = p.organization_id
+        AND actor.user_id = searqon.current_user_id()
+    )
+  ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 WHEN 'analyst' THEN 2 ELSE 3 END,
+    lower(u.display_name),u.id;
+$;
+
+REVOKE ALL ON FUNCTION searqon.list_project_members(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION searqon.list_project_members(uuid) TO searqon_app;
+
 COMMIT;
