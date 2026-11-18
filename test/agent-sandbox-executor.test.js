@@ -62,8 +62,8 @@ test("isolated child is terminated immediately when its queue lease is cancelled
 test("isolated child does not spawn when cancellation is already signalled", async () => {
   const controller = new AbortController();
   controller.abort();
-  await assert.rejects(
-    runAgentSimulationIsolated(manifest,{signal:controller.signal}),
+  assert.throws(
+    () => runAgentSimulationIsolated(manifest,{signal:controller.signal}),
     error=>error instanceof AgentSandboxExecutionError && error.code==="simulation_cancelled"
   );
 });
