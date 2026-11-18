@@ -79,7 +79,9 @@ if (root) {
 
   function renderActions(model) {
     actionsTarget.replaceChildren();
-    actionsCountTarget.textContent = model.recommendationUnavailableProjectCount\n      ? model.openActionCount + " known active / partial"\n      : model.openActionCount + " active / " + model.recommendationCount + " tracked";
+    actionsCountTarget.textContent = model.recommendationUnavailableProjectCount
+      ? model.openActionCount + " known active / partial"
+      : model.openActionCount + " active / " + model.recommendationCount + " tracked";
     const recommendations = model.recommendations;
     if (!recommendations.length) {
       actionsTarget.append(element("p", "command-empty",
@@ -195,7 +197,8 @@ if (root) {
 
       const projectResult = await getJson("/api/v1/projects?organizationId=" + encodeURIComponent(selectedOrganizationId));
       const projects = Array.isArray(projectResult.projects) ? projectResult.projects : [];
-      let failedAssessmentReads = 0;\n      let failedRecommendationReads = 0;
+      let failedAssessmentReads = 0;
+      let failedRecommendationReads = 0;
       const assessmentsByProject = {};
       const recommendationsByProject = {};
       let cursor = 0;
