@@ -302,3 +302,12 @@ This register separates implemented repository capabilities from customer, secur
 - A deployment attempt for main commit 954059230e01948df733c092a02a7c161e0b3ada was rejected by Vercel with HTTP 402, code payment_required, resource api-deployments-free-per-day, and retryAfter 86400 seconds.
 - No plan upgrade, billing change, or quota workaround was performed. No mapped Vercel CLI fallback was available in the execution environment.
 - The latest verified production deployment therefore remains dpl_DxpoZxvtkeo1MWKhqMmGcVYpa4EW at source commit 202ad02fcfeb0a26034c7017874abaf087d6d82b. PRs #131–#133 are merged and CI-green but are not production-live until a later READY deployment is verified.
+
+## 2026-11-18 — production deployment reconciliation and dashboard initiative
+
+- Production deployment `dpl_Bq5XKxTPxFYG4h4nsig6n7VNKwbb` is `READY` for source commit `78e1970a372be4e2cb6e0d40fd44efe6b2105636` on branch `main`. The production alias `searqon.tinlance.com` is attached with no alias error. This supersedes earlier notes that the QA remediation commits were awaiting deployment.
+- The following production routes were verified HTTP 200 after that deployment: `/`, `/product/`, `/auth/register/`, `/auth/login/`, `/api/v1/ready`, `/robots.txt`, and `/sitemap.xml`.
+- Production auth configuration diagnostics reported `configured: true` and `missing: []`; this confirms required configuration presence only. A valid registration, delivered email, magic-link click-through and complete session/logout round trip remain unverified.
+- A 24-hour Vercel runtime-error query returned no runtime error clusters at the time of review. This is a bounded observation, not an SLO or uptime guarantee.
+- Dashboard Command Center work is isolated in PR #136 and is not deployed to production. Vercel Hobby preview deployment attempts for the branch were rejected by the `api-deployments-free-per-day` quota. No plan upgrade, billing change, quota workaround or production alias change was performed.
+- The production baseline remains the deployed main commit above until a separately reviewed and verified dashboard change is merged and deployed.
