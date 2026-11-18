@@ -32,6 +32,9 @@ ALTER TABLE searqon.billing_webhook_inbox
 CREATE POLICY billing_webhook_ingest_insert ON searqon.billing_webhook_inbox
   FOR INSERT TO searqon_billing_ingest
   WITH CHECK (true);
+CREATE POLICY billing_webhook_ingest_duplicate_read ON searqon.billing_webhook_inbox
+  FOR SELECT TO searqon_billing_ingest
+  USING (true);
 CREATE POLICY billing_webhook_worker_select ON searqon.billing_webhook_inbox
   FOR SELECT TO searqon_billing_worker
   USING (true);
@@ -43,7 +46,8 @@ CREATE POLICY billing_webhook_worker_update ON searqon.billing_webhook_inbox
 GRANT USAGE ON SCHEMA searqon TO searqon_billing_ingest, searqon_billing_worker;
 GRANT INSERT (provider,provider_event_id,organization_id,event_type,event_kind,raw_body_sha256,verified_at,received_at,normalized_payload)
   ON searqon.billing_webhook_inbox TO searqon_billing_ingest;
-GRANT SELECT (id) ON searqon.billing_webhook_inbox TO searqon_billing_ingest;
+GRANT SELECT (id,provider,provider_event_id,organization_id,raw_body_sha256)
+  ON searqon.billing_webhook_inbox TO searqon_billing_ingest;
 GRANT SELECT ON searqon.billing_webhook_inbox TO searqon_billing_worker;
 GRANT UPDATE (processing_status,attempt_count,next_attempt_at,locked_until,lease_owner,lease_token,processed_at,last_error_code,updated_at)
   ON searqon.billing_webhook_inbox TO searqon_billing_worker;
