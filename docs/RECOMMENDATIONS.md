@@ -47,13 +47,19 @@ This is deliberately narrow: verification means the deterministic finding was ab
 ## API surface
 
 - GET /api/v1/projects/{projectId}/recommendations
+- GET /api/v1/projects/{projectId}/recommendations/assignees
 - POST /api/v1/projects/{projectId}/recommendations with an assessmentId
 - POST /api/v1/recommendations/{recommendationId}/status with a status
+- POST /api/v1/recommendations/{recommendationId}/work with assignedTo and/or dueDate
 - POST /api/v1/recommendations/{recommendationId}/verify with an assessmentId
 - GET /api/v1/recommendations/{recommendationId}/events
 
 Write requests require an authenticated session and same-origin validation. The service independently enforces tenant membership and writer role.
 
+## Ownership and scheduling
+
+Workspace writers can assign a recommendation to any current member of the same workspace or clear the assignment. A due date is an optional calendar date (`YYYY-MM-DD`) with strict calendar validation; it is not a timestamp and carries no timezone. Assignment and due-date changes are recorded as separate append-only events. The assignee lookup returns only member ID, display name and workspace role. Viewers can see ownership and due dates but cannot change them.
+
 ## Remaining scope
 
-Assignments and due dates, patch/test linkage, source-control integrations, richer cross-engine priority, multi-step remediation plans and customer validation remain future work. The feature is an evidence-linked workflow, not an autonomous remediation agent.
+Patch/test linkage, source-control integrations, richer cross-engine priority, multi-step remediation plans and customer validation remain future work. The feature is an evidence-linked workflow, not an autonomous remediation agent.
