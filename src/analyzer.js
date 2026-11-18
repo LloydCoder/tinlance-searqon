@@ -12,53 +12,53 @@ function finding(data) {
 }
 
 function getAttribute(tag, name) {
-  const pattern = new RegExp("(?:^|\\s)" + name + "\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'=<>]+))", "i");
+  const pattern = new RegExp("(?:^|\\s)" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s\"'=<>]+))", "i");
   const match = tag.match(pattern);
   return match ? (match[1] ?? match[2] ?? match[3] ?? "") : null;
 }
 
 function renderedHtml(html) {
   return html
-    .replace(/<!--[\\s\\S]*?-->/g, " ")
-    .replace(/<(script|style|textarea|noscript|template)\\b[^>]*>[\\s\\S]*?<\\/\\1\\s*>/gi, " ");
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(script|style|textarea|noscript|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ");
 }
 
 function extractTag(html, tag) {
   const pattern = new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]*?)</" + tag + "\\s*>", "gi");
   for (const match of html.matchAll(pattern)) {
-    const text = match[1].replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim();
+    const text = match[1].replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
     if (text) return text;
   }
   return "";
 }
 
 function analyzeHtml(html, evidenceId) {
-  const uncommentedHtml = html.replace(/<!--[\\s\\S]*?-->/g, " ");
-  const jsonLd = [...uncommentedHtml.matchAll(/<script\\b[^>]*>/gi)]
+  const uncommentedHtml = html.replace(/<!--[\s\S]*?-->/g, " ");
+  const jsonLd = [...uncommentedHtml.matchAll(/<script\b[^>]*>/gi)]
     .some(match => (getAttribute(match[0], "type") ?? "").toLowerCase() === "application/ld+json");
   const visibleHtml = renderedHtml(uncommentedHtml);
   const findings = [];
   const title = extractTag(visibleHtml, "title");
   const h1 = extractTag(visibleHtml, "h1");
-  const metaTags = [...visibleHtml.matchAll(/<meta\\b[^>]*>/gi)].map(match => match[0]);
+  const metaTags = [...visibleHtml.matchAll(/<meta\b[^>]*>/gi)].map(match => match[0]);
   const descriptionTag = metaTags.find(tag => (getAttribute(tag, "name") ?? "").toLowerCase() === "description");
   const descriptionText = (descriptionTag ? getAttribute(descriptionTag, "content") : null)?.trim() ?? "";
   const description = descriptionText.length > 0;
-  const canonical = [...visibleHtml.matchAll(/<link\\b[^>]*>/gi)].some(match =>
-    (getAttribute(match[0], "rel") ?? "").toLowerCase().split(/\\s+/).includes("canonical") &&
+  const canonical = [...visibleHtml.matchAll(/<link\b[^>]*>/gi)].some(match =>
+    (getAttribute(match[0], "rel") ?? "").toLowerCase().split(/\s+/).includes("canonical") &&
     Boolean(getAttribute(match[0], "href"))
   );
   const robotsTag = metaTags.find(tag => (getAttribute(tag, "name") ?? "").toLowerCase() === "robots");
   const robotsNoIndex = (getAttribute(robotsTag ?? "", "content") ?? "")
-    .split(/[\\s,]+/).some(directive => directive.toLowerCase() === "noindex");
-  const htmlTag = visibleHtml.match(/<html\\b[^>]*>/i)?.[0] ?? "";
+    .split(/[\s,]+/).some(directive => directive.toLowerCase() === "noindex");
+  const htmlTag = visibleHtml.match(/<html\b[^>]*>/i)?.[0] ?? "";
   const languagePresent = Boolean((getAttribute(htmlTag, "lang") ?? "").trim());
   const viewportTag = metaTags.find(tag => (getAttribute(tag, "name") ?? "").toLowerCase() === "viewport");
   const viewportPresent = Boolean((getAttribute(viewportTag ?? "", "content") ?? "").trim());
   const titleLength = title ? [...title].length : null;
   const descriptionLength = description ? [...descriptionText].length : null;
-  const h1Count = [...visibleHtml.matchAll(/<h1\\b[^>]*>/gi)].length;
-  const imagesMissingAlt = [...visibleHtml.matchAll(/<img\\b[^>]*>/gi)]
+  const h1Count = [...visibleHtml.matchAll(/<h1\b[^>]*>/gi)].length;
+  const imagesMissingAlt = [...visibleHtml.matchAll(/<img\b[^>]*>/gi)]
     .filter(match => getAttribute(match[0], "alt") === null).length;
 
   if (!title) findings.push(finding({ruleId:"html.title.missing",dimension:"SEO",severity:"high",title:"Document title is missing",description:"The document has no detectable non-empty title element.",recommendation:"Add a concise, page-specific title that describes the page's primary subject.",evidenceId}));
@@ -98,12 +98,27 @@ function analyzeHtml(html, evidenceId) {
   };
 }
 function isSecuritySchemeUriReference(value) {
+  if (typeof value !== "string" || value.length === 0 || /[\u0000-\u0020\u007f]/.test(value)) return false;
+  const looksLikeUri = value.startsWith("/") || value.startsWith("#") ||
+    value.startsWith("./") || value.startsWith("../") ||
+    /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value);
+  if (!looksLikeUri || /%(?![A-Fa-f0-9]{2})/.test(value) ||
+      /[^A-Za-z0-9\-._~%!function isSecuritySchemeUriReference(value) {
   if (typeof value !== "string" || value.length === 0 || /[\\u0000-\\u0020\\u007f]/.test(value)) return false;
   const looksLikeUri = value.startsWith("/") || value.startsWith("#") ||
     value.startsWith("./") || value.startsWith("../") ||
     /^[A-Za-z][A-Za-z0-9+.-]*:/.test(value);
   if (!looksLikeUri || /%(?![A-Fa-f0-9]{2})/.test(value) ||
       /[^A-Za-z0-9\\-._~%!$&'()*+,;=:@/?#\\[\\]]/.test(value) ||
+      (value.match(/#/g) ?? []).length > 1) return false;
+  try {
+    new URL(value, "https://searqon.invalid/");
+    return true;
+  } catch {
+    return false;
+  }
+}
+'()*+,;=:@/?#\[\]]/.test(value) ||
       (value.match(/#/g) ?? []).length > 1) return false;
   try {
     new URL(value, "https://searqon.invalid/");
