@@ -124,3 +124,12 @@ test("simulation does not leak raw document bodies into the result", () => {
   const result = simulateAgentJourney(input);
   assert.equal(JSON.stringify(result).includes(secretLikeBody),false);
 });
+
+test("simulated link traversal requires the link to exist in the source snapshot", () => {
+  const input = structuredClone(manifest);
+  input.journey = [{action:"follow_link",fromDocumentId:"home",href:"/mcp-snapshot.json"}];
+  const result = simulateAgentJourney(input);
+  assert.equal(result.steps[0].status,"blocked");
+  assert.equal(result.steps[0].result.reason,"link_not_present_in_source");
+  assert.equal(result.steps[0].result.networkRequested,false);
+});
