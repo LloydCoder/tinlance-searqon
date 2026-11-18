@@ -19,8 +19,8 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(release, /npm sbom --sbom-format cyclonedx/);
   assert.match(release, /git merge-base --is-ancestor/);
   assert.match(release, /fetch-depth: 0/);
-  assert.match(release, /push:\s+tags:\s+\["v\*"\]/);
-  assert.match(release, /branches:\\s+\\["release\\/v\\*"\\]/);
+  assert.match(release, /push:\s+branches:\s+\["release\/v\*"\]/);
+  assert.match(release, /push:\s+branches:\s+\["release\/v\*"\]/);
   assert.match(release, /git tag -a/);
   assert.match(release, /git push origin "\\$RELEASE_TAG"/);
   assert.match(release, /persist-credentials: true/);
