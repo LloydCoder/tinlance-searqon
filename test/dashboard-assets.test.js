@@ -28,6 +28,6 @@ test("dashboard browser assets pass Node syntax validation", async () => {
 test("dashboard styling preserves the Searqon no-gradient workspace treatment", async () => {
   const css = await readFile(dashboardStyles, "utf8");
   assert.match(css, /#FFFEFA/);
-  assert.match(css, /#12203A/);
+  assert.match(css, /var\(--ink\)/);
   assert.doesNotMatch(css, /linear-gradient|radial-gradient/);
 });
