@@ -56,6 +56,7 @@ test("verified billing webhook is durably accepted once and processed under a fe
             providerEventId: eventId,
             eventType: "customer.subscription.updated",
             verifiedAt: receivedAt,
+            providerCreatedAt: "2026-11-18T09:59:59.000Z",
             payload: {
               organizationId,
               providerCustomerId: "cus_" + randomUUID().replaceAll("-", "").slice(0, 16),
