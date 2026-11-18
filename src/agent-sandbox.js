@@ -202,7 +202,7 @@ function validateManifest(manifest) {
   return {origin:originUrl.origin,documents,journey,inputSha256:sha256(serialized)};
 }
 
-export function simulateAgentJourney(manifest, { runId = null, now = () => new Date().toISOString() } = {}) {
+export function simulateAgentJourney(manifest, { runId = null } = {}) {
   const validated = validateManifest(manifest);
   const steps = [];
   for (let index = 0; index < validated.journey.length; index += 1) {
@@ -280,7 +280,6 @@ export function simulateAgentJourney(manifest, { runId = null, now = () => new D
     egress:"none",
     mutations:"disabled",
     inputSha256:validated.inputSha256,
-    startedAt:now(),
     documents:[...validated.documents.values()].map(document=>({id:document.id,path:document.pathname,contentType:document.contentType,bytes:document.bytes,sha256:document.sha256})),
     steps
   };
