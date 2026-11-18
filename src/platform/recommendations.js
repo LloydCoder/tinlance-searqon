@@ -74,7 +74,7 @@ export function recommendationPriority(severity) {
 
 export function normalizeRecommendationDueDate(value) {
   if (value === null) return null;
-  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new RecommendationError(400,"invalid_due_date","Due date must be a real calendar date in YYYY-MM-DD format or null.");
   }
   const [year,month,day] = value.split("-").map(Number);
