@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -267,4 +267,21 @@ test("CLI evaluates labelled GEO citation alert quality cases", async () => {
   assert.equal(report.counts.truePositive, 1);
   assert.equal(report.counts.falsePositive, 0);
   assert.equal(report.metrics.falsePositiveRate, 0);
+});
+
+
+test("CLI refuses symbolic-link inputs before reading their targets", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "searqon-symlink-"));
+  try {
+    const target = join(dir, "private.html");
+    const link = join(dir, "sq-link.html");
+    await writeFile(target, "<html><title>private data</title></html>");
+    await symlink(target, link);
+    const result = spawnSync(process.execPath, [cli.pathname, "scan", link], { encoding: "utf8" });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /symlink/i);
+    assert.equal(result.stdout.includes("private data"), false);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
