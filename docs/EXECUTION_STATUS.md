@@ -295,3 +295,10 @@ This register separates implemented repository capabilities from customer, secur
 - Deployment boundary: the verified production deployment includes PRs #127–#130. PRs #131–#133 are merged to main but were not yet present in the latest observed production deployment at this record's creation. Do not describe their metadata, port-policy, auth-diagnostic or strict product-token changes as live until a deployment sourced from the later main commit is READY and rechecked.
 - Authentication limitation: GET page availability and the socketless-request regression test do not prove the production POST registration/login round trip or actual email delivery. A real registration request and receipt/use of a magic link remain unverified. No credentials or secret values are included in logs or this record.
 - Product maturity remains early alpha. This QA remediation does not claim recursive crawling, browser rendering, live GEO provider sampling, independent penetration testing, or commercial production readiness.
+
+
+## 2026-11-18 — Deployment quota gate
+
+- A deployment attempt for main commit 954059230e01948df733c092a02a7c161e0b3ada was rejected by Vercel with HTTP 402, code payment_required, resource api-deployments-free-per-day, and retryAfter 86400 seconds.
+- No plan upgrade, billing change, or quota workaround was performed. No mapped Vercel CLI fallback was available in the execution environment.
+- The latest verified production deployment therefore remains dpl_DxpoZxvtkeo1MWKhqMmGcVYpa4EW at source commit 202ad02fcfeb0a26034c7017874abaf087d6d82b. PRs #131–#133 are merged and CI-green but are not production-live until a later READY deployment is verified.
