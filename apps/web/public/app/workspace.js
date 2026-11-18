@@ -187,7 +187,7 @@ async function loadRecommendationHistory(recommendationId, target) {
   target.append(list);
 }
 
-function renderRecommendations(project, recommendations) {
+function renderRecommendations(project, recommendations, assignees = []) {
   const panel = document.querySelector("#recommendations-panel");
   if (!panel) return;
   panel.replaceChildren();
@@ -240,8 +240,53 @@ function renderRecommendations(project, recommendations) {
     card.append(node("h5","",recommendation.title));
     card.append(node("p","recommendation-description",recommendation.description));
     card.append(node("p","recommendation-action",recommendation.recommendedAction));
-    const meta = node("p","recommendation-meta","Priority " + recommendation.priority + " · Seen " + recommendation.occurrenceCount + " time" + (recommendation.occurrenceCount === 1 ? "" : "s"));
+    const assignedMember = assignees.find(member=>member.id===recommendation.assignedTo);
+    const meta = node("p","recommendation-meta","Priority " + recommendation.priority + " · Seen " + recommendation.occurrenceCount + " time" + (recommendation.occurrenceCount === 1 ? "" : "s")
+      + " · Assigned: " + (assignedMember?.displayName ?? (recommendation.assignedTo ? "Workspace member" : "Unassigned"))
+      + " · Due: " + (recommendation.dueDate ?? "Not scheduled"));
     card.append(meta);
+    if (canWrite) {
+      const workForm = node("form","recommendation-work-form");
+      const assigneeLabel = node("label","","Owner");
+      const assigneeSelect = node("select","recommendation-assignee");
+      assigneeSelect.name = "assignedTo";
+      const unassigned = node("option","","Unassigned");
+      unassigned.value = "";
+      assigneeSelect.append(unassigned);
+      for (const member of assignees) {
+        const option = node("option","",member.displayName + " · " + member.role);
+        option.value = member.id;
+        assigneeSelect.append(option);
+      }
+      assigneeSelect.value = recommendation.assignedTo ?? "";
+      assigneeLabel.append(assigneeSelect);
+      const dueLabel = node("label","","Due date");
+      const dueInput = node("input","recommendation-due-date");
+      dueInput.type = "date";
+      dueInput.name = "dueDate";
+      dueInput.value = recommendation.dueDate ?? "";
+      dueLabel.append(dueInput);
+      const saveWork = node("button","button button-light button-small","Save ownership");
+      saveWork.type = "submit";
+      workForm.append(assigneeLabel,dueLabel,saveWork);
+      workForm.addEventListener("submit",async event=>{
+        event.preventDefault();
+        saveWork.disabled = true;
+        try {
+          await api("/api/v1/recommendations/" + encodeURIComponent(recommendation.id) + "/work",{
+            method:"POST",
+            body:JSON.stringify({assignedTo:assigneeSelect.value || null,dueDate:dueInput.value || null})
+          });
+          setStatus("Recommendation ownership and due date saved.","success");
+          await loadRecommendations(project);
+        } catch (error) {
+          setStatus(error instanceof Error ? error.message : "Recommendation work details could not be saved.","error");
+        } finally {
+          saveWork.disabled = false;
+        }
+      });
+      card.append(workForm);
+    }
     if (canWrite) {
       const actions = node("div","recommendation-actions");
       const changeStatus = async (status,label) => {
@@ -316,8 +361,12 @@ async function loadRecommendations(project) {
   const panel = document.querySelector("#recommendations-panel");
   if (!panel) return;
   panel.replaceChildren(node("p","muted-copy","Loading recommendations…"));
-  const result = await api("/api/v1/projects/" + encodeURIComponent(project.id) + "/recommendations");
-  renderRecommendations(project,Array.isArray(result.recommendations) ? result.recommendations : []);
+  const [result,assigneeResult] = await Promise.all([
+    api("/api/v1/projects/" + encodeURIComponent(project.id) + "/recommendations"),
+    api("/api/v1/projects/" + encodeURIComponent(project.id) + "/recommendations/assignees")
+  ]);
+  renderRecommendations(project,Array.isArray(result.recommendations) ? result.recommendations : [],
+    Array.isArray(assigneeResult.assignees) ? assigneeResult.assignees : []);
 }
 
 function renderProjectDetail(project) {

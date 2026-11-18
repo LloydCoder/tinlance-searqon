@@ -119,3 +119,11 @@ The existing user instruction to avoid new spend remains in force. No paid provi
 8. Make commercial v1 launch decisions only through Phase 15 acceptance.
 
 **Current overall verdict:** substantial early-alpha engineering exists across many phases; canonical Phase 0 and bounded Phase 4 have verified implementation gates; Phase 1 remains commercially unvalidated; Phases 2–10, 12–14 remain in progress to differing degrees; Phase 11 is the major missing engineering capability; Phase 15 has not started. No claim of 100% roadmap completion or production readiness is supported.
+
+
+## 2026-11-18 — Phase 11 merge and Phase 12 ownership increment
+
+- Phase 11 PR #141 merged to `main` as `837f23f977433ea03094ed6153303b7eddfd5b63`. Exact-head Node 22/24 test/package validation, PostgreSQL tenant isolation, CodeQL and full-history secret scanning passed.
+- The Vercel preview check remained rate-limited by the existing Hobby build quota. No plan upgrade, spend, production deployment or worker deployment was performed. Phase 11's authorized staging verification and explicit product-owner acceptance remain outstanding; merge is not a claim of full production acceptance.
+- Phase 12 already had its foundational recommendation lifecycle and evidence-gated verification from PRs #120/#121. PR #142 starts the next increment: tenant-member assignment, strict optional calendar due dates, append-only assignment/due-date events, authenticated assignee lookup, and workspace ownership/scheduling controls.
+- PR #142 adds migration `0014_recommendation_work_management.sql`, service validation, API routes and unit/API/PostgreSQL integration coverage. It is a draft and remains subject to exact-head CI, security review and customer/product acceptance.

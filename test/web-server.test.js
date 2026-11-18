@@ -426,6 +426,22 @@ test("recommendation APIs enforce authentication, same-origin writes and explici
       calls.push(["list",userId,projectId]);
       return [{ id: "rec-1", status: "open" }];
     },
+    async listAssignees(userId, projectId) {
+      calls.push(["assignees",userId,projectId]);
+      return [{id:"member-1",displayName:"Analyst",role:"analyst"}];
+    },
+    async listPlans(userId, projectId) {
+      calls.push(["listPlans",userId,projectId]);
+      return [{planRef:"plan-1",status:"ready_for_human_review"}];
+    },
+    async createPlan(userId, projectId, input) {
+      calls.push(["createPlan",userId,projectId,input.planId]);
+      return {planRef:input.planId,status:"ready_for_human_review"};
+    },
+    async updateWork(userId, recommendationId, input) {
+      calls.push(["work",userId,recommendationId,input.assignedTo,input.dueDate]);
+      return {id:recommendationId,assignedTo:input.assignedTo,dueDate:input.dueDate};
+    },
     async syncFromAssessment(userId, projectId, assessmentId) {
       calls.push(["sync",userId,projectId,assessmentId]);
       return { counts: { created: 1, updated: 0, replayed: 0 } };
@@ -452,6 +468,26 @@ test("recommendation APIs enforce authentication, same-origin writes and explici
     const list = await fetch(base + "/api/v1/projects/project-1/recommendations",{headers:{cookie}});
     assert.equal(list.status,200);
     assert.equal((await list.json()).recommendations[0].id,"rec-1");
+    const assignees = await fetch(base + "/api/v1/projects/project-1/recommendations/assignees",{headers:{cookie}});
+    assert.equal(assignees.status,200);
+    assert.equal((await assignees.json()).assignees[0].id,"member-1");
+
+    const plans = await fetch(base + "/api/v1/projects/project-1/recommendation-plans",{headers:{cookie}});
+    assert.equal(plans.status,200);
+    assert.equal((await plans.json()).plans[0].planRef,"plan-1");
+
+    const crossOriginPlan = await fetch(base + "/api/v1/projects/project-1/recommendation-plans",{
+      method:"POST",headers:{cookie,origin:"https://attacker.example","content-type":"application/json"},
+      body:JSON.stringify({planId:"plan-1",steps:[]})
+    });
+    assert.equal(crossOriginPlan.status,403);
+
+    const createPlan = await fetch(base + "/api/v1/projects/project-1/recommendation-plans",{
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},
+      body:JSON.stringify({planId:"plan-2",steps:[]})
+    });
+    assert.equal(createPlan.status,201);
+    assert.equal((await createPlan.json()).plan.planRef,"plan-2");
 
     const crossOrigin = await fetch(base + "/api/v1/projects/project-1/recommendations",{
       method:"POST",headers:{cookie,origin:"https://attacker.example","content-type":"application/json"},
@@ -465,6 +501,19 @@ test("recommendation APIs enforce authentication, same-origin writes and explici
     });
     assert.equal(sync.status,200);
     assert.equal((await sync.json()).counts.created,1);
+
+    const crossOriginWork = await fetch(base + "/api/v1/recommendations/rec-1/work",{
+      method:"POST",headers:{cookie,origin:"https://attacker.example","content-type":"application/json"},
+      body:JSON.stringify({assignedTo:"member-1",dueDate:"2026-12-01"})
+    });
+    assert.equal(crossOriginWork.status,403);
+
+    const work = await fetch(base + "/api/v1/recommendations/rec-1/work",{
+      method:"POST",headers:{cookie,origin,"content-type":"application/json"},
+      body:JSON.stringify({assignedTo:"member-1",dueDate:"2026-12-01"})
+    });
+    assert.equal(work.status,200);
+    assert.equal((await work.json()).recommendation.dueDate,"2026-12-01");
 
     const status = await fetch(base + "/api/v1/recommendations/rec-1/status",{
       method:"POST",headers:{cookie,origin,"content-type":"application/json"},
@@ -483,7 +532,7 @@ test("recommendation APIs enforce authentication, same-origin writes and explici
     const history = await fetch(base + "/api/v1/recommendations/rec-1/events",{headers:{cookie}});
     assert.equal(history.status,200);
     assert.equal((await history.json()).events[0].eventType,"created");
-    assert.deepEqual(calls.map(item=>item[0]),["list","sync","transition","verify","history"]);
+    assert.deepEqual(calls.map(item=>item[0]),["list","assignees","listPlans","createPlan","sync","work","transition","verify","history"]);
   },{authService,recommendationService});
 });
 

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { withUserTransaction } from "./database.js";
+import { compileRemediationPlan, rankRecommendations } from "./recommendation-plans.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RULE_ID = /^[a-z][a-z0-9_.-]{1,159}$/;
@@ -72,6 +73,30 @@ export function recommendationPriority(severity) {
   return PRIORITY[severity];
 }
 
+export function normalizeRecommendationDueDate(value) {
+  if (value === null) return null;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new RecommendationError(400,"invalid_due_date","Due date must be a real calendar date in YYYY-MM-DD format or null.");
+  }
+  const [year,month,day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year,month-1,day));
+  if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month-1 || parsed.getUTCDate() !== day) {
+    throw new RecommendationError(400,"invalid_due_date","Due date must be a real calendar date in YYYY-MM-DD format or null.");
+  }
+  return value;
+}
+
+function dateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = String(value.getFullYear()).padStart(4,"0");
+    const month = String(value.getMonth()+1).padStart(2,"0");
+    const day = String(value.getDate()).padStart(2,"0");
+    return year + "-" + month + "-" + day;
+  }
+  return String(value).slice(0,10);
+}
+
 function normalizeFinding(finding) {
   if (!finding || typeof finding !== "object" || Array.isArray(finding)
     || !RULE_ID.test(finding.ruleId ?? "")
@@ -107,6 +132,8 @@ function recommendationRow(row, idempotentReplay = false) {
     title: row.title,
     description: row.description,
     recommendedAction: row.recommended_action,
+    assignedTo: row.assigned_to ?? null,
+    dueDate: dateOnly(row.due_date),
     status: row.status,
     occurrenceCount: row.occurrence_count,
     lastSeenAt: row.last_seen_at,
@@ -175,7 +202,178 @@ export function createRecommendationService({ database } = {}) {
              priority DESC, updated_at DESC, id`,
           [projectId]
         );
-        return result.rows.map(row => recommendationRow(row));
+        const recommendations = result.rows.map(row => recommendationRow(row));
+        const ranked = rankRecommendations(recommendations, { asOf: new Date().toISOString().slice(0,10) });
+        const byId = new Map(recommendations.map(item => [item.id,item]));
+        return ranked.map(item => ({
+          ...byId.get(item.id),
+          crossEngineRank: item.rank,
+          crossEnginePriorityScore: item.priorityScore,
+          priorityFactors: item.factors
+        }));
+      });
+    },
+
+    async listAssignees(userId, projectId) {
+      requireUuid(userId,"user_id");
+      requireUuid(projectId,"project_id");
+      return withUserTransaction(database.pool,userId,async client => {
+        const organizationId = await requireProjectMembership(client,userId,projectId,false);
+        const result = await client.query(
+          "SELECT user_id,display_name,role FROM searqon.list_project_members($1)",
+          [projectId]
+        );
+        return result.rows.map(row=>({id:row.user_id,displayName:row.display_name,role:row.role}));
+      });
+    },
+
+    async updateWork(userId, recommendationId, input = {}) {
+      requireUuid(userId,"user_id");
+      requireUuid(recommendationId,"recommendation_id");
+      if (!input || typeof input !== "object" || Array.isArray(input)) {
+        throw new RecommendationError(400,"invalid_work_update","Provide assignment and/or dueDate fields.");
+      }
+      const hasAssignee = Object.hasOwn(input,"assignedTo");
+      const hasDueDate = Object.hasOwn(input,"dueDate");
+      if (!hasAssignee && !hasDueDate) {
+        throw new RecommendationError(400,"empty_work_update","Provide at least one work-management field.");
+      }
+      const assignedTo = hasAssignee
+        ? input.assignedTo === null ? null : requireUuid(input.assignedTo,"assignee_id")
+        : undefined;
+      const dueDate = hasDueDate ? normalizeRecommendationDueDate(input.dueDate) : undefined;
+
+      return withUserTransaction(database.pool,userId,async client => {
+        const currentResult = await client.query(
+          "SELECT * FROM searqon.recommendations WHERE id=$1 FOR UPDATE",
+          [recommendationId]
+        );
+        const current = currentResult.rows?.[0];
+        if (!current) throw new RecommendationError(404,"recommendation_not_found","The requested recommendation was not found.");
+        const organizationId = await requireProjectMembership(client,userId,current.project_id,true);
+        if (organizationId !== current.organization_id) {
+          throw new RecommendationError(404,"recommendation_not_found","The requested recommendation was not found.");
+        }
+        if (hasAssignee && assignedTo !== null) {
+          const member = await client.query(
+            "SELECT 1 FROM searqon.list_project_members($1) WHERE user_id=$2",
+            [current.project_id,assignedTo]
+          );
+          if (!member.rows.length) {
+            throw new RecommendationError(422,"assignee_not_in_workspace","The assignee must be an active member of this workspace.");
+          }
+        }
+        const previousAssignee = current.assigned_to ?? null;
+        const previousDueDate = dateOnly(current.due_date);
+        const nextAssignee = hasAssignee ? assignedTo : previousAssignee;
+        const nextDueDate = hasDueDate ? dueDate : previousDueDate;
+        if (nextAssignee === previousAssignee && nextDueDate === previousDueDate) {
+          return recommendationRow(current,true);
+        }
+        const updated = await client.query(
+          `UPDATE searqon.recommendations
+           SET assigned_to=$2,due_date=$3::date,updated_at=now()
+           WHERE id=$1 RETURNING *`,
+          [recommendationId,nextAssignee,nextDueDate]
+        );
+        const row = updated.rows[0];
+        if (nextAssignee !== previousAssignee) {
+          await appendEvent(client,{organizationId,projectId:current.project_id,recommendationId,actorUserId:userId,
+            eventType:"assignment_changed",
+            metadata:{previousAssigneeId:previousAssignee,assignedToId:nextAssignee}});
+        }
+        if (nextDueDate !== previousDueDate) {
+          await appendEvent(client,{organizationId,projectId:current.project_id,recommendationId,actorUserId:userId,
+            eventType:"due_date_changed",
+            metadata:{previousDueDate,dueDate:nextDueDate}});
+        }
+        return recommendationRow(row);
+      });
+    },
+
+    async createPlan(userId, projectId, input = {}) {
+      requireUuid(userId,"user_id");
+      requireUuid(projectId,"project_id");
+      if (!input || typeof input !== "object" || Array.isArray(input)) {
+        throw new RecommendationError(400,"invalid_remediation_plan","A remediation plan object is required.");
+      }
+      const createdAt = new Date().toISOString();
+      let plan;
+      try {
+        plan = compileRemediationPlan({
+          planId: input.planId,
+          projectId,
+          createdAt,
+          steps: input.steps
+        });
+      } catch (error) {
+        throw new RecommendationError(422,"invalid_remediation_plan",
+          error instanceof Error ? error.message : "The remediation plan is invalid.");
+      }
+      const recommendationIds = [...new Set(plan.steps.flatMap(step => step.recommendationIds))].map(id => requireUuid(id,"recommendation_id"));
+      const assessmentIds = [...new Set(plan.steps.flatMap(step => step.tests.map(item => item.assessmentId)))].map(id => requireUuid(id,"assessment_id"));
+      const planDigest = createHash("sha256").update(JSON.stringify(plan),"utf8").digest("hex");
+      return withUserTransaction(database.pool,userId,async client => {
+        const organizationId = await requireProjectMembership(client,userId,projectId,true);
+        const recommendations = await client.query(
+          "SELECT id FROM searqon.recommendations WHERE organization_id=$1 AND project_id=$2 AND id=ANY($3::uuid[])",
+          [organizationId,projectId,recommendationIds]
+        );
+        if (recommendations.rows.length !== recommendationIds.length) {
+          throw new RecommendationError(422,"plan_recommendation_scope_mismatch","Every plan recommendation must belong to this project.");
+        }
+        const assessments = await client.query(
+          "SELECT id FROM searqon.assessments WHERE organization_id=$1 AND project_id=$2 AND status='succeeded' AND completed_at IS NOT NULL AND id=ANY($3::uuid[])",
+          [organizationId,projectId,assessmentIds]
+        );
+        if (assessments.rows.length !== assessmentIds.length) {
+          throw new RecommendationError(422,"plan_assessment_scope_mismatch","Every test evidence reference must point to a successful assessment in this project.");
+        }
+        try {
+          const inserted = await client.query(
+            `INSERT INTO searqon.recommendation_plans
+              (organization_id,project_id,plan_ref,plan_digest,status,plan_document,created_by)
+             VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7)
+             RETURNING id,plan_digest,created_by,created_at`,
+            [organizationId,projectId,plan.planId,planDigest,plan.status,JSON.stringify(plan),userId]
+          );
+          return {
+            ...plan,
+            id: inserted.rows[0].id,
+            digest: inserted.rows[0].plan_digest,
+            createdBy: inserted.rows[0].created_by,
+            createdAt: inserted.rows[0].created_at
+          };
+        } catch (error) {
+          if (error?.code === "23505") {
+            throw new RecommendationError(409,"remediation_plan_exists","A plan with this reference already exists in the project.");
+          }
+          throw error;
+        }
+      });
+    },
+
+    async listPlans(userId, projectId) {
+      requireUuid(userId,"user_id");
+      requireUuid(projectId,"project_id");
+      return withUserTransaction(database.pool,userId,async client => {
+        await requireProjectMembership(client,userId,projectId,false);
+        const result = await client.query(
+          `SELECT id,plan_ref,plan_digest,status,plan_document,created_by,created_at
+           FROM searqon.recommendation_plans
+           WHERE project_id=$1
+           ORDER BY created_at DESC,id DESC`,
+          [projectId]
+        );
+        return result.rows.map(row => ({
+          ...row.plan_document,
+          id: row.id,
+          planRef: row.plan_ref,
+          digest: row.plan_digest,
+          status: row.status,
+          createdBy: row.created_by,
+          createdAt: row.created_at
+        }));
       });
     },
 
@@ -273,21 +471,33 @@ export function createRecommendationService({ database } = {}) {
           const resume = existing.status === "not_resolved";
           const clearVerification = reopen || resume;
           const nextStatus = reopen ? "open" : resume ? "in_progress" : existing.status;
+          const previousSeverity = existing.severity;
+          const severityChanged = previousSeverity !== finding.severity;
+          const severityEvent = severityChanged
+            ? PRIORITY[finding.severity] > PRIORITY[previousSeverity] ? "severity_escalated" : "severity_deescalated"
+            : null;
           const updatedResult = await client.query(
             `UPDATE searqon.recommendations
              SET latest_assessment_id=$2,status=$3,occurrence_count=LEAST(occurrence_count+1,1000000),
+                 severity=$5,priority=$6,title=$7,description=$8,recommended_action=$9,
                  last_seen_at=now(),
                  verification_assessment_id=CASE WHEN $4 THEN NULL ELSE verification_assessment_id END,
                  verification_result=CASE WHEN $4 THEN NULL ELSE verification_result END,
                  verified_at=CASE WHEN $4 THEN NULL ELSE verified_at END,
                  updated_at=now()
              WHERE id=$1 RETURNING *`,
-            [existing.id,assessmentId,nextStatus,clearVerification]
+            [existing.id,assessmentId,nextStatus,clearVerification,finding.severity,finding.priority,
+              finding.title,finding.description,finding.recommendedAction]
           );
           const row = updatedResult.rows[0];
           await appendEvent(client,{organizationId,projectId,recommendationId:row.id,actorUserId:userId,
             eventType:reopen ? "reopened" : "finding_reobserved",fromStatus:existing.status,toStatus:nextStatus,
             assessmentId,metadata:{findingKey:finding.findingKey,occurrenceCount:row.occurrence_count}});
+          if (severityEvent) {
+            await appendEvent(client,{organizationId,projectId,recommendationId:row.id,actorUserId:userId,
+              eventType:severityEvent,assessmentId,
+              metadata:{previousSeverity,severity:finding.severity,previousPriority:existing.priority,priority:finding.priority}});
+          }
           updated.push(recommendationRow(row));
         }
         return {

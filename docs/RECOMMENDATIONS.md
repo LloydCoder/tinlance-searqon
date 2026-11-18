@@ -47,13 +47,32 @@ This is deliberately narrow: verification means the deterministic finding was ab
 ## API surface
 
 - GET /api/v1/projects/{projectId}/recommendations
+- GET /api/v1/projects/{projectId}/recommendations/assignees
+- GET /api/v1/projects/{projectId}/recommendation-plans
+- POST /api/v1/projects/{projectId}/recommendation-plans
 - POST /api/v1/projects/{projectId}/recommendations with an assessmentId
 - POST /api/v1/recommendations/{recommendationId}/status with a status
+- POST /api/v1/recommendations/{recommendationId}/work with assignedTo and/or dueDate
 - POST /api/v1/recommendations/{recommendationId}/verify with an assessmentId
 - GET /api/v1/recommendations/{recommendationId}/events
 
 Write requests require an authenticated session and same-origin validation. The service independently enforces tenant membership and writer role.
 
+## Ownership and scheduling
+
+Workspace writers can assign a recommendation to any current member of the same workspace or clear the assignment. A due date is an optional calendar date (`YYYY-MM-DD`) with strict calendar validation; it is not a timestamp and carries no timezone. Assignment and due-date changes are recorded as separate append-only events. The assignee lookup returns only member ID, display name and workspace role. Viewers can see ownership and due dates but cannot change them.
+
 ## Remaining scope
 
-Assignments and due dates, patch/test linkage, source-control integrations, richer cross-engine priority, multi-step remediation plans and customer validation remain future work. The feature is an evidence-linked workflow, not an autonomous remediation agent.
+Patch/test linkage, source-control integrations, richer cross-engine priority, multi-step remediation plans and customer validation remain future work. The feature is an evidence-linked workflow, not an autonomous remediation agent.
+
+## Cross-engine prioritization and remediation plans
+
+Repeated observations of the same stable finding also update its latest severity and recommendation text. A severity increase emits a separate append-only \`severity_escalated\` event; a decrease emits \`severity_deescalated\`. The finding identity remains stable because severity is not part of its fingerprint. This preserves the regression trail without creating duplicate recommendation records.
+
+
+The authenticated project worklist ranks SEO, AEO, GEO and AgEO recommendations with a deterministic, explainable score. The score combines the existing severity priority, bounded recurrence, workflow state and overdue status. Verified and dismissed items receive a zero active-work score. Ties are resolved by due date and stable recommendation ID. Ranking is a presentation/work-queue signal; it does not rewrite the persisted severity or recommendation state.
+
+A remediation plan is an immutable, tenant-scoped proposal. Each step binds one or more recommendation IDs to a repository-relative patch path, the SHA-256 digest of the exact unified-diff bytes, explicit step dependencies, and test evidence references. Test evidence must identify a successful assessment in the same project and must carry the exact patch digest. Any failed or unrun test blocks the plan from becoming ready for human review. Plans are stored as immutable snapshots with a tenant/project boundary and a content digest.
+
+The plan compiler validates dependency acyclicity, path traversal, patch digest integrity, test-to-patch linkage, bounded input sizes and evidence references. It does not execute tests, apply patches, write to source control, open pull requests, merge, or publish. A plan marked "ready_for_human_review" means only that supplied test references are marked passed and structurally linked; it is not independent proof that tests ran or that a patch is correct. Source-control operations remain separate and require explicit human authorization.

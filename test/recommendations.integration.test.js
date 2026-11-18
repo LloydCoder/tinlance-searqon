@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { createWorkspaceService } from "../src/platform/workspaces.js";
 import { createRecommendationService } from "../src/platform/recommendations.js";
@@ -63,6 +63,53 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     const recommendation = generated.created.find(item => item.ruleId === "html.meta_description.missing");
     assert.ok(recommendation);
     assert.equal(recommendation.status,"open");
+    const patchDiff = "--- a/docs/remediation/meta-description.md\n+++ b/docs/remediation/meta-description.md\n@@\n-Add nothing\n+Add a concise description\n";
+    const patchSha256 = createHash("sha256").update(patchDiff,"utf8").digest("hex");
+    const remediationPlan = await service.createPlan(userA,project.id,{
+      planId:"meta-description-remediation",
+      steps:[{
+        id:"step-1",
+        title:"Add a page-specific meta description",
+        recommendationIds:[recommendation.id],
+        patch:{path:"docs/remediation/meta-description.md",sha256:patchSha256,diff:patchDiff},
+        tests:[{testId:"seo-meta-description-regression",assessmentId:baseline.id,patchSha256,status:"passed"}]
+      }]
+    });
+    assert.equal(remediationPlan.status,"ready_for_human_review");
+    assert.equal(remediationPlan.autoApply,false);
+    assert.equal(remediationPlan.steps[0].patch.sha256,patchSha256);
+    const storedPlans = await service.listPlans(userA,project.id);
+    assert.equal(storedPlans.length,1);
+    assert.equal(storedPlans[0].digest,remediationPlan.digest);
+    assert.equal((await service.listPlans(viewer,project.id)).length,1);
+    await assert.rejects(
+      service.createPlan(userA,project.id,{
+        planId:"cross-project-plan",
+        steps:[{
+          id:"step-1",title:"Invalid cross-project link",recommendationIds:[recommendation.id],
+          patch:{path:"docs/remediation/meta-description.md",sha256:patchSha256,diff:patchDiff},
+          tests:[{testId:"test",assessmentId:randomUUID(),patchSha256,status:"passed"}]
+        }]
+      }),
+      error=>error.code==="plan_assessment_scope_mismatch"
+    );
+    await assert.rejects(
+      owner.query("UPDATE searqon.recommendation_plans SET status='blocked_by_test_evidence' WHERE organization_id=$1 AND plan_ref=$2",[orgA,"meta-description-remediation"]),
+      /immutable/
+    );
+    const assignees = await service.listAssignees(userA,project.id);
+    assert.ok(assignees.some(member=>member.id===viewer && member.role==="viewer"));
+    assert.ok(!assignees.some(member=>member.id===userB),"cross-tenant users must never appear in the assignee directory");
+    const scheduled = await service.updateWork(userA,recommendation.id,{assignedTo:viewer,dueDate:"2026-12-01"});
+    assert.equal(scheduled.assignedTo,viewer);
+    assert.equal(scheduled.dueDate,"2026-12-01");
+    await assert.rejects(
+      service.updateWork(userA,recommendation.id,{assignedTo:userB}),
+      error=>error.code==="assignee_not_in_workspace"
+    );
+    const cleared = await service.updateWork(userA,recommendation.id,{assignedTo:null,dueDate:null});
+    assert.equal(cleared.assignedTo,null);
+    assert.equal(cleared.dueDate,null);
     const replay = await service.syncFromAssessment(userA,project.id,baseline.id);
     assert.ok(replay.replayed.some(item => item.id === recommendation.id && item.idempotentReplay));
 
@@ -70,7 +117,10 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
       service.syncFromAssessment(viewer,project.id,baseline.id),
       error => error.code === "insufficient_role"
     );
-    assert.equal((await service.list(viewer,project.id)).length,generated.created.length);
+    const viewerWorklist = await service.list(viewer,project.id);
+    assert.equal(viewerWorklist.length,generated.created.length);
+    assert.ok(viewerWorklist.every(item=>Number.isInteger(item.crossEngineRank)));
+    assert.ok(viewerWorklist.every(item=>Number.isInteger(item.crossEnginePriorityScore)));
     await assert.rejects(
       service.list(userB,project.id),
       error => error.code === "project_not_found"
@@ -90,10 +140,21 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     );
 
     const repeated = await assess(project.id,htmlMissing);
+    await owner.query(
+      `UPDATE searqon.assessments
+       SET report=jsonb_set(report,'{findings}',(
+         SELECT jsonb_agg(CASE WHEN item->>'ruleId'='html.meta_description.missing'
+           THEN jsonb_set(item,'{severity}','"critical"'::jsonb) ELSE item END)
+         FROM jsonb_array_elements(report->'findings') item
+       ))
+       WHERE id=$1`,
+      [repeated.id]
+    );
     await service.syncFromAssessment(userA,project.id,repeated.id);
     const afterRepeat = (await service.list(userA,project.id)).find(item => item.id === recommendation.id);
     assert.equal(afterRepeat.occurrenceCount,2);
     assert.equal(afterRepeat.latestAssessmentId,repeated.id);
+    assert.equal(afterRepeat.severity,"critical");
 
     const methodologyMismatch = await assess(project.id,htmlMissing);
     await owner.query(
@@ -121,11 +182,12 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     const current = (await service.list(userA,project.id)).find(item => item.id === recommendation.id);
     assert.equal(current.status,"open");
     assert.equal(current.latestAssessmentId,regressed.id);
+    assert.equal(current.severity,"medium");
     assert.ok(reopened.updated.some(item => item.id === recommendation.id));
 
     const history = await service.history(viewer,recommendation.id);
     const eventTypes = history.map(item => item.eventType);
-    for (const expected of ["created","status_changed","finding_reobserved","verification_failed","verification_succeeded","reopened"]) {
+    for (const expected of ["created","assignment_changed","due_date_changed","status_changed","finding_reobserved","verification_failed","verification_succeeded","reopened","severity_escalated","severity_deescalated"]) {
       assert.ok(eventTypes.includes(expected), "missing recommendation event " + expected);
     }
     await assert.rejects(

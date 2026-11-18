@@ -409,12 +409,49 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const projectRecommendationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendations$/);
+    const projectRecommendationPlansRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendation-plans$/);
+    if (projectRecommendationPlansRoute) {
+      const projectId = projectRecommendationPlansRoute[1];
+      if (request.method !== "GET" && request.method !== "POST") {
+        response.setHeader("allow","GET, POST");
+        sendJson(response,405,{error:{code:"method_not_allowed",message:"Use GET or POST."}});
+        return;
+      }
+      if (!auth || !recommendations) {
+        sendJson(response,503,{error:{code:"recommendations_unavailable",message:"The authenticated recommendation service is not configured."}});
+        return;
+      }
+      if (request.method === "POST" && !isSameOrigin(request,auth.publicOrigin)) {
+        sendJson(response,403,{error:{code:"origin_rejected",message:"The request origin is not allowed."}});
+        return;
+      }
+      try {
+        const profile = await auth.getProfile(readSessionCookie(request));
+        if (!profile?.user?.id) {
+          sendJson(response,401,{error:{code:"unauthenticated",message:"Sign in to access remediation plans."}});
+          return;
+        }
+        if (request.method === "GET") {
+          sendJson(response,200,{plans:await recommendations.listPlans(profile.user.id,projectId)});
+          return;
+        }
+        if (!requireJsonContentType(request,response)) return;
+        const body = await readJsonBody(request,MAX_AUTH_BODY_BYTES);
+        sendJson(response,201,{plan:await recommendations.createPlan(profile.user.id,projectId,body)});
+      } catch (error) {
+        const status = Number.isInteger(error?.statusCode) ? error.statusCode : 500;
+        sendJson(response,status,{error:{code:status < 500 ? (error.code ?? "invalid_request") : "recommendations_error",message:status < 500 ? error.message : "The remediation plan request could not be completed."}});
+      }
+      return;
+    }
+
+    const projectRecommendationsRoute = url.pathname.match(/^\/api\/v1\/projects\/([^/]+)\/recommendations(?:\/(assignees))?$/);
     if (projectRecommendationsRoute) {
       const projectId = projectRecommendationsRoute[1];
-      if (request.method !== "GET" && request.method !== "POST") {
-        response.setHeader("allow", "GET, POST");
-        sendJson(response, 405, { error: { code: "method_not_allowed", message: "Use GET or POST." } });
+      const recommendationSubroute = projectRecommendationsRoute[2] ?? null;
+      if ((recommendationSubroute && request.method !== "GET") || (!recommendationSubroute && request.method !== "GET" && request.method !== "POST")) {
+        response.setHeader("allow", recommendationSubroute ? "GET" : "GET, POST");
+        sendJson(response, 405, { error: { code: "method_not_allowed", message: recommendationSubroute ? "Use GET." : "Use GET or POST." } });
         return;
       }
       if (!auth || !recommendations) {
@@ -432,7 +469,11 @@ export function createAppServer({ database = null, authService = null, workspace
           return;
         }
         if (request.method === "GET") {
-          sendJson(response, 200, { recommendations: await recommendations.list(profile.user.id, projectId) });
+          if (recommendationSubroute === "assignees") {
+            sendJson(response, 200, { assignees: await recommendations.listAssignees(profile.user.id, projectId) });
+          } else {
+            sendJson(response, 200, { recommendations: await recommendations.list(profile.user.id, projectId) });
+          }
           return;
         }
         if (!requireJsonContentType(request, response)) return;
@@ -446,7 +487,7 @@ export function createAppServer({ database = null, authService = null, workspace
       return;
     }
 
-    const recommendationActionRoute = url.pathname.match(/^\/api\/v1\/recommendations\/([^/]+)(?:\/(status|verify|events))?$/);
+    const recommendationActionRoute = url.pathname.match(/^\/api\/v1\/recommendations\/([^/]+)(?:\/(status|verify|events|work))?$/);
     if (recommendationActionRoute) {
       const recommendationId = recommendationActionRoute[1];
       const action = recommendationActionRoute[2] ?? "events";
@@ -478,6 +519,8 @@ export function createAppServer({ database = null, authService = null, workspace
         const body = await readJsonBody(request, MAX_AUTH_BODY_BYTES);
         if (action === "status") {
           sendJson(response, 200, { recommendation: await recommendations.transition(profile.user.id, recommendationId, body?.status) });
+        } else if (action === "work") {
+          sendJson(response, 200, { recommendation: await recommendations.updateWork(profile.user.id, recommendationId, body) });
         } else {
           sendJson(response, 200, { recommendation: await recommendations.verify(profile.user.id, recommendationId, body?.assessmentId) });
         }
