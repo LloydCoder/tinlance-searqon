@@ -84,19 +84,20 @@ export function buildDashboardModel({
       : [];
     for (const recommendation of recommendations) {
       if (!recommendation || typeof recommendation !== "object") continue;
-      const enriched = {
-        ...recommendation,
-        projectId: project.id,
-        projectName: project.name,
-        targetUrl: project.targetUrl
-      };
-      model.recommendations.push(enriched);
-      if (ACTIVE_STATUSES.has(recommendation.status)) model.openActionCount += 1;
+      model.recommendationCount += 1;
+      if (ACTIVE_STATUSES.has(recommendation.status)) {
+        model.openActionCount += 1;
+        model.recommendations.push({
+          ...recommendation,
+          projectId: project.id,
+          projectName: project.name,
+          targetUrl: project.targetUrl
+        });
+      }
       if (recommendation.status === "verified") model.verifiedActionCount += 1;
     }
   }
 
-  model.recommendationCount = model.recommendations.length;
   model.recommendations.sort((a, b) =>
     (Number(b.priority) || 0) - (Number(a.priority) || 0)
     || timestamp(b.updatedAt) - timestamp(a.updatedAt)
