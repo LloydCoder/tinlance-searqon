@@ -78,6 +78,20 @@ function documentTitle(document) {
   return match ? htmlText(match[1]).slice(0,256) : null;
 }
 
+function sourceLinks(document) {
+  if (document.contentType === "text/html") {
+    return [...document.content.matchAll(/\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))/gi)]
+      .map(match => match[1] ?? match[2] ?? match[3])
+      .filter(value => typeof value === "string" && value.length > 0);
+  }
+  if (document.contentType === "text/markdown") {
+    return [...document.content.matchAll(/\\[[^\\]]*\\]\\(([^)]+)\\)/g)]
+      .map(match => match[1].trim())
+      .filter(value => value.length > 0);
+  }
+  return [];
+}
+
 function inspectOpenApi(document) {
   let spec;
   try { spec = JSON.parse(document.content); }
@@ -237,15 +251,20 @@ export function simulateAgentJourney(manifest, { runId = null } = {}) {
     if (step.action === "follow_link") {
       const source = validated.documents.get(step.fromDocumentId);
       const destination = safeUrl(step.href,new URL(source.url).origin,"journey.href",source.url);
+      const linked = sourceLinks(source).some(href => {
+        try { return safeUrl(href,new URL(source.url).origin,"source link",source.url).href === destination.href; }
+        catch { return false; }
+      });
       const target = [...validated.documents.values()].find(document => document.url === destination.href);
+      const completed = linked && Boolean(target);
       steps.push({
         index,
         action:step.action,
-        status:target ? "completed" : "blocked",
+        status:completed ? "completed" : "blocked",
         evidence:{documentId:source.id,sourcePath:source.pathname},
-        result:target
+        result:completed
           ? {documentId:target.id,path:target.pathname,networkRequested:false}
-          : {reason:"destination_not_in_supplied_snapshot",networkRequested:false}
+          : {reason:linked ? "destination_not_in_supplied_snapshot" : "link_not_present_in_source",networkRequested:false}
       });
       continue;
     }
