@@ -9,7 +9,7 @@ ALTER TABLE searqon.billing_webhook_inbox
     AND octet_length(normalized_payload::text)<=16384
     AND normalized_payload - ARRAY[
       'organizationId','providerCustomerId','providerSubscriptionId','status','plan',
-      'currentPeriodStart','currentPeriodEnd','trialEndsAt','checkoutIntentId'
+      'currentPeriodStart','currentPeriodEnd','trialEndsAt','checkoutIntentId','providerTransactionId'
     ]='{}'::jsonb
   );
 
