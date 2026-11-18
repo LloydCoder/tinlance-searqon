@@ -55,12 +55,20 @@ if (root) {
 
   function renderMetrics(model) {
     metricsTarget.replaceChildren();
+    const assessmentNote = model.assessmentUnavailableProjectCount
+      ? "Known records only · " + model.assessmentUnavailableProjectCount + " project history request(s) unavailable"
+      : "Latest 100 returned per project";
+    const recommendationNote = model.recommendationUnavailableProjectCount
+      ? "Known records only · " + model.recommendationUnavailableProjectCount + " project list(s) unavailable"
+      : "Persisted recommendation lifecycle records";
     const metrics = [
       ["Projects", model.projectCount, "In this workspace"],
-      ["Successful assessments", model.completedAssessmentCount, "Latest 100 returned per project"],
-      ["Latest findings", model.latestFindingCount, "Across each project's latest successful assessment"],
-      ["Open actions", model.openActionCount, "Accepted, active or unresolved"],
-      ["Verified actions", model.verifiedActionCount, "Evidence-gated verification records"]
+      ["Successful assessments", model.completedAssessmentCount, assessmentNote],
+      ["Latest findings", model.latestFindingCount, model.assessmentUnavailableProjectCount
+        ? "Known latest reports only · some project history unavailable"
+        : "Across each project's latest successful assessment"],
+      ["Open actions", model.openActionCount, recommendationNote],
+      ["Verified actions", model.verifiedActionCount, recommendationNote]
     ];
     for (const [label, value, detail] of metrics) {
       const card = element("article", "command-metric");
@@ -71,15 +79,17 @@ if (root) {
 
   function renderActions(model) {
     actionsTarget.replaceChildren();
-    actionsCountTarget.textContent = model.openActionCount + " active / " + model.recommendationCount + " tracked";
+    actionsCountTarget.textContent = model.recommendationUnavailableProjectCount\n      ? model.openActionCount + " known active / partial"\n      : model.openActionCount + " active / " + model.recommendationCount + " tracked";
     const recommendations = model.recommendations;
     if (!recommendations.length) {
       actionsTarget.append(element("p", "command-empty",
-        model.recommendationCount
-          ? "No open actions remain. Tracked recommendations are currently verified or dismissed."
-          : model.projectCount
-            ? "No tracked recommendations yet. Open a project, run a successful assessment, then generate its evidence-linked worklist."
-            : "Create a project to establish your first evidence-backed baseline."));
+        model.recommendationUnavailableProjectCount
+          ? "Some project recommendation lists are unavailable. This queue is incomplete; refresh after access or connectivity is restored."
+          : model.recommendationCount
+            ? "No open actions remain. Tracked recommendations are currently verified or dismissed."
+            : model.projectCount
+              ? "No tracked recommendations yet. Open a project, run a successful assessment, then generate its evidence-linked worklist."
+              : "Create a project to establish your first evidence-backed baseline."));
       return;
     }
     for (const recommendation of recommendations) {
@@ -135,7 +145,7 @@ if (root) {
       const card = element("article", "command-coverage-card");
       card.append(element("strong", "", dimension));
       const stats = element("div", "command-coverage-stats");
-      for (const [key, label] of [["full", "Full"], ["partial", "Partial"], ["none", "Not assessed"]]) {
+      for (const [key, label] of [["full", "Full"], ["partial", "Partial"], ["none", "Not assessed"], ["unavailable", "Unavailable"]]) {
         const line = element("span");
         line.append(document.createTextNode(label), element("b", "", counts[key]));
         stats.append(line);
@@ -185,7 +195,7 @@ if (root) {
 
       const projectResult = await getJson("/api/v1/projects?organizationId=" + encodeURIComponent(selectedOrganizationId));
       const projects = Array.isArray(projectResult.projects) ? projectResult.projects : [];
-      let failedProjectReads = 0;
+      let failedAssessmentReads = 0;\n      let failedRecommendationReads = 0;
       const assessmentsByProject = {};
       const recommendationsByProject = {};
       let cursor = 0;
