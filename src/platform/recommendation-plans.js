@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 const SEVERITY_SCORE = Object.freeze({ critical: 100, high: 80, medium: 60, low: 30, info: 10 });
 const DIMENSIONS = new Set(["SEO", "AEO", "GEO", "AgEO"]);
 const STATUSES = new Set(["open", "accepted", "in_progress", "dismissed", "not_resolved", "verified"]);
@@ -6,7 +8,7 @@ const MAX_STEPS = 100;
 const SHA256 = /^[a-f0-9]{64}$/;
 
 function date(value, field) {
-  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new TypeError(field + " must be a YYYY-MM-DD calendar date");
   }
   const [year, month, day] = value.split("-").map(Number);
@@ -18,7 +20,7 @@ function date(value, field) {
 }
 
 function identifier(value, field, max = 128) {
-  if (typeof value !== "string" || !value.trim() || value.trim() !== value || value.length > max || /[\\u0000-\\u001f\\u007f]/.test(value)) {
+  if (typeof value !== "string" || !value.trim() || value.trim() !== value || value.length > max || /[\u0000-\u001f\u007f]/.test(value)) {
     throw new TypeError(field + " must be a normalized non-empty identifier");
   }
   return value;
@@ -26,7 +28,7 @@ function identifier(value, field, max = 128) {
 
 function safePath(value) {
   const path = identifier(value, "patch.path", 240);
-  if (path.startsWith("/") || path.includes("\\\\") || /^[A-Za-z]:/.test(path) ||
+  if (path.startsWith("/") || path.includes("\\") || /^[A-Za-z]:/.test(path) ||
       /[?#%]/.test(path) || path.split("/").some(part => !part || part === "." || part === ".." || part.startsWith("."))) {
     throw new TypeError("patch.path must be a safe repository-relative path");
   }
@@ -44,28 +46,26 @@ function normalizeRecommendation(item, index, asOf) {
     throw new RangeError("occurrenceCount must be an integer from 1 to 1000000");
   }
   const dueDate = item.dueDate == null ? null : date(item.dueDate, "dueDate");
-  const overdue = dueDate !== null && dueDate < asOf && !["verified", "dismissed"].includes(item.status);
+  const closed = ["verified", "dismissed"].includes(item.status);
+  const overdue = dueDate !== null && dueDate < asOf && !closed;
   const recurrence = Math.min(20, Math.floor(Math.log2(occurrenceCount) * 5));
   const statusAdjustment = item.status === "not_resolved" ? 12 : item.status === "in_progress" ? 6 :
-    item.status === "accepted" ? 3 : ["verified", "dismissed"].includes(item.status) ? -100 : 0;
+    item.status === "accepted" ? 3 : 0;
   const overdueAdjustment = overdue ? 15 : 0;
-  const score = Math.max(0, SEVERITY_SCORE[item.severity] + recurrence + statusAdjustment + overdueAdjustment);
+  const score = closed ? 0 : SEVERITY_SCORE[item.severity] + recurrence + statusAdjustment + overdueAdjustment;
   return {
     id, dimension: item.dimension, severity: item.severity, status: item.status,
     priorityScore: score, overdue, dueDate, occurrenceCount,
     factors: {
-      severity: SEVERITY_SCORE[item.severity],
-      recurrence,
-      workflow: statusAdjustment,
+      severity: closed ? 0 : SEVERITY_SCORE[item.severity],
+      recurrence: closed ? 0 : recurrence,
+      workflow: closed ? 0 : statusAdjustment,
       overdue: overdueAdjustment
     }
   };
 }
 
-/**
- * Explainable cross-discipline work ranking. It does not alter stored severity,
- * statuses or recommendation records; the caller supplies the evaluation date.
- */
+/** Explainable cross-discipline ranking; does not mutate persisted recommendations. */
 export function rankRecommendations(recommendations, { asOf } = {}) {
   if (!Array.isArray(recommendations) || recommendations.length > MAX_RECOMMENDATIONS) {
     throw new RangeError("recommendations must be an array of at most " + MAX_RECOMMENDATIONS + " items");
@@ -85,8 +85,8 @@ export function rankRecommendations(recommendations, { asOf } = {}) {
 }
 
 /**
- * Build a review-only remediation plan that binds recommendations to patch
- * digests and test evidence. No patch is applied and no test command is executed.
+ * Build a review-only remediation plan linking recommendations, exact patch
+ * bytes and test evidence. No patch is applied and no test command is executed.
  */
 export function compileRemediationPlan({ planId, projectId, createdAt, steps } = {}) {
   identifier(planId, "planId");
@@ -111,22 +111,24 @@ export function compileRemediationPlan({ planId, projectId, createdAt, steps } =
     if (recommendations.length !== recommendationIds.length) throw new TypeError("recommendation IDs within a step must be unique");
     const patch = step.patch;
     if (!patch || typeof patch !== "object" || Array.isArray(patch) ||
-        typeof patch.sha256 !== "string" || !SHA256.test(patch.sha256)) {
-      throw new TypeError("each step requires a SHA-256 patch proposal digest");
+        typeof patch.sha256 !== "string" || !SHA256.test(patch.sha256) || typeof patch.diff !== "string") {
+      throw new TypeError("each step requires a SHA-256 patch proposal digest and diff");
     }
     const path = safePath(patch.path);
-    if (typeof patch.diff !== "string" || !patch.diff.startsWith("--- a/") || !patch.diff.includes("\\n+++ b/") ||
-        patch.diff.length > 200_000) {
-      throw new TypeError("patch.diff must be a bounded unified diff proposal");
+    if (!patch.diff.startsWith("--- a/" + path + "\n+++ b/" + path + "\n") || patch.diff.length > 200_000) {
+      throw new TypeError("patch.diff must be a bounded unified diff for patch.path");
     }
+    const actualPatchDigest = createHash("sha256").update(patch.diff, "utf8").digest("hex");
+    if (actualPatchDigest !== patch.sha256) throw new TypeError("patch.sha256 must match the exact unified diff bytes");
     const tests = step.tests;
     if (!Array.isArray(tests) || tests.length < 1 || tests.length > 50) throw new TypeError("each step requires 1 to 50 test evidence references");
-    const normalizedTests = tests.map((item, testIndex) => {
+    const normalizedTests = tests.map(item => {
       if (!item || typeof item !== "object" || Array.isArray(item)) throw new TypeError("test evidence must be an object");
       const testId = identifier(item.testId, "test.testId");
       const assessmentId = identifier(item.assessmentId, "test.assessmentId");
+      if (item.patchSha256 !== patch.sha256) throw new TypeError("test evidence must bind to the exact patch SHA-256");
       if (!["passed", "failed", "not_run"].includes(item.status)) throw new TypeError("test status must be passed, failed or not_run");
-      return Object.freeze({ testId, assessmentId, status: item.status });
+      return Object.freeze({ testId, assessmentId, patchSha256: item.patchSha256, status: item.status });
     });
     const dependsOn = step.dependsOn ?? [];
     if (!Array.isArray(dependsOn) || dependsOn.length > MAX_STEPS) throw new TypeError("dependsOn must be a bounded array");
@@ -155,7 +157,7 @@ export function compileRemediationPlan({ planId, projectId, createdAt, steps } =
     visiting.delete(id);
     visited.add(id);
   }
-  for (const step of normalized) visit(step.id);
+  for (const id of byId.keys()) visit(id);
   const allTestsPassed = normalized.every(step => step.tests.every(item => item.status === "passed"));
   return Object.freeze({
     schemaVersion: "1.0.0",
