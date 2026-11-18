@@ -104,6 +104,7 @@ export function createBillingWebhookProcessor({
         providerEventId: verified.providerEventId,
         eventType: verified.eventType,
         verifiedAt: new Date(verifiedAt).toISOString(),
+        providerCreatedAt: verified.providerCreatedAt,
         receivedAt,
         rawBodySha256: createHash("sha256").update(rawBody).digest("hex"),
         payload: verified.payload
