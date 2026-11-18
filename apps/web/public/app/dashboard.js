@@ -8,6 +8,7 @@ if (root) {
   const coverageTarget = root.querySelector("#command-center-coverage");
   const statusTarget = root.querySelector("#command-center-status");
   const refreshTarget = root.querySelector("#command-center-refresh");
+  const actionsCountTarget = root.querySelector("#command-actions-count");
   const organizationSelector = document.querySelector("#organization-select");
   let requestSequence = 0;
 
@@ -21,6 +22,11 @@ if (root) {
   function setStatus(message, tone = "") {
     statusTarget.textContent = message;
     statusTarget.className = "command-status" + (tone ? " " + tone : "");
+  }
+
+  function formatDate(value) {
+    if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return "Date unavailable";
+    return new Date(value).toLocaleString();
   }
 
   async function getJson(path) {
@@ -51,9 +57,10 @@ if (root) {
     metricsTarget.replaceChildren();
     const metrics = [
       ["Projects", model.projectCount, "In this workspace"],
-      ["Successful assessments", model.completedAssessmentCount, "Across returned project history"],
+      ["Successful assessments", model.completedAssessmentCount, "Latest 100 returned per project"],
+      ["Latest findings", model.latestFindingCount, "Across each project's latest successful assessment"],
       ["Open actions", model.openActionCount, "Accepted, active or unresolved"],
-      ["Latest findings", model.latestFindingCount, "Across each project's latest successful assessment"]
+      ["Verified actions", model.verifiedActionCount, "Evidence-gated verification records"]
     ];
     for (const [label, value, detail] of metrics) {
       const card = element("article", "command-metric");
@@ -64,6 +71,7 @@ if (root) {
 
   function renderActions(model) {
     actionsTarget.replaceChildren();
+    actionsCountTarget.textContent = model.recommendationCount + " tracked";
     const recommendations = model.recommendations;
     if (!recommendations.length) {
       actionsTarget.append(element("p", "command-empty",
@@ -112,9 +120,7 @@ if (root) {
         element("span", "", (Number.isSafeInteger(findingCount) ? findingCount + " findings" : "No report")
           + " · " + (assessment.methodologyVersion ?? "Methodology unavailable"))
       );
-      const date = element("span", "", assessment.completedAt
-        ? new Date(assessment.completedAt).toLocaleString()
-        : assessment.createdAt ? new Date(assessment.createdAt).toLocaleString() : "Date unavailable");
+      const date = element("span", "", formatDate(assessment.completedAt ?? assessment.createdAt));
       item.append(details, date);
       recentTarget.append(item);
     }
@@ -142,6 +148,14 @@ if (root) {
     renderActions(model);
     renderRecent(model);
     renderCoverage(model);
+    const state = document.querySelector(".workspace-state");
+    if (state) {
+      state.textContent = !model.projectCount
+        ? "AWAITING FIRST PROJECT"
+        : model.projectsWithLatestAssessment
+          ? "LATEST PROJECT BASELINES"
+          : "AWAITING FIRST ASSESSMENT";
+    }
     refreshTarget.textContent = "Refreshed " + new Date().toLocaleTimeString();
   }
 
