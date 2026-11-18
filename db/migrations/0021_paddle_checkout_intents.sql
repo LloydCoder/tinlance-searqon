@@ -149,7 +149,7 @@ BEGIN
 
   SELECT role INTO v_role FROM searqon.memberships
   WHERE organization_id=v_organization_id AND user_id=v_actor;
-  IF v_role NOT IN ('owner','admin') THEN
+  IF v_role IS NULL OR v_role NOT IN ('owner','admin') THEN
     RAISE EXCEPTION 'Workspace billing administration is not permitted' USING ERRCODE='42501';
   END IF;
 
@@ -198,7 +198,7 @@ BEGIN
   IF v_organization_id IS NULL THEN RETURN false; END IF;
   SELECT role INTO v_role FROM searqon.memberships
   WHERE organization_id=v_organization_id AND user_id=v_actor;
-  IF v_role NOT IN ('owner','admin') THEN
+  IF v_role IS NULL OR v_role NOT IN ('owner','admin') THEN
     RAISE EXCEPTION 'Workspace billing administration is not permitted' USING ERRCODE='42501';
   END IF;
   UPDATE searqon.billing_checkout_intents
@@ -226,7 +226,7 @@ COMMIT;
   IF v_organization_id IS NULL THEN RETURN false; END IF;
   SELECT role INTO v_role FROM searqon.memberships
   WHERE organization_id=v_organization_id AND user_id=v_actor;
-  IF v_role NOT IN ('owner','admin') THEN
+  IF v_role IS NULL OR v_role NOT IN ('owner','admin') THEN
     RAISE EXCEPTION 'Workspace billing administration is not permitted' USING ERRCODE='42501';
   END IF;
   UPDATE searqon.billing_checkout_intents
