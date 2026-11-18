@@ -7,6 +7,7 @@ import { createAppServer } from "../apps/web/server.js";
 
 const workspaceHtml = new URL("../apps/web/public/app/index.html", import.meta.url);
 const dashboardScript = new URL("../apps/web/public/app/dashboard.js", import.meta.url);
+const workspaceClientScript = new URL("../apps/web/public/app/workspace.js", import.meta.url);
 const dashboardModel = new URL("../apps/web/public/app/dashboard-model.js", import.meta.url);
 const dashboardStyles = new URL("../apps/web/public/app/dashboard.css", import.meta.url);
 const workspaceStyles = new URL("../apps/web/public/app/workspace.css", import.meta.url);
@@ -19,7 +20,9 @@ test("authenticated workspace loads the additive command center assets", async (
   assert.match(html, /id="command-center-actions"/);
   assert.match(html, /id="command-center-coverage"/);
   const script = await readFile(dashboardScript, "utf8");
+  const workspaceScript = await readFile(workspaceClientScript, "utf8");
   assert.match(script, /searqon:workspace-data-changed/);
+  assert.match(workspaceScript, /searqon:workspace-data-changed/);
   assert.match(html, /noindex, nofollow/);
 });
 
