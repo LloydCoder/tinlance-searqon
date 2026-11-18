@@ -40,7 +40,8 @@ function validateEvent(event) {
     plan: event.plan,
     currentPeriodStart: event.currentPeriodStart,
     currentPeriodEnd: event.currentPeriodEnd,
-    ...(event.trialEndsAt ? { trialEndsAt: event.trialEndsAt } : {})
+    ...(event.trialEndsAt ? { trialEndsAt: event.trialEndsAt } : {}),
+    ...(event.checkoutIntentId ? { checkoutIntentId:event.checkoutIntentId } : {})
   };
   return Object.freeze({
     provider: event.provider,
