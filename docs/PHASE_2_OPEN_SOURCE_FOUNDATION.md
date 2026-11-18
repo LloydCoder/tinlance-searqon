@@ -76,3 +76,7 @@ The dependency metadata inventory is complete for the locked graph, but a full s
 Phase 2 remains **IN_PROGRESS**. Existing source CI, CodeQL and secret-scan workflows are green on the audited commit, but the aggregate commit status is not green because of the Vercel rate limit; no release/tag/attestation exists; and repository branch protections/rulesets are absent. These are hard exit gates, not documentation-only caveats.
 
 No paid infrastructure, provider activation, npm publication, production deployment, or bypass of failed checks is authorized by this audit.
+
+## 6. Audit refresh policy
+
+Re-run the dependency/license inventory and update this evidence record whenever `package.json`, `package-lock.json`, vendored source, generated assets, or release packaging rules change. A release candidate must be audited from its exact tag commit, not from a later `main` snapshot. Record the archive digest, SBOM digest, attestation verification result, workflow run URL, and verifier identity in the release record. Treat an absent, ambiguous, custom, or `SEE LICENSE IN` declaration as unresolved until the corresponding upstream license text has been inspected.
