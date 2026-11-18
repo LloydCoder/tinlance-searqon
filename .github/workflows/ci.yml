@@ -60,6 +60,12 @@ jobs:
         run: |
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE searqon_worker_login LOGIN PASSWORD 'worker-test-only' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS"
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "GRANT searqon_worker TO searqon_worker_login"
+      - name: Create restricted billing ingestion and processing logins
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE searqon_billing_ingest_login LOGIN PASSWORD 'billing-ingest-test-only' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "GRANT searqon_billing_ingest TO searqon_billing_ingest_login"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE searqon_billing_worker_login LOGIN PASSWORD 'billing-worker-test-only' NOSUPERUSER NOCREATEDB NOCREATEROLE INHERIT NOBYPASSRLS"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "GRANT searqon_billing_worker TO searqon_billing_worker_login"
       - name: Verify Node.js tenant transactions against PostgreSQL
         run: node --test test/database.integration.test.js
         env:
@@ -86,6 +92,23 @@ jobs:
           SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
       - name: Verify subscription and redacted webhook inbox schema
         run: node --test test/billing-lifecycle.integration.test.js
+        env:
+          SEARQON_TEST_DATABASE: "1"
+          SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
+      - name: Verify durable billing inbox, idempotency and worker lease fencing
+        run: node --test test/billing-webhook-store.integration.test.js
+        env:
+          SEARQON_TEST_DATABASE: "1"
+          SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
+          SEARQON_BILLING_INGEST_DATABASE_URL: postgresql://searqon_billing_ingest_login:billing-ingest-test-only@127.0.0.1:5432/searqon_test
+          SEARQON_BILLING_WORKER_DATABASE_URL: postgresql://searqon_billing_worker_login:billing-worker-test-only@127.0.0.1:5432/searqon_test
+      - name: Verify provider-canonical subscription reconciliation and stale-event ordering
+        run: node --test test/billing-subscription-reconciler.integration.test.js
+        env:
+          SEARQON_TEST_DATABASE: "1"
+          SEARQON_BILLING_WORKER_DATABASE_URL: postgresql://searqon_billing_worker_login:billing-worker-test-only@127.0.0.1:5432/searqon_test
+      - name: Verify workspace invitation acceptance and role administration
+        run: node --test test/workspace-admin.integration.test.js
         env:
           SEARQON_TEST_DATABASE: "1"
           SEARQON_RUNTIME_DATABASE_URL: postgresql://searqon_runtime:runtime-test-only@127.0.0.1:5432/searqon_test
@@ -147,7 +170,7 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
-          for file in src/*.js src/security/*.js src/platform/*.js test/*.js apps/web/server.js apps/web/public/app.js apps/web/public/pages.js apps/web/public/app/workspace.js apps/web/public/auth/auth.js; do
+          for file in src/*.js src/security/*.js src/platform/*.js test/*.js apps/web/server.js apps/web/public/app.js apps/web/public/pages.js apps/web/public/app/workspace.js apps/web/public/auth/auth.js apps/web/public/auth/invitation.js; do
             node --check "$file"
           done
       - name: Run test suite
