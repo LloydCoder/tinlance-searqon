@@ -71,12 +71,30 @@ Configure and verify a main-branch ruleset requiring pull requests and the appro
 
 The dependency metadata inventory is complete for the locked graph, but a full source-level provenance review of every first-party file, historical contribution, generated asset, and any adapted third-party material has not been evidenced. No blanket claim of legal clearance is made. Keep the upstream attribution/license terms for any future vendored or adapted material and add a third-party notice when the distributed work includes attribution notices that require preservation.
 
-## 5. Decision
+## 5. PR #145 follow-up verification
+
+**Audited PR head:** `b5eb0b7440e9595168b4c1a7e7ae31be2a6d4aeb`.
+
+| Workflow | Run ID | Event | Result |
+|---|---:|---|---|
+| CI — Node 22, Node 24, PostgreSQL integration, package/SBOM validation | 44384769348 | pull_request | success |
+| CodeQL | 44384769353 | pull_request | success |
+| Full-history secret scanning | 44384769508 | pull_request | success |
+| CodeQL | 44384747729 | push | success |
+| Full-history secret scanning | 44384747654 | push | success |
+
+A full-history scan exposed three `generic-api-key` detections in a historical, test-only Paddle checkout fixture (commit `20045e861ccde3dc25efd6c220ac4663734171fb`, file `test/paddle-checkout.integration.test.js`). Source inspection showed the values are synthetic sandbox test fixtures, not usable provider credentials. The repository now contains `.gitleaks.toml`, which extends the default Gitleaks rules and permits only the exact historical commit **and** exact test path (`condition = "AND"`). The generic API-key rule remains enabled everywhere else. A regression test asserts the narrow allowlist and prevents disabling that rule. The full-history push and PR scans passed on the audited PR head.
+
+The CodeQL and secret-scanning workflows were also extended to run on pushes to `bootstrap/**`, `feat/**`, and `fix/**`, matching the CI branch coverage. Static workflow tests enforce these triggers.
+
+The PR's Vercel status remains **failure** with the provider message `Deployment rate limited — retry in 24 hours.` The separate Vercel Preview Comments check is successful, but it does not override the failed Vercel deployment status. No quota bypass, plan upgrade, or manual deployment was attempted.
+
+## 6. Decision
 
 Phase 2 remains **IN_PROGRESS**. Existing source CI, CodeQL and secret-scan workflows are green on the audited commit, but the aggregate commit status is not green because of the Vercel rate limit; no release/tag/attestation exists; and repository branch protections/rulesets are absent. These are hard exit gates, not documentation-only caveats.
 
 No paid infrastructure, provider activation, npm publication, production deployment, or bypass of failed checks is authorized by this audit.
 
-## 6. Audit refresh policy
+## 7. Audit refresh policy
 
 Re-run the dependency/license inventory and update this evidence record whenever `package.json`, `package-lock.json`, vendored source, generated assets, or release packaging rules change. A release candidate must be audited from its exact tag commit, not from a later `main` snapshot. Record the archive digest, SBOM digest, attestation verification result, workflow run URL, and verifier identity in the release record. Treat an absent, ambiguous, custom, or `SEE LICENSE IN` declaration as unresolved until the corresponding upstream license text has been inspected.
