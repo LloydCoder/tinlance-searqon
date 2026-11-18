@@ -33,6 +33,7 @@ test("supply-chain workflows pin actions and enforce least-privilege release per
   assert.match(release, /gh release create.*PACKAGE_FILE/);
   assert.equal((release.match(/uses: actions\/attest@/g) || []).length, 2);
   assert.match(releaseVerification, /release-attestation-repair\.yml/);
+  assert.match(releaseVerification, /release-provenance\.yml/);
   assert.match(releaseAttestationRepair, /branches:\s+\["attest\/v\*"\]/);
   assert.match(releaseAttestationRepair, /RELEASE_TAG="\$\{ATTEST_BRANCH#attest\/\}"/);
   assert.match(releaseAttestationRepair, /diff -qr/);
