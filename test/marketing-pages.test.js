@@ -153,7 +153,7 @@ test("public pages never expose escaped newline sequences as visible HTML text",
 
 test("indexable public pages keep title and description metadata within the analyzer guidance bands", async () => {
   await withServer(async base => {
-    for (const route of ["/", "/about/", "/docs/", "/pricing/", "/product/", "/security/", "/solutions/", "/contact/", "/privacy/", "/terms/"]) {
+    for (const route of ["/", "/about/", "/docs/", "/methodology/", "/pricing/", "/product/", "/security/", "/solutions/", "/contact/", "/privacy/", "/terms/"]) {
       const response = await fetch(base + route);
       assert.equal(response.status, 200, "page must load: " + route);
       const html = await response.text();
