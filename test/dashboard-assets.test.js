@@ -17,7 +17,7 @@ test("authenticated workspace loads the additive command center assets", async (
   assert.match(html, /src="\/app\/dashboard\.js"/);
   assert.match(html, /href="\/app\/dashboard\.css"/);
   assert.match(html, /id="command-center-actions"/);
-  assert.match(html, /id="command-center-coverage"/);
+  assert.match(html, /id="command-center-coverage"/);\n  const script = await readFile(dashboardScript, "utf8");\n  assert.match(script, /searqon:workspace-data-changed/);
   assert.match(html, /noindex, nofollow/);
 });
 
