@@ -1,7 +1,7 @@
 const PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const PROVIDER_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const STATUSES = new Set(["active","trialing","past_due","canceled","expired","free"]);
+const STATUSES = new Set(["active","trialing","past_due","paused","canceled","expired","free"]);
 const PLANS = new Set(["free","starter","growth","agency","business","enterprise","trial"]);
 const INTERVALS = new Set(["none","month","year"]);
 
