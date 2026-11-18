@@ -169,3 +169,12 @@ test("simulation rejects malformed MCP metadata JSON with a bounded error", () =
     error=>error.code==="invalid_document_json" && !error.message.includes("at ")
   );
 });
+
+test("bounded malformed HTML with repeated unclosed script tokens is handled as inert text", () => {
+  const input = structuredClone(manifest);
+  input.documents[0].content = "<script" + "<script".repeat(700) + ">" + "x".repeat(1000) + "</script><p>safe</p>";
+  input.journey = [{action:"read_document",documentId:"home"}];
+  const result = simulateAgentJourney(input);
+  assert.equal(result.steps[0].status,"completed");
+  assert.equal(result.steps[0].result.textLength,4);
+});
