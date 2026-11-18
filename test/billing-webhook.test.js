@@ -119,3 +119,49 @@ test("never forwards or persists raw webhook bytes or arbitrary provider fields"
   assert.equal("email" in saved, false);
   assert.equal(JSON.stringify(saved).includes("4111111111111111"), false);
 });
+
+test("rejects verification timestamps outside the bounded freshness window", async () => {
+  for (const verifiedAt of ["2026-11-18T09:54:59.999Z", "2026-11-18T10:00:31.001Z"]) {
+    let persisted = false;
+    const processor = createBillingWebhookProcessor({
+      adapters: { stripe: { verifyAndParse: async () => ({ ...canonical, verifiedAt }) } },
+      persist: async () => { persisted = true; return { accepted: true, duplicate: false }; },
+      now: () => new Date("2026-11-18T10:00:00.000Z"),
+      maxVerificationAgeMs: 5 * 60 * 1000,
+      maxFutureSkewMs: 30 * 1000
+    });
+    await assert.rejects(
+      processor({ provider: "stripe", rawBody, headers: {} }),
+      error => error instanceof BillingWebhookError && error.code === "event_invalid"
+    );
+    assert.equal(persisted, false);
+  }
+});
+
+test("rejects a persistence result that does not prove durable acceptance", async () => {
+  for (const outcome of [null, {}, { accepted: false, duplicate: false }, { accepted: true, duplicate: "no" }]) {
+    const processor = createBillingWebhookProcessor({
+      adapters: { stripe: { verifyAndParse: async () => canonical } },
+      persist: async () => outcome,
+      now: () => new Date("2026-11-18T10:00:01.000Z")
+    });
+    await assert.rejects(
+      processor({ provider: "stripe", rawBody, headers: {} }),
+      error => error instanceof BillingWebhookError && error.statusCode === 503
+    );
+  }
+});
+
+test("maps persistence exceptions to a retryable generic service error", async () => {
+  const processor = createBillingWebhookProcessor({
+    adapters: { stripe: { verifyAndParse: async () => canonical } },
+    persist: async () => { throw new Error("database URL and SQL must not leak"); },
+    now: () => new Date("2026-11-18T10:00:01.000Z")
+  });
+  await assert.rejects(
+    processor({ provider: "stripe", rawBody, headers: {} }),
+    error => error instanceof BillingWebhookError
+      && error.statusCode === 503
+      && !error.message.includes("database URL")
+  );
+});
