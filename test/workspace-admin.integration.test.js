@@ -53,7 +53,7 @@ test("workspace invitations enforce verified-email binding, one-time acceptance,
 
     await assert.rejects(
       service.acceptInvitation(strangerId,token),
-      error => error.code === "42501"
+      error => error.statusCode === 403 && error.code === "workspace_forbidden"
     );
     const accepted = await service.acceptInvitation(inviteeId,token);
     assert.deepEqual(accepted,{organizationId,role:"viewer"});
@@ -75,7 +75,7 @@ test("workspace invitations enforce verified-email binding, one-time acceptance,
 
     await assert.rejects(
       service.createInvitation(adminId,organizationId,{email:"new-admin@example.test",role:"admin",organizationName:"Workspace Admin"}),
-      error => error.code === "42501"
+      error => error.statusCode === 403 && error.code === "workspace_forbidden"
     );
     const adminInvitation = await service.createInvitation(adminId,organizationId,{email:"analyst@example.test",role:"analyst",organizationName:"Workspace Admin"});
     assert.equal(adminInvitation.role,"analyst");
