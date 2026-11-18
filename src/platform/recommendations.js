@@ -85,6 +85,17 @@ export function normalizeRecommendationDueDate(value) {
   return value;
 }
 
+function dateOnly(value) {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = String(value.getFullYear()).padStart(4,"0");
+    const month = String(value.getMonth()+1).padStart(2,"0");
+    const day = String(value.getDate()).padStart(2,"0");
+    return year + "-" + month + "-" + day;
+  }
+  return String(value).slice(0,10);
+}
+
 function normalizeFinding(finding) {
   if (!finding || typeof finding !== "object" || Array.isArray(finding)
     || !RULE_ID.test(finding.ruleId ?? "")
@@ -121,7 +132,7 @@ function recommendationRow(row, idempotentReplay = false) {
     description: row.description,
     recommendedAction: row.recommended_action,
     assignedTo: row.assigned_to ?? null,
-    dueDate: row.due_date ? String(row.due_date).slice(0,10) : null,
+    dueDate: dateOnly(row.due_date),
     status: row.status,
     occurrenceCount: row.occurrence_count,
     lastSeenAt: row.last_seen_at,
@@ -244,7 +255,7 @@ export function createRecommendationService({ database } = {}) {
           }
         }
         const previousAssignee = current.assigned_to ?? null;
-        const previousDueDate = current.due_date ? String(current.due_date).slice(0,10) : null;
+        const previousDueDate = dateOnly(current.due_date);
         const nextAssignee = hasAssignee ? assignedTo : previousAssignee;
         const nextDueDate = hasDueDate ? dueDate : previousDueDate;
         if (nextAssignee === previousAssignee && nextDueDate === previousDueDate) {
