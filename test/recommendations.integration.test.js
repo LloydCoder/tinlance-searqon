@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { createWorkspaceService } from "../src/platform/workspaces.js";
 import { createRecommendationService } from "../src/platform/recommendations.js";
@@ -63,6 +63,40 @@ test("recommendations preserve tenant scope, human approval, evidence verificati
     const recommendation = generated.created.find(item => item.ruleId === "html.meta_description.missing");
     assert.ok(recommendation);
     assert.equal(recommendation.status,"open");
+    const patchDiff = "--- a/docs/remediation/meta-description.md\n+++ b/docs/remediation/meta-description.md\n@@\n-Add nothing\n+Add a concise description\n";
+    const patchSha256 = createHash("sha256").update(patchDiff,"utf8").digest("hex");
+    const remediationPlan = await service.createPlan(userA,project.id,{
+      planId:"meta-description-remediation",
+      steps:[{
+        id:"step-1",
+        title:"Add a page-specific meta description",
+        recommendationIds:[recommendation.id],
+        patch:{path:"docs/remediation/meta-description.md",sha256:patchSha256,diff:patchDiff},
+        tests:[{testId:"seo-meta-description-regression",assessmentId:baseline.id,patchSha256,status:"passed"}]
+      }]
+    });
+    assert.equal(remediationPlan.status,"ready_for_human_review");
+    assert.equal(remediationPlan.autoApply,false);
+    assert.equal(remediationPlan.steps[0].patch.sha256,patchSha256);
+    const storedPlans = await service.listPlans(userA,project.id);
+    assert.equal(storedPlans.length,1);
+    assert.equal(storedPlans[0].digest,remediationPlan.digest);
+    assert.equal((await service.listPlans(viewer,project.id)).length,1);
+    await assert.rejects(
+      service.createPlan(userA,project.id,{
+        planId:"cross-project-plan",
+        steps:[{
+          id:"step-1",title:"Invalid cross-project link",recommendationIds:[recommendation.id],
+          patch:{path:"docs/fix.md",sha256:patchSha256,diff:patchDiff},
+          tests:[{testId:"test",assessmentId:randomUUID(),patchSha256,status:"passed"}]
+        }]
+      }),
+      error=>error.code==="plan_assessment_scope_mismatch"
+    );
+    await assert.rejects(
+      owner.query("UPDATE searqon.recommendation_plans SET status='blocked_by_test_evidence' WHERE organization_id=$1 AND plan_ref=$2",[orgA,"meta-description-remediation"]),
+      /immutable/
+    );
     const assignees = await service.listAssignees(userA,project.id);
     assert.ok(assignees.some(member=>member.id===viewer && member.role==="viewer"));
     assert.ok(!assignees.some(member=>member.id===userB),"cross-tenant users must never appear in the assignee directory");
