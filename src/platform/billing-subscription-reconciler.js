@@ -200,12 +200,13 @@ export function createBillingSubscriptionReconciler({workerPool,adapters}={}) {
           resulting=snapshotFromRow(previousRow);
         }
 
-        if(event.provider==="paddle" && event.payload?.checkoutIntentId) {
+        if(event.provider==="paddle" && event.payload?.checkoutIntentId && event.payload?.providerTransactionId) {
           await client.query(
             `UPDATE searqon.billing_checkout_intents
              SET state='completed',updated_at=now()
-             WHERE id=$1 AND organization_id=$2 AND provider='paddle' AND state<>'completed'`,
-            [event.payload.checkoutIntentId,event.organizationId]
+             WHERE id=$1 AND organization_id=$2 AND provider='paddle'
+               AND provider_transaction_id=$3 AND state<>'completed'`,
+            [event.payload.checkoutIntentId,event.organizationId,event.payload.providerTransactionId]
           );
         }
 
