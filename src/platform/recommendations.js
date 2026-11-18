@@ -200,15 +200,10 @@ export function createRecommendationService({ database } = {}) {
       return withUserTransaction(database.pool,userId,async client => {
         const organizationId = await requireProjectMembership(client,userId,projectId,false);
         const result = await client.query(
-          `SELECT u.id,u.display_name,m.role
-           FROM searqon.memberships m
-           JOIN searqon.app_users u ON u.id=m.user_id
-           WHERE m.organization_id=$1
-           ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 WHEN 'analyst' THEN 2 ELSE 3 END,
-             lower(u.display_name),u.id`,
-          [organizationId]
+          "SELECT user_id,display_name,role FROM searqon.list_project_members($1)",
+          [projectId]
         );
-        return result.rows.map(row=>({id:row.id,displayName:row.display_name,role:row.role}));
+        return result.rows.map(row=>({id:row.user_id,displayName:row.display_name,role:row.role}));
       });
     },
 
