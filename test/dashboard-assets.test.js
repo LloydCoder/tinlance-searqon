@@ -40,8 +40,7 @@ test("workspace styling follows the supplied flat-color Searqon brand rules", as
     readFile(dashboardStyles, "utf8"),
     readFile(workspaceStyles, "utf8")
   ]);
-  const css = dashboard + "
-" + workspace;
+  const css = dashboard + "\n" + workspace;
   assert.match(css, /#FFFEFA/);
   assert.match(css, /var\(--ink\)/);
   assert.match(css, /font:500 12px\/18px var\(--mono\)/);
