@@ -73,3 +73,17 @@ test("phase one validation pack defines real customer evidence and market resear
   assert.match(validation, /Do not ask leading questions/);
   assert.match(validation, /A non-binding LOI, verbal "yes", free trial/);
 });
+
+
+test("phase one trackers contain only empty slots for real customer evidence", async () => {
+  const interviews = await read("../docs/validation/INTERVIEW_TRACKER.csv");
+  const partners = await read("../docs/validation/DESIGN_PARTNER_TRACKER.csv");
+  const pilots = await read("../docs/validation/PAID_PILOT_TRACKER.csv");
+  assert.equal(interviews.trim().split("\n").length, 16);
+  assert.equal(partners.trim().split("\n").length, 6);
+  assert.equal(pilots.trim().split("\n").length, 4);
+  assert.match(interviews, /P1-INT-015,api_first_agent_platform/);
+  assert.match(partners, /P1-DP-005/);
+  assert.match(pilots, /P1-PP-003/);
+  assert.ok(!/P1-INT-001,[^,]+,[^,]+,[^,]+/.test(interviews), "interview slots must not invent customer identities");
+});

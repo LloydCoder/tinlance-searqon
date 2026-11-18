@@ -1,0 +1,16 @@
+interview_id,cohort,organization,contact_name,role,buying_authority,outreach_status,scheduled_at,completed_at,recent_problem_instance,frequency,business_impact,current_tools,current_cost_or_time,budget_owner,urgency_0_to_5,frequency_0_to_5,impact_0_to_5,workaround_cost_0_to_5,product_fit_0_to_5,evidence_access_0_to_5,objections,next_step,recording_consent,anonymized_notes_reference,evidence_review_status
+P1-INT-001,technical_seo_geo_agency,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-002,technical_seo_geo_agency,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-003,technical_seo_geo_agency,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-004,technical_seo_geo_agency,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-005,technical_seo_geo_agency,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-006,technical_seo_geo_agency,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-007,b2b_saas_ai_devtools,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-008,b2b_saas_ai_devtools,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-009,b2b_saas_ai_devtools,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-010,b2b_saas_ai_devtools,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-011,b2b_saas_ai_devtools,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-012,b2b_saas_ai_devtools,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-013,api_first_agent_platform,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-014,api_first_agent_platform,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
+P1-INT-015,api_first_agent_platform,,,,,not_contacted,,,,,,,,,,,,,,,,,not_requested,,not_reviewed
