@@ -169,3 +169,30 @@ test("remote scanner classifies unsafe redirect destinations separately and neve
   assert.equal(result.status, "redirect_blocked_by_policy");
   assert.deepEqual(robotOrigins, ["https://example.com"]);
 });
+
+
+test("remote scanner passes one crawler identity to robots evaluation and HTTP acquisition", async () => {
+  let fetchedUserAgent = null;
+  const result = await scanPublicUrl("https://example.com/docs", {
+    confirmAuthorizedTarget: true,
+    userAgent: "CustomBot",
+    robotsLoader: async (origin, token, options) => {
+      assert.equal(origin, "https://example.com");
+      assert.equal(token, "CustomBot");
+      assert.equal(options.userAgent, "CustomBot");
+      return allowedRobots();
+    },
+    fetcher: async (url, options) => {
+      fetchedUserAgent = options.userAgent;
+      return {
+        status: 200,
+        headers: { "content-type": "text/html" },
+        body: Buffer.from("<html><title>Useful documentation for developers</title><body><h1>Docs</h1></body></html>"),
+        finalUrl: url,
+        redirects: 0
+      };
+    }
+  });
+  assert.equal(result.status, "scanned");
+  assert.equal(fetchedUserAgent, "CustomBot");
+});

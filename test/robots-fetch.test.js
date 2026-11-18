@@ -121,8 +121,8 @@ test("robots cache enforces a bounded entry count", async () => {
   await fetchRobotsPolicy("https://one.example.com", "SearqonBot", { cache, fetcher, maxEntries: 1 });
   await fetchRobotsPolicy("https://two.example.com", "SearqonBot", { cache, fetcher, maxEntries: 1 });
   assert.equal(cache.size, 1);
-  assert.equal(cache.has("https://two.example.com"), true);
-  assert.equal(cache.has("https://one.example.com"), false);
+  assert.equal(cache.has("https://two.example.com\nsearqonbot"), true);
+  assert.equal(cache.has("https://one.example.com\nsearqonbot"), false);
 });
 
 test("invalid cache bounds are rejected", async () => {
@@ -142,4 +142,44 @@ test("unfollowable redirect responses fail closed with a short cache lifetime", 
   assert.equal(result.outcome, "unreachable");
   assert.equal(result.expiresAt, 50_000);
   assert.equal(evaluateRobots(result.policy, "https://example.com/", "SearqonBot").allowed, false);
+});
+
+
+test("robots retrieval forwards the product token and caches policies separately per token", async () => {
+  const cache = new Map();
+  let calls = 0;
+  const fetcher = async (url, options) => {
+    calls++;
+    assert.equal(options.userAgent, calls === 1 ? "SearqonBot" : "CustomBot");
+    assert.equal(options.validateRedirect({ to: "https://example.com/robots.txt" }), true);
+    assert.equal(options.validateRedirect({ to: "https://other.example.net/robots.txt" }), false);
+    return { status: 200, headers: { "cache-control": "max-age=600" }, body: Buffer.from("User-agent: *\nAllow: /"), finalUrl: url };
+  };
+  await fetchRobotsPolicy(origin, "SearqonBot", { cache, fetcher, now: () => 1000 });
+  await fetchRobotsPolicy(origin, "CustomBot", { cache, fetcher, now: () => 1000 });
+  await fetchRobotsPolicy(origin, "SearqonBot", { cache, fetcher, now: () => 1001 });
+  assert.equal(calls, 2);
+  assert.equal(cache.has("https://example.com\nsearqonbot"), true);
+  assert.equal(cache.has("https://example.com\ncustombot"), true);
+});
+
+test("cross-origin robots redirect results fail closed and cache only a short-lived denial", async () => {
+  const cache = new Map();
+  const result = await fetchRobotsPolicy(origin, "SearqonBot", {
+    cache,
+    now: () => 50_000,
+    fetcher: async () => ({
+      status: 200,
+      headers: { "cache-control": "max-age=600" },
+      body: Buffer.from("User-agent: *\nAllow: /"),
+      finalUrl: "https://other.example.net/robots.txt",
+      redirects: 1
+    })
+  });
+  assert.equal(result.outcome, "unreachable");
+  assert.equal(result.error, "Cross-origin robots.txt redirect is not permitted");
+  assert.equal(result.expiresAt, 80_000);
+  assert.equal(evaluateRobots(result.policy, "https://example.com/", "SearqonBot").allowed, false);
+  assert.equal(cache.size, 1); // Short failure cache only; no permissive policy is retained.
+  assert.equal(cache.has("https://example.com\nsearqonbot"), true);
 });

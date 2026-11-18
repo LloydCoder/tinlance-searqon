@@ -100,7 +100,7 @@ export async function scanPublicUrl(value, options = {}) {
 
   let initialRobots;
   try {
-    initialRobots = await robotsLoader(origin, userAgent, robotsOptions);
+    initialRobots = await robotsLoader(origin, userAgent, { ...robotsOptions, userAgent });
   } catch {
     return result("robots_unreachable", { target: publicLabel(target.href), robotsOutcome: "unreachable" });
   }
@@ -158,6 +158,7 @@ export async function scanPublicUrl(value, options = {}) {
     response = await fetcher(target.href, {
       maxBytes,
       maxRedirects,
+      userAgent,
       timeoutMs: options.timeoutMs ?? 10_000,
       dnsTimeoutMs: options.dnsTimeoutMs ?? 5_000,
       validateRedirect

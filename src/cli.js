@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { readFile, writeFile } from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
+import { lstat, open, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, resolve } from "node:path";
 import { analyzeDocument } from "./analyzer.js";
 import { analyzeGeoObservation, aggregateGeoObservations } from "./geo.js";
@@ -42,6 +43,22 @@ async function emitResult(result,args) {
   await writeFile(resolve(outputPath),output,{flag:"wx"});
 }
 
+async function readScanFile(file) {
+  const info = await lstat(file);
+  if (info.isSymbolicLink()) throw new Error("Refusing to scan a symlink");
+  if (!info.isFile()) throw new Error("Only regular files can be scanned");
+  const handle = await open(file, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0));
+  try {
+    const openedInfo = await handle.stat();
+    if (!openedInfo.isFile() || openedInfo.dev !== info.dev || openedInfo.ino !== info.ino) {
+      throw new Error("Scan input changed while opening; refusing to read it");
+    }
+    return await handle.readFile("utf8");
+  } finally {
+    await handle.close();
+  }
+}
+
 async function runScan(args) {
   if (!args[1]) throw new Error(usage);
   const file=resolve(args[1]);
@@ -55,7 +72,7 @@ async function runScan(args) {
   const sourceIndex=args.indexOf("--source");
   const source=sourceIndex>=0 ? args[sourceIndex+1] : basename(file);
   if (sourceIndex>=0 && (!source || source.startsWith("--"))) throw new Error("--source requires a value");
-  await emitResult(analyzeDocument({source,contentType,content:await readFile(file,"utf8")}),args);
+  await emitResult(analyzeDocument({source,contentType,content:await readScanFile(file)}),args);
 }
 
 async function runScanUrl(args) {

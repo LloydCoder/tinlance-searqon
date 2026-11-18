@@ -1,6 +1,7 @@
 import { fetchPublicUrl } from "./fetch.js";
 import { validateTargetUrl } from "./url-policy.js";
 import { parseRobots } from "./robots.js";
+import { wireUserAgent } from "./user-agent.js";
 
 const MAX_ROBOTS_BYTES = 512 * 1024;
 const MAX_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -58,6 +59,7 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
   if (typeof userAgent !== "string" || !userAgent.trim() || userAgent.length > 256) {
     throw new TypeError("A crawler user-agent token of at most 256 characters is required");
   }
+  wireUserAgent(userAgent);
   const target = validateTargetUrl(origin);
   const originUrl = new URL(target.href);
   const originKey = originUrl.origin;
@@ -73,11 +75,12 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
   const now = clock();
   if (!Number.isFinite(now)) throw new TypeError("clock must return a finite timestamp");
 
-  const cached = cache.get(originKey);
+  const cacheKey = originKey + "\n" + userAgent.toLowerCase();
+  const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt !== null && cached.expiresAt > now) {
     return immutableResult({ ...cached, cacheHit: true });
   }
-  if (cached) cache.delete(originKey);
+  if (cached) cache.delete(cacheKey);
 
   const fetcher = options.fetcher ?? fetchPublicUrl;
   if (typeof fetcher !== "function") throw new TypeError("fetcher must be a function");
@@ -95,12 +98,22 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
       maxBytes: MAX_ROBOTS_BYTES,
       maxRedirects: 5,
       timeoutMs: options.timeoutMs ?? 10_000,
-      dnsTimeoutMs: options.dnsTimeoutMs ?? 5_000
+      dnsTimeoutMs: options.dnsTimeoutMs ?? 5_000,
+      userAgent,
+      // Deliberately stricter than RFC 9309 cross-authority redirect guidance:
+      // a foreign robots file must not silently become this origin's policy.
+      validateRedirect: ({ to }) => {
+        try { return new URL(to).origin === originKey; }
+        catch { return false; }
+      }
     });
     status = response.status;
     headers = response.headers ?? {};
     finalUrl = response.finalUrl ?? sourceUrl;
     redirects = response.redirects ?? 0;
+    if (new URL(finalUrl).origin !== originKey) {
+      throw new Error("Cross-origin robots.txt redirect is not permitted");
+    }
 
     if (Number.isInteger(status) && status >= 200 && status < 300) {
       const body = Buffer.isBuffer(response.body) ? response.body : Buffer.from(response.body ?? "");
@@ -116,6 +129,8 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
       outcome = "unreachable";
     }
   } catch (cause) {
+    status = null;
+    headers = {};
     policy = DISALLOW_ALL;
     outcome = "unreachable";
     error = cause instanceof Error ? cause.message.slice(0, 256) : "Robots retrieval failed";
@@ -138,7 +153,7 @@ export async function fetchRobotsPolicy(origin, userAgent, options = {}) {
   });
 
   if (expiresAt !== null) {
-    cache.set(originKey, result);
+    cache.set(cacheKey, result);
     while (cache.size > maxEntries) cache.delete(cache.keys().next().value);
   }
   return result;

@@ -414,3 +414,69 @@ test("MCP custom header annotations inside schema composition are rejected", () 
   });
   assert.equal(result.observations.toolsWithInvalidHeaderAnnotations, 1);
 });
+
+
+test("HTML analysis ignores comments and non-rendered elements and accepts unquoted attributes", () => {
+  const content = '<!-- <title>Commented title is not visible</title><h1>Commented heading</h1><meta name=robots content=noindex> -->' +
+    '<script><title>Script title is not visible</title><h1>Script heading</h1><meta name=robots content=noindex></script>' +
+    '<style><h1>Style heading</h1></style><textarea><h1>Textarea heading</h1></textarea>' +
+    '<template><h1>Template heading</h1></template><noscript><h1>Noscript heading</h1></noscript>' +
+    '<html lang=en><head><title></title><title>Example documentation for developers and agents</title>' +
+    '<meta name=description content=' + 'x'.repeat(80) + '>' +
+    '<meta name=viewport content=width=device-width>' +
+    '<link rel=canonical href=https://example.test/docs></head><body><h1>Visible heading</h1></body></html>';
+  const result = analyzeDocument({ source: "rendered.html", contentType: "text/html", content });
+  assert.equal(result.observations.titlePresent, true);
+  assert.equal(result.observations.descriptionPresent, true);
+  assert.equal(result.observations.canonicalPresent, true);
+  assert.equal(result.observations.languagePresent, true);
+  assert.equal(result.observations.viewportPresent, true);
+  assert.equal(result.observations.h1Count, 1);
+  assert.equal(result.observations.noindex, false);
+  const rules = result.findings.map(item => item.ruleId);
+  for (const rule of ["html.title.missing", "html.meta_description.missing", "html.canonical.missing", "html.lang.missing", "html.viewport.missing", "html.h1.multiple", "html.robots.noindex"]) {
+    assert.equal(rules.includes(rule), false, "unexpected finding " + rule);
+  }
+});
+
+test("HTML analysis preserves JSON-LD detection while excluding script content from visible text", () => {
+  const content = '<html lang=en><head><title>Useful documentation title for readers</title>' +
+    '<script type=application/ld+json>{"name":"Example"}</script></head>' +
+    '<body><h1>Visible heading</h1><script>var fake = "<h1>Injected heading</h1>";</script></body></html>';
+  const result = analyzeDocument({ source: "jsonld.html", contentType: "text/html", content });
+  assert.equal(result.observations.jsonLdPresent, true);
+  assert.equal(result.observations.h1Count, 1);
+});
+
+test("OpenAPI 3.2 rejects bare undefined component names and gives each finding a unique ID", () => {
+  const document = {
+    openapi: "3.2.0",
+    info: { title: "Example API", version: "1.0.0", description: "Example service" },
+    security: [
+      { NotARealScheme: [] },
+      { MissingBearer: [] },
+      { "https://example.com/security/bearer": [] },
+      { "./security/api-key": [] }
+    ],
+    paths: { "/items": { get: { operationId: "listItems", summary: "List items", responses: { "200": { description: "OK" } } } } }
+  };
+  const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
+  const findings = result.findings.filter(item => item.ruleId === "openapi.security_scheme.undefined");
+  assert.equal(result.observations.undefinedSecuritySchemeCount, 2);
+  assert.equal(findings.length, 2);
+  assert.equal(new Set(findings.map(item => item.id)).size, 2);
+  assert.ok(findings.some(item => item.description.includes("NotARealScheme")));
+  assert.ok(findings.some(item => item.description.includes("MissingBearer")));
+});
+
+test("OpenAPI 3.2 rejects malformed security scheme URI references", () => {
+  const document = {
+    openapi: "3.2.0",
+    info: { title: "Example API", version: "1.0.0", description: "Example service" },
+    security: [{ "https://[invalid": [] }],
+    paths: { "/items": { get: { operationId: "listItems", summary: "List items", responses: { "200": { description: "OK" } } } } }
+  };
+  const result = analyzeDocument({ source: "openapi.json", contentType: "application/json", content: JSON.stringify(document) });
+  assert.equal(result.observations.undefinedSecuritySchemeCount, 1);
+  assert.ok(result.findings.some(item => item.ruleId === "openapi.security_scheme.undefined"));
+});
