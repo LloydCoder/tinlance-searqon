@@ -15,7 +15,7 @@ function escapeHtml(value) {
 function validateMessage({ to, url, idempotencyKey }) {
   if (typeof to !== "string" || to.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)
     || typeof url !== "string" || typeof idempotencyKey !== "string"
-    || idempotencyKey.length < 8 || idempotencyKey.length > 128) {
+    || idempotencyKey.length < 1 || idempotencyKey.length > 128) {
     throw new TypeError("A valid recipient, URL and idempotency key are required.");
   }
   const parsed = new URL(url);
