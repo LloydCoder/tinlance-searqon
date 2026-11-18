@@ -17,7 +17,14 @@ export class AgentSandboxExecutionError extends Error {
   }
 }
 
-export function runAgentSimulationIsolated(manifest,{runId = null,timeoutMs = DEFAULT_TIMEOUT_MS} = {}) {
+export function runAgentSimulationIsolated(manifest,{runId = null,timeoutMs = DEFAULT_TIMEOUT_MS,signal} = {}) {
+  if (signal !== undefined && (!signal || typeof signal.aborted !== "boolean"
+    || typeof signal.addEventListener !== "function" || typeof signal.removeEventListener !== "function")) {
+    throw new AgentSandboxExecutionError("invalid_simulation_signal","The simulation cancellation signal is invalid.");
+  }
+  if (signal?.aborted) {
+    throw new AgentSandboxExecutionError("simulation_cancelled","The simulation was cancelled before its child process started.");
+  }
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 10000) {
     throw new AgentSandboxExecutionError("invalid_simulation_timeout","The simulation timeout must be between 100 and 10000 milliseconds.");
   }
@@ -48,17 +55,28 @@ export function runAgentSimulationIsolated(manifest,{runId = null,timeoutMs = DE
     let outputBytes = 0;
     let settled = false;
     let timedOut = false;
+    let timer;
     const finish = (error,value) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      signal?.removeEventListener("abort",onAbort);
       if (error) rejectResult(error);
       else resolveResult(value);
     };
-    const timer = setTimeout(() => {
+    const onAbort = () => {
+      child.kill("SIGKILL");
+      finish(new AgentSandboxExecutionError("simulation_cancelled","The simulation was cancelled after its queue lease was lost."));
+    };
+    timer = setTimeout(() => {
       timedOut = true;
       child.kill("SIGKILL");
     },timeoutMs);
+    signal?.addEventListener("abort",onAbort,{once:true});
+    if (signal?.aborted) {
+      onAbort();
+      return;
+    }
 
     child.stdout.on("data",chunk => {
       outputBytes += chunk.length;
@@ -72,7 +90,7 @@ export function runAgentSimulationIsolated(manifest,{runId = null,timeoutMs = DE
     child.once("error",() => {
       finish(new AgentSandboxExecutionError("simulation_child_unavailable","The isolated simulation process could not be started."));
     });
-    child.once("close",(code,signal) => {
+    child.once("close",(code,childSignal) => {
       if (settled) return;
       if (timedOut) {
         finish(new AgentSandboxExecutionError("simulation_timeout","The isolated simulation exceeded its wall-clock limit."));
@@ -91,7 +109,7 @@ export function runAgentSimulationIsolated(manifest,{runId = null,timeoutMs = DE
         finish(new AgentSandboxExecutionError(errorCode,"The isolated simulation did not complete."));
         return;
       }
-      if (signal) {
+      if (childSignal) {
         finish(new AgentSandboxExecutionError("simulation_child_terminated","The isolated simulation process was terminated."));
         return;
       }
